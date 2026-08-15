@@ -5,7 +5,9 @@ import '../styles/global.css';
 import Toggles from '../components/Toggles.astro';
 
 interface Props { title: string; description?: string; }
-const { title, description = 'Distributed systems, consensus, replication. And the infrastructure underneath.' } = Astro.props;
+// Third person, and search terms rather than the hero's voice — this
+// is what shows up in results and link previews, not on the page.
+const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.' } = Astro.props;
 const nav = [
   { href: '/projects', label: 'Work' },
   { href: '/about', label: 'About' },
