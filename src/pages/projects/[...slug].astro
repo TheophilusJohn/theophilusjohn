@@ -1,0 +1,81 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
+  return projects.map((p) => ({ params: { slug: p.id }, props: { project: p } }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+---
+<Base title={`${d.title} — Theophilus John`} description={d.summary}>
+  <article class="wrap">
+    <header class="head">
+      <div class="top">
+        <span class="id">{d.machineId}</span>
+        <span class="period">{d.period} · {d.role}</span>
+      </div>
+      <h1>{d.headline}</h1>
+      <p class="summary">{d.summary}</p>
+
+      {d.metrics.length > 0 && (
+        <dl class="stats">
+          {d.metrics.map((m) => (
+            <div><dt>{m.value}</dt><dd>{m.label}</dd></div>
+          ))}
+        </dl>
+      )}
+
+      <p class="links">
+        {d.liveUrl && <a href={d.liveUrl}>Live</a>}
+        {d.repoUrl && <a href={d.repoUrl}>Source</a>}
+        <span class="stack">{d.stack.join(' · ')}</span>
+      </p>
+    </header>
+
+    <div class="prose"><Content /></div>
+  </article>
+</Base>
+
+<style>
+  .head { padding-block: var(--s-12) var(--s-8); border-bottom: 1px solid var(--rule); }
+  .top { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; }
+  .id, .period, .stack {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .id { color: var(--leader); }
+  .period, .stack { color: var(--dim); }
+
+  h1 {
+    font-size: var(--t-2xl); line-height: 0.94;
+    letter-spacing: -0.045em; font-weight: 500;
+    margin-top: var(--s-3); font-variation-settings: 'wdth' 120;
+  }
+  .summary { margin-top: var(--s-4); max-width: 48ch; color: var(--muted); font-size: var(--t-lg); }
+
+  .stats { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-8); }
+  .stats dt { font-size: var(--t-xl); color: var(--leader); font-weight: 500; letter-spacing: -0.03em; }
+  .stats dd {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+  }
+
+  .links { display: flex; gap: var(--s-4); align-items: baseline; margin-top: var(--s-8); flex-wrap: wrap; }
+  .links a {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--leader);
+  }
+
+  .prose { max-width: var(--measure); padding-block: var(--s-8); }
+  .prose :global(h2) {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--dim); margin-top: var(--s-12); margin-bottom: var(--s-3);
+    font-weight: 400;
+  }
+  .prose :global(p) { color: var(--muted); margin-bottom: var(--s-4); }
+</style>

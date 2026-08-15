@@ -1,0 +1,74 @@
+---
+import '../styles/tokens.css';
+import '../styles/global.css';
+import Toggles from '../components/Toggles.astro';
+
+interface Props { title: string; description?: string; }
+const { title, description = 'Distributed systems, consensus, replication. And the infrastructure underneath.' } = Astro.props;
+const nav = [
+  { href: '/projects', label: 'Work' },
+  { href: '/about', label: 'About' },
+  { href: '/theo-john-resume.pdf', label: 'Resume' },
+];
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+
+  <!-- Applied before first paint so neither toggle flashes. §5 -->
+  <script is:inline>
+    (function () {
+      var r = document.documentElement;
+      try {
+        if (localStorage.getItem('tj:contrast') === 'high') r.dataset.contrast = 'high';
+        var m = localStorage.getItem('tj:motion');
+        if (m === 'off') r.dataset.motion = 'off';
+        else if (m === null && matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.motion = 'off';
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="wrap site-head">
+    <a href="/" class="wordmark">theophilusjohn.com</a>
+    <nav aria-label="Primary">
+      {nav.map((n) => <a href={n.href}>{n.label}</a>)}
+      <Toggles />
+    </nav>
+  </header>
+
+  <main id="main"><slot /></main>
+
+  <footer class="wrap site-foot">
+    <span class="meta">Houston, TX</span>
+    <span class="meta">
+      <a href="https://github.com/TheophilusJohn">GitHub</a> ·
+      <a href="mailto:theo@theophilusjohn.com">Email</a>
+    </span>
+  </footer>
+
+  <style>
+    .site-head, .site-foot {
+      display: flex; justify-content: space-between;
+      align-items: baseline; gap: var(--s-4);
+      padding-block: var(--s-6);
+    }
+    .site-foot { border-top: 1px solid var(--rule); margin-top: var(--s-24); }
+    .wordmark { font-family: var(--font-mono); font-size: var(--t-sm); text-decoration: none; }
+    nav { display: flex; align-items: center; gap: var(--s-4); }
+    nav a {
+      font-family: var(--font-mono); font-size: var(--t-meta);
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--dim); text-decoration: none;
+    }
+    nav a:hover { color: var(--leader); }
+  </style>
+</body>
+</html>

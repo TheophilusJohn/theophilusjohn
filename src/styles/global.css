@@ -1,0 +1,69 @@
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--void);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--t-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100svh;
+}
+
+a { color: inherit; text-decoration-color: var(--leader); text-underline-offset: 0.25em; }
+a:hover { color: var(--leader); }
+
+:focus-visible {
+  outline: 2px solid var(--leader);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+img, svg, canvas { display: block; max-width: 100%; }
+
+.wrap { padding-inline: var(--gutter); }
+
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--void-lift); color: var(--paper);
+  padding: var(--s-3) var(--s-4); z-index: 99;
+}
+.skip:focus { left: var(--s-4); top: var(--s-4); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* ── Motion ──────────────────────────────────────────────
+   data-motion="off" is set by the toggle OR by the OS via
+   the inline head script. Motion code must check this
+   attribute, not just the media query. */
+[data-motion="off"] *,
+[data-motion="off"] *::before,
+[data-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,51 @@
+---
+// Both controls from §5. State is applied before first paint by the
+// inline script in Base.astro, so there is no flash.
+---
+<div class="toggles">
+  <button id="t-contrast" type="button" aria-pressed="false" title="Toggle high contrast">
+    <span aria-hidden="true">◐</span>
+    <span class="sr-only">High contrast</span>
+  </button>
+  <button id="t-motion" type="button" aria-pressed="false" title="Toggle reduced motion">
+    <span aria-hidden="true">≋</span>
+    <span class="sr-only">Reduce motion</span>
+  </button>
+</div>
+
+<style>
+  .toggles { display: flex; gap: var(--s-2); }
+  button {
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: var(--font-mono);
+    font-size: var(--t-sm);
+    line-height: 1;
+    padding: var(--s-1) var(--s-2);
+    cursor: pointer;
+  }
+  button:hover { color: var(--leader); border-color: var(--leader); }
+  button[aria-pressed="true"] { color: var(--leader); border-color: var(--leader); }
+</style>
+
+<script>
+  const root = document.documentElement;
+
+  function wire(id: string, attr: string, onValue: string, key: string) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const sync = () => btn.setAttribute('aria-pressed', String(root.dataset[attr] === onValue));
+    sync();
+    btn.addEventListener('click', () => {
+      const next = root.dataset[attr] === onValue ? null : onValue;
+      if (next) { root.dataset[attr] = next; localStorage.setItem(key, next); }
+      else { delete root.dataset[attr]; localStorage.removeItem(key); }
+      sync();
+    });
+  }
+
+  wire('t-contrast', 'contrast', 'high', 'tj:contrast');
+  wire('t-motion', 'motion', 'off', 'tj:motion');
+</script>

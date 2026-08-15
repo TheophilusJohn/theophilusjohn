@@ -1,0 +1,44 @@
+/* ── Palette ─────────────────────────────────────────────
+   Violet-black. The accent carries one meaning everywhere
+   it appears: active, elected, current. Never decoration. */
+
+:root {
+  --void:      #14121F;
+  --void-lift: #1C1A2B;
+  --rule:      #2A2640;
+  --dim:       #4A4470;
+  --muted:     #9A93C0;
+  --paper:     #EDEAFB;
+  --leader:    #A99BF5;
+  --mint:      #C6E9D2;   /* reserved second accent. Do not use without a reason. */
+
+  /* ── Type scale ───────────────────────────────────────
+     Use these. No arbitrary font sizes anywhere else. */
+  --t-hero:  clamp(4rem, 18vw, 16rem);
+  --t-2xl:   clamp(2.5rem, 7vw, 5.5rem);
+  --t-xl:    clamp(1.75rem, 3.5vw, 2.75rem);
+  --t-lg:    1.25rem;
+  --t-body:  1rem;
+  --t-sm:    0.875rem;
+  --t-meta:  0.625rem;
+
+  /* ── Space ────────────────────────────────────────── */
+  --s-1: 0.25rem;  --s-2: 0.5rem;   --s-3: 0.75rem;
+  --s-4: 1rem;     --s-6: 1.5rem;   --s-8: 2rem;
+  --s-12: 3rem;    --s-16: 4rem;    --s-24: 6rem;
+
+  --measure: 62ch;
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* High contrast mode — §5 */
+[data-contrast="high"] {
+  --paper:  #FFFFFF;
+  --muted:  #CFC9E8;
+  --dim:    #8F88BC;
+  --rule:   #4A4470;
+  --leader: #C4B8FF;
+}

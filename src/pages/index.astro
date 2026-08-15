@@ -1,0 +1,46 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import ProjectRow from '../components/ProjectRow.astro';
+
+const projects = (await getCollection('projects', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.order - b.data.order);
+---
+<Base title="Theophilus John — Developer">
+  <section class="wrap hero">
+    <h1>Developer</h1>
+    <p class="sub">
+      <span class="accent">Distributed systems, consensus, replication.</span>
+      And the infrastructure underneath.
+    </p>
+  </section>
+
+  <section class="wrap work" aria-labelledby="work-h">
+    <h2 id="work-h" class="meta">Work — {String(projects.length).padStart(2, '0')}</h2>
+    {projects.map((p) => (
+      <ProjectRow
+        slug={p.id}
+        machineId={p.data.machineId}
+        headline={p.data.headline}
+        stack={p.data.stack}
+        metrics={p.data.metrics}
+      />
+    ))}
+  </section>
+</Base>
+
+<style>
+  .hero { padding-block: var(--s-12) var(--s-8); }
+  h1 {
+    font-size: var(--t-hero); line-height: 0.84;
+    letter-spacing: -0.06em; font-weight: 500;
+    font-variation-settings: 'wdth' 125;
+  }
+  .sub {
+    margin-top: var(--s-6); max-width: 46ch;
+    color: var(--muted); font-size: var(--t-lg); line-height: 1.5;
+  }
+  .accent { color: var(--leader); }
+  .work { padding-block: var(--s-12); }
+  .work > .meta { display: block; margin-bottom: var(--s-4); }
+</style>

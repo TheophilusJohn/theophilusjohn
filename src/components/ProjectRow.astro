@@ -1,0 +1,54 @@
+---
+interface Props {
+  slug: string; machineId: string; headline: string;
+  stack: string[]; metrics: { value: string; label: string }[];
+}
+const { slug, machineId, headline, stack, metrics } = Astro.props;
+---
+<a class="row" href={`/projects/${slug}`}>
+  <div class="top">
+    <span class="id">{machineId}</span>
+    <span class="stack">{stack.join(' · ')}</span>
+  </div>
+  <h2 class="name" set:html={headline.replace(' in ', ' in<br>').replace(' made ', ' made<br>')} />
+  {metrics.length > 0 && (
+    <p class="metrics">
+      {metrics.map((m, i) => (
+        <>{i > 0 && <span class="sep"> · </span>}<span class="val">{m.value}</span> {m.label}</>
+      ))}
+    </p>
+  )}
+</a>
+
+<style>
+  .row {
+    display: block; text-decoration: none;
+    padding-block: var(--s-6);
+    border-top: 1px solid var(--rule);
+  }
+  .row:hover { color: inherit; }
+  .row:hover .name { color: var(--leader); }
+  .name { transition: color 180ms ease; }
+
+  .top { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; }
+  .id, .stack {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .id { color: var(--leader); }
+  .stack { color: var(--dim); text-align: right; }
+
+  .name {
+    font-size: var(--t-2xl); line-height: 0.94;
+    letter-spacing: -0.045em; font-weight: 500;
+    margin-top: var(--s-2);
+    font-variation-settings: 'wdth' 120;
+  }
+
+  .metrics {
+    font-family: var(--font-mono); font-size: var(--t-meta);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--dim); margin-top: var(--s-3);
+  }
+  .val { color: var(--leader); }
+</style>
