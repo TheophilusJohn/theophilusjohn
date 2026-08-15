@@ -28,6 +28,20 @@
   }
   button:hover { color: var(--leader); border-color: var(--leader); }
   button[aria-pressed="true"] { color: var(--leader); border-color: var(--leader); }
+
+  /* Once the nav has wrapped to its own line these are being tapped,
+     not clicked. 26x24 is too small for that — go to a full 44x44
+     target. Width-based rather than (pointer: coarse) so it holds on
+     a narrow desktop window too, and so it is actually testable. */
+  @media (max-width: 640px) {
+    button {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 </style>
 
 <script>

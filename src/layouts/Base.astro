@@ -70,9 +70,18 @@ const nav = [
       align-items: baseline; gap: var(--s-4);
       padding-block: var(--s-6);
     }
+
+    /* The head needs 384px of content to sit on one line (wordmark 151
+       + nav 217 + gap). Below that it wrapped nowhere and just pushed
+       the document into horizontal scroll. Let it wrap instead: the
+       nav drops under the wordmark on its own, no breakpoint needed —
+       384px of content is available at 768 and up, and isn't at 390.
+       nav wraps too, as a floor for viewports narrower than 360. */
+    .site-head { flex-wrap: wrap; }
+
     .site-foot { border-top: 1px solid var(--rule); margin-top: var(--s-24); }
     .wordmark { font-family: var(--font-mono); font-size: var(--t-sm); text-decoration: none; }
-    nav { display: flex; align-items: center; gap: var(--s-4); }
+    nav { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-4); }
     nav a {
       font-family: var(--font-mono); font-size: var(--t-meta);
       letter-spacing: 0.12em; text-transform: uppercase;
