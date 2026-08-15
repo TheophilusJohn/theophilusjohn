@@ -101,3 +101,13 @@ client session handling. Say so in the README.
 - Every safety property is a predicate over the full cluster state, asserted
   after every tick — not spot-checked at the end of a run.
 - A regression scenario gets a named test the moment it is found.
+
+## Before step 15
+
+Install the `webgpu-threejs-tsl` skill. Without it, Three.js code gets
+written against the pre-r171 WebGL API — which runs, looks correct, and
+is the wrong path.
+
+Verify any Three code: imports from `three/webgpu`, uses TSL rather than
+GLSL strings, calls `await renderer.init()`. Fails any of those, the
+skill isn't loaded.
