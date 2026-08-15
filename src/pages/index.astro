@@ -30,7 +30,18 @@ const projects = (await getCollection('projects', ({ data }) => !data.draft))
 </Base>
 
 <style>
-  .hero { padding-block: var(--s-12) var(--s-8); }
+  /* The hero word is meant to bleed off the right edge at wdth 125.
+     Clip it here so the bleed never reaches the document scrollport.
+
+     clip, not hidden: `hidden` would make .hero a scroll container,
+     and `overflow-x: hidden` forces overflow-y to auto — which makes
+     it the nearest scrollport for any descendant position: sticky.
+     `clip` creates no scroll container, so §10's pinning still
+     resolves against the page. Do not "simplify" this to hidden. */
+  .hero {
+    padding-block: var(--s-12) var(--s-8);
+    overflow-x: clip;
+  }
   h1 {
     font-size: var(--t-hero); line-height: 0.84;
     letter-spacing: -0.06em; font-weight: 500;
