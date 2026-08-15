@@ -1,4 +1,5 @@
 ---
+import '../styles/fonts.css';
 import '../styles/tokens.css';
 import '../styles/global.css';
 import Toggles from '../components/Toggles.astro';
@@ -19,6 +20,15 @@ const nav = [
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+
+  <!-- Display face only. The mono carries metadata that can swap in late. §5 -->
+  <link
+    rel="preload"
+    href="/fonts/archivo-var-latin.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+  />
 
   <!-- Applied before first paint so neither toggle flashes. §5 -->
   <script is:inline>

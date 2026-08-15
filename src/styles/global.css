@@ -7,6 +7,7 @@ body {
   background: var(--void);
   color: var(--paper);
   font-family: var(--font-display);
+  font-variation-settings: 'wdth' 110;   /* hero overrides to 125 */
   font-size: var(--t-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
