@@ -36,9 +36,27 @@ for (const band of document.querySelectorAll<HTMLElement>('.log-band')) {
 
   /* Measured, not assumed: the width is whatever the mono renders to, and
      it changes once when the self-hosted face swaps in over the fallback. */
+  let seeded = false;
   const measure = () => {
     const copy = track.scrollWidth / 2;
-    if (copy > 0) tween.duration(copy / SPEED);
+    if (copy <= 0) return;
+    const duration = copy / SPEED;
+
+    /* Start mid-drift. Phase comes from the wall clock, so a reload picks
+       the band up wherever it would have been rather than snapping it back
+       to the start — the cluster was running before you opened the page.
+       Nothing is stored; the clock is the only input, and the three bands
+       land on three different phases because their durations differ. Any
+       progress in [0,1) maps inside the -50%..0 window, so no seam.
+
+       Seeded once. Re-reading the clock on the font swap would re-phase
+       against a new duration and jerk the band sideways mid-load — and a
+       jerk under [data-motion="off"] is motion. Carry progress across the
+       duration change instead; changing duration does not preserve it. */
+    const phase = seeded ? tween.progress() : ((Date.now() / 1000) % duration) / duration;
+    tween.duration(duration);
+    tween.progress(phase);
+    seeded = true;
   };
   new ResizeObserver(measure).observe(track);
   measure();
