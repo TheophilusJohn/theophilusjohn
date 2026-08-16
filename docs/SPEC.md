@@ -285,6 +285,8 @@ Every piece of information in world mode must exist in document mode. That is th
 - States: default dot, expanded ring over project rows, amber over links
 - Reduced motion → don't initialise at all, native cursor only
 
+**Decided (§13): `--leader`, not amber.** The palette moved off amber to lavender in §2 and this line was not updated with it — it means the accent, and §5 already allows the accent on a live link. The "project rows" are now the full-height stages of §4.3, so the ring is what the cursor becomes over a project: an outline rather than more ink, since that is where the pointer sits over text being read.
+
 ### 4.6 One page, no transitions
 
 **The site is a single document.** Everything — hero, all four projects, about — lives on `/`. There are no route changes and no `<ClientRouter />`.

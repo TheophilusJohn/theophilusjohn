@@ -30,6 +30,12 @@
   --measure: 62ch;
   --gutter: clamp(1.25rem, 5vw, 4rem);
 
+  /* The cursor's two sizes, §4.10. Not on the space scale: the dot stands
+     in for a pointer and the ring is drawn around it, so both are measured
+     against the native arrow rather than against the layout. */
+  --cursor-dot: 10px;
+  --cursor-ring: 40px;
+
   --font-display: 'Archivo', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }

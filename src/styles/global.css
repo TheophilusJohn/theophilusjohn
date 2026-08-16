@@ -76,6 +76,102 @@ html[data-intro] .site-head > *,
 html[data-intro] .hero h1,
 html[data-intro] .hero .sub { visibility: hidden; }
 
+/* ── The cursor ──────────────────────────────────────────
+   §4.10. cursor.ts builds the element and puts data-cursor
+   on the root, and it does neither on a touch device, under
+   motion off, or with JS off — so on any of those the rules
+   below match nothing and the native cursor is untouched.
+
+   Here rather than in a component because the element is
+   over every section and inside none of them. */
+
+/* The dot is the substitute, so the native arrow goes. The
+   universal selector is doing real work: `cursor` inherits,
+   but any element that sets its own — every `cursor: pointer`
+   on a control — would otherwise keep it, and a component's
+   scoped rule carries Astro's own attribute and outranks this
+   one. Measured: without !important the toggles kept the
+   native hand under the dot. Same argument as the motion
+   block below — this is one decision about the whole page
+   and no component may opt out of it. */
+html[data-cursor] * { cursor: none !important; }
+
+/* The one place it must not. A text field's I-beam marks the
+   insertion point and the dot says nothing about where a
+   caret would land, so nothing here is a substitute for it.
+   cursor.ts hides the dot over the same selector, so the two
+   are never both on screen. `auto` and not `text`: a select
+   or a checkbox reaches this rule too and has its own right
+   answer. */
+html[data-cursor] :is(input, textarea, select, [contenteditable]:not([contenteditable="false"])) {
+  cursor: auto !important;   /* more specific than the rule above, and must stay so */
+}
+
+/* A point, not a box: width and height are zero and the two
+   children hang off it by their own half-widths, so GSAP's
+   x/y are the raw client coordinates of the pointer. It also
+   keeps `transform` on this element free — an element that
+   already has a CSS transform when GSAP attaches gets that
+   transform absorbed as pixel x and anything further stacked
+   on top of it. */
+.cursor {
+  position: fixed; left: 0; top: 0;
+  width: 0; height: 0;
+  z-index: 100;                 /* over .skip at 99 */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms linear;
+  will-change: transform;
+}
+
+/* Shown from the first real pointer move, never before: on a
+   load where the pointer has not moved yet there is nothing
+   to point at, and the native cursor is still the one on
+   screen. */
+.cursor[data-shown] { opacity: 1; }
+.cursor[data-shown][data-state="field"] { opacity: 0; }
+
+.cursor > i {
+  position: absolute; left: 0; top: 0;
+  display: block; border-radius: 50%;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms linear,
+    opacity 180ms linear;
+}
+
+.cursor .dot {
+  width: var(--cursor-dot); height: var(--cursor-dot);
+  margin: calc(var(--cursor-dot) / -2);
+  background: var(--paper);
+  /* Display type is --paper as well, and at 16rem the strokes are wider
+     than the dot — inside one, a paper dot is a hole rather than a
+     pointer. The rim is what keeps it legible on both grounds. */
+  box-shadow: 0 0 0 1px var(--void);
+}
+
+.cursor .ring {
+  width: var(--cursor-ring); height: var(--cursor-ring);
+  margin: calc(var(--cursor-ring) / -2);
+  border: 1px solid var(--muted);
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+/* Over a project: the ring opens and the dot drops back inside it. An
+   outline rather than more ink, because the stage is mostly writeup and
+   the pointer spends that time over text being read. */
+.cursor[data-state="row"] .ring { opacity: 1; transform: scale(1); }
+.cursor[data-state="row"] .dot { transform: scale(0.4); }
+
+/* Over a link: --leader, which §5 allows here precisely because a live
+   link is state. The spec says amber; the palette moved off amber to
+   lavender (§2) and this is the same accent it named. */
+.cursor[data-state="link"] .dot {
+  background: var(--leader);
+  transform: scale(1.5);
+}
+
 /* ── Motion ──────────────────────────────────────────────
    data-motion="off" is set by the toggle OR by the OS via
    the inline head script. Motion code must check this

@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–10 are done. The site is live. **Update this line at the end of
+Steps 1–13 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -174,6 +174,51 @@ initialised at all under reduced motion.
 
 **Done when:** touch devices unaffected; native cursor never hidden over
 text inputs without a visible substitute.
+
+*Done.* A paper dot, a ring that opens over a project, `--leader` over a
+link. The spec says amber over links; §2 moved the accent off amber to
+lavender, and §5 already names a live link as one of the two things
+`--leader` is allowed to mean, so it is the same rule, not an exception.
+
+Both gates hold before anything is built: the element is created in
+cursor.ts rather than shipped in the markup, so a touch device carries no
+node, no listener and no rule that could hide its cursor, and under
+`[data-motion="off"]` there is nothing to tear down because nothing was
+made. Measured: with `(pointer: fine)` stubbed false and the module
+re-imported, it builds nothing; the motion toggle removes the element and
+the root attribute together and rebuilds on the way back, in both
+directions, mid-session.
+
+The native cursor goes only from the first real mouse move — before that
+the pointer may never have entered the window, and the page would simply
+have no cursor at all — and comes back over `input`, `textarea`, `select`
+and `contenteditable`, where a dot says nothing about where a caret would
+land and the dot is hidden to match. Measured on an injected field:
+`cursor: auto` on the input, `none` on the body, the link and the toggles.
+
+**Trap, measured:** a component's own `cursor` beats a global rule. Astro
+compiles scoped styles with its own attribute on every selector, so
+`button { cursor: pointer }` inside Toggles.astro outranks
+`html[data-cursor] *` and the native hand stayed under the dot. The hide
+rule is `!important` for the same reason the motion block is: it is one
+decision about the whole page and no component may opt out of it.
+
+Non-touch pointer events are filtered by `pointerType`, so a finger on a
+hybrid cannot strand the dot where the last tap was; leaving the window
+hides it, and the first move back teleports rather than flying in, using
+quickTo's start argument.
+
+Follow: `quickTo` per axis, `power3`, 0.15s. GSAP's `power3` is quartic, so
+one 60fps frame closes 37.6% of the gap — a steady trail of **22.2px** at
+800px/s and **55.4px** at 2000px/s, settling to within 1px **150ms** after
+the pointer stops, which is where clicks happen. Those come from GSAP's own
+ease function rather than from a live sweep: Chrome reported the tab
+`hidden` for the whole session (occluded window, `hasFocus()` true and rAF
+never firing), and per the trap in CLAUDE.md a timing read in that state is
+frozen rather than wrong in a visible way. **Not yet observed live.**
+
+Cost: **+505 bytes** gzipped of JS (55.1KB total, desktop) and +347 bytes
+of CSS. The module ships on mobile and never runs there.
 
 ### 14. Budget and accessibility pass
 Lighthouse accessibility 100. Keyboard reach and visible focus on everything.

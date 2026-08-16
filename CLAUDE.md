@@ -119,6 +119,11 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   window, and rAF stops — the numbers come back frozen at the start
   state rather than wrong in an obvious way. Check `document.hidden` in
   the probe before trusting a timing.
+- A component's scoped style outranks a page-level rule. Astro compiles
+  scoped CSS with its own attribute on every selector, so a bare
+  `button { cursor: pointer }` in a component beats `html[data-cursor] *`
+  in global.css. A rule that is one decision about the whole page needs
+  `!important` to be that, the way the motion block already is.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or
