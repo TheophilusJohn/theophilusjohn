@@ -293,9 +293,10 @@ inline in a sentence and keep the exception.
 
 ## ▲ Ship here.
 
-Steps 1–14 are a complete portfolio. Everything below is a second project
-layered on a finished one. Do not begin 15 until 14 is deployed and verified
-in production.
+Steps 1–14 are the portfolio, and they stand entirely on their own: every
+fact, every writeup, every link, reachable by scrolling one page with no
+GPU involved. Everything below this line is world mode — a second project
+layered on a finished one, and atmosphere rather than information.
 
 ---
 

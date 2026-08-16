@@ -15,7 +15,7 @@ Supersedes v1. The OpenLDAP writeup is out.
 | Framework | Astro 5 | Same as the reference site. Zero JS baseline, opt into islands |
 | Animation | GSAP 3.13+ with ScrollTrigger and SplitText | Free for commercial use since April 2025, all plugins included |
 | Smooth scroll | Lenis | Does not break `position: sticky`, which pinned sections depend on |
-| 3D | Three.js r171+ via `three/webgpu` | `WebGPURenderer`, TSL shaders, automatic WebGL 2 fallback. Laptop geometry from primitives — no GLTF, no loader, no Draco |
+| 3D | Three.js pinned at 0.185.1 via `three/webgpu` | WebGPU only (§15) — a `Renderer` on a `WebGPUBackend`, TSL shaders, no WebGL 2 fallback. A browser without WebGPU gets the document, which is the whole site. Laptop geometry from primitives — no GLTF, no loader, no Draco |
 | Page transitions | Astro `<ClientRouter />` (View Transitions) | See §4.6 for the teardown problem |
 | Styling | Plain CSS, custom properties | No Tailwind |
 | Fonts | Self-hosted woff2, variable, subset | Display face needs a width axis |
@@ -182,7 +182,6 @@ Everything about loading, DPR, mobile, fallbacks and pausing is inherited from �
 - The laptop is added to the scene *after* first paint of the field, so the background establishes before the object arrives
 - Tree-shake hard: import only `WebGLRenderer`, `Scene`, `PerspectiveCamera`, and the geometries and materials actually used. No `OrbitControls`
 - Clicking the laptop routes to the Homonoia writeup. It needs a real focusable DOM element over it — a mesh is not keyboard reachable
-- The static fallback PNG in §4.7 must include the laptop, since there is no path where the field renders and the laptop doesn't
 
 ### 4.7 The render layer, and the world it contains
 
@@ -469,33 +468,10 @@ If the desktop budget blows, the laptop is what gets deferred or simplified — 
 
 ## 7. Build order
 
-Get the domain resolving on day one, then layer motion on top of a site that already works without it.
-
-1. Astro scaffold, Cloudflare Pages, `theophilusjohn.com` live on an empty page
-2. Tokens, type scale, fonts subset and self-hosted
-3. **Full static site: all four project pages, about, contact, resume. No animation at all.** This is the fallback layer and it must stand alone.
-4. Both toggles, wired to a `data-motion` attribute nothing reads yet
-5. Lenis + ScrollTrigger wiring, log band drift
-6. Hero type reveal (SplitText)
-7. Pinned project sections
-8. Page-load intro
-9. 3D laptop hero — geometry first, then the canvas terminal, then the static PNG fallback. Render the PNG *from* the finished scene so they match
-10. Custom cursor
-11. Collapse to one page — all content on `/`, plus `replaceState` URL sync and deep-link entry (§4.6)
-12. Budget and accessibility pass
-
-**Ship here.** Steps 1–12 are the complete document-mode site and it stands entirely on its own. Everything below is world mode, which is a second project layered on top of a finished one.
-
-13. Give the scene depth — field extends into Z, camera spline laid out
-14. Landmarks: geometry, three states, positions along the spline
-15. Mode switch, `localStorage` persistence, scroll ↔ camera sync both directions
-16. Rails movement wired to Lenis
-17. Free flight, bounds, return-to-path control
-18. LOD, instancing, culling, 60fps pass on integrated graphics
-
-Steps 1–3 are a shippable site. If momentum dies at any point after step 3, what's live is still a real portfolio.
-
----
+**`docs/STEPS.md` is the single source of truth for step numbering.** It is
+the file a session opens with, it carries the done-markers and the measured
+reports, and a second numbering here only ever drifts out of agreement
+with it.
 
 ## 8. Open decisions
 
