@@ -715,6 +715,125 @@ of degrees of eased pointer parallax. Parallax off under reduced motion.
 **Done when:** scrolling the page top to bottom reads as a descent and a
 climb; the camera is still a pure function of scroll position.
 
+*Done.* The page is a flight now. Ten keyframes, `alt 26 → 4.20 → 12` and
+`pitch 58° → 5° → 28°`, and the two properties §4.7 asks of the whole scene
+hold on the object the renderer is handed: **the descent is monotone to
+y 10269 and the climb monotone after it**, and the same scroll position
+reached from above and from below gives **Δ 0.000** in altitude and pitch.
+Every project is visibly lower at beat 3 than at beat 1 — **3.87, 2.58,
+1.61 and 1.18** units — because a pin is 69% of the span to the next
+project and plain interpolation between section starts spends that much of
+the descent inside it.
+
+**The path is in `curve.ts` with no three and no DOM in it**, which is not
+tidiness: a pose is a pure function of scroll position and the layout, so
+it is the one part of this layer that can be checked without a GPU. The
+figures above are that module's own output, run in Node against the
+measured layout; the poses the renderer was actually given were then read
+back off the camera and match to the hundredth of a degree.
+
+**Two keyframes the table does not have, both forced by the page rather
+than by the design.**
+- **The bottom of the flight is project four's last beat, not its first.**
+  Every other row descends toward the row after it, so the beats inherit
+  the descent free. The fourth has `about` after it, and `about` climbs —
+  keyed at basis's start it would have raised the camera through basis's
+  own writeup. §4.7's "~5°" is now the pair 8° → 5°.
+- **`about` is keyed at the bottom of the document, not at its own top.**
+  The about section starts at **11,113px against a maximum scroll of
+  10,755** at 1512×804, so a keyframe there is one no reader can reach.
+  What is left is the **486px** after the last pin releases, which is also
+  exactly where the about section rises into frame.
+
+**Smoothstep per segment, not a straight line.** The segments are 781px
+from the hero to the first project against 2,573px between projects, so
+linear plunges over the hero and drifts everywhere after it. Zero velocity
+at each keyframe also means the camera *arrives* at a section rather than
+passing through the altitude the section is named for.
+
+**Damping, and the case it must not apply to.** τ = 0.18s, measured on a
+500px scroll: **50% at 122ms, 90% at 407ms, 99% at 706ms**. More than a
+screen in one frame is not a scroll, it is a jump — a deep link's re-jump
+once the pins are in, keepingPlace's correction, the back button — and the
+lag would fly the camera in over half a second from a pose nobody was at.
+Over `innerHeight` it snaps: measured, a nine-screen jump resolves in
+**13ms**, one frame. All four project deep links and `/#about` render their
+**first frame at the named pose exactly** — 18.00/36°, 12.00/21°, 8.00/13°,
+5.50/8°, 12.00/28°.
+
+Parallax is **±2.06° of yaw** measured at the frame edges against ±2.2°
+asked for, and **zero in every direction under motion off** — five pointer
+positions, one identical pose.
+
+**Fog: the vertical axis is squashed, and that is the whole finding.**
+Plain radial distance is the obvious reading of §4.7 and it does not
+survive a camera that moves: at 26 units up the ground directly below is 26
+units away and comes back at 0.29, so the first screen everybody sees goes
+into the haze while the low stops stay lit. Measured, mean scene
+contribution over the frame, against §17's **0.00020** everywhere:
+
+| | hero | enargeia b3 | philoi b3 | about |
+|---|---|---|---|---|
+| radial fog | 0.00009 | 0.00015 | 0.00027 | 0.00013 |
+| dy weighted 0.35 | 0.00023 | 0.00017 | 0.00027 | 0.00015 |
+
+Weighting dy at 0.35 says the fog is a layer over the ground and thin
+through its own thickness, which is what makes §4.7's tuning sentence true
+at *every* altitude rather than at the one it was set at: the arc is
+`RADIUS` away horizontally whatever the altitude, so 0.043 puts the ground
+at **0.03 by the arc** from 26 units up and from 4. The depth gradient is
+20× either way.
+
+**Brightness: stars and ground are two budgets, not one, and the harness
+proved it rather than assumed it.** Measured per element with the stars
+switched off, the `period` and `#ID` lines that sit high in a section have
+**literally zero** ground or field behind them — they are bound entirely by
+sky — and the elements the ground binds have no stars over them. Over 196
+paired elements there is no element that mixes the two enough to bind, so
+they solve separately: ground and field **×2.19** to the ceiling, stars
+left at **1.0** of their own 1.24× headroom. Spending decoration's budget
+to put a `--dim` label at exactly the AA floor is the wrong trade, and
+§4.7 is explicit about which of the two is scaffolding.
+
+Ink: field **221 → 474**, ground **14,500 → 31,150**. Re-measured after the
+change: **1.003× at 4.55:1** — at the ceiling — and **0 of 196 elements
+fail**. High contrast puts the scene at **0.32×** of that and 18.1× of
+headroom, so the toggle still moves the busiest frame down and only down.
+
+**§17's hand-off is largely spent, and by the camera rather than by an
+alpha.** It recorded 23× to 223× of local headroom at beats 1 and 3 and
+noted a scroll-varying alpha for this step. Per-stop headroom now runs
+**1.11× to 36.7×**, and the loose end of it is enargeia alone — the one
+project still high enough that the ground is far. Descending is what spent
+it: the stops with text now have the ground close. Not built, and there is
+much less left to buy than there was.
+
+**Everything else, checked.** **5 draw calls**, which is what §4.7 predicted
+stars would make it. **2.71ms/frame** at 1512×804, DPR 1 *and* DPR 1.5
+(§16: 2.50ms) — stars are 0.07ms of it, the fog is the rest, and the layer
+is still vertex-bound on 428k instanced quads. Tiers hold: 60k/150k/4k
+below 1024px, no canvas below 768px, no horizontal overflow at any width
+tried. axe-core **0 violations** across eight states. LCP **116ms** desktop
+/ **100ms** mobile, CLS **0** with zero shift entries. Bundle **55.3 KiB
+eager / 253.3 KiB desktop** against 120 and 260 — **+1.14 KiB**, 6.7 KiB
+spare — and `projects.ts` stays in the eager chunk with the scene chunk
+importing it rather than copying it.
+
+**Motion off is still a frozen frame** and the camera is set from the
+scroll position at mount, so a deep link with motion off lands at its own
+pose — `/projects/homonoia` at alt 12.00/21°, `/#about` at 12.00/28° — and
+then holds it while the reader scrolls, which is what §4.7 asks for and
+what the field presets have always done. Turning motion back on snaps
+within one frame.
+
+**One thing measured and left alone.** Motion off at philoi beat 2 and on
+again lands in homonoia's range, not philoi's. §17 reported the round trip
+holding the beat and it does — on homonoia, which is what it measured. The
+same script on the §17 build returns the identical scroll positions
+(4105, 2653, 4086), so this is not a §18 regression and the camera is
+faithful to wherever `keepingPlace` leaves the reader. It belongs to the
+pin restoration, not to the curve.
+
 ### 19. The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
 from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,

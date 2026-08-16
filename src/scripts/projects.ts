@@ -253,6 +253,37 @@ function unpin() {
    +60%; at +220% it measured as an 825px jump on the motion toggle. */
 const anchors = Array.from(document.querySelectorAll<HTMLElement>('[data-path]'));
 
+/* §18. Where each project's scroll range begins and ends, in document
+   coordinates — the keyframes the camera curve is hung on. The beats are a
+   scroll range inside a pin and nothing outside this module knows where
+   that is: a pinned section's own rect reads `top: 0` throughout the pin
+   and lands at the pin's *end* once it is over, so measuring it from
+   outside gives the wrong one of the two numbers at every scroll position.
+   Ask the trigger. Without a pin the section is the range it occupies,
+   which is the same question answered by the layout. */
+export function ranges() {
+  return sections.map((s, i) => {
+    const trigger = pins[i];
+    if (trigger) return { id: s.el.id, start: trigger.start, end: trigger.end };
+    const r = s.el.getBoundingClientRect();
+    return { id: s.el.id, start: r.top + scrollY, end: r.bottom + scrollY };
+  });
+}
+
+/* Pinning is worth most of nine screens of scroll distance, so anything
+   keyed to a document position has to be told when that decision changes.
+   Same shape as url-sync's onSection and for the same reason: one
+   authority, and the subscriber does not re-derive the layout itself. */
+const layoutWatchers = new Set<() => void>();
+
+export function onLayout(fn: () => void) {
+  layoutWatchers.add(fn);
+}
+
+function relaid() {
+  for (const fn of layoutWatchers) fn();
+}
+
 /* Where a section's top is relative to the viewport's, negative once you
    are past it. `getBoundingClientRect().top` is that number — until the
    section is pinned, when it is frozen at 0 for the entire length of the
@@ -322,6 +353,7 @@ function decide() {
   });
   if (pins.length) settle();
   else if (!entrances.length) reveal();
+  relaid();
 }
 
 let resizing = 0;
@@ -342,6 +374,7 @@ onMotionChange((off) => {
   } else {
     keepingPlace(pin);
   }
+  relaid();
 });
 
 decide();

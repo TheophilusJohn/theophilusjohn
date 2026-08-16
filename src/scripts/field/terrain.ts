@@ -52,6 +52,7 @@ import {
 } from 'three/tsl';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import gsap from 'gsap';
+import { fog } from './fog';
 
 /* ── Shape ───────────────────────────────────────────────────────────────
    World units, and all of them are relative to the cluster: the pentagon
@@ -71,7 +72,7 @@ const TAU = 1.3;     // ridge half-width, 1/e
    island in an empty plain and the ground never read as a surface; at 42
    the same points cover the visible ground four times as densely and the
    arc is a limit you can see. */
-const RADIUS = 42;
+export const RADIUS = 42;
 
 const PAIRS: Array<[number, number]> = [];
 
@@ -146,8 +147,15 @@ const uAlpha = uniform(0);
    requirement was not. See the note on INK in scene.ts for why 2.5 and
    not the 2x the revision expected, which is a stranger sentence than it
    looks: the ceiling is higher than the revision asked for and the reason
-   it asked for 2x does not hold. */
-const INK = 14500;
+   it asked for 2x does not hold.
+
+   §18 again, from 14500, and again by the same factor as the field —
+   **2.15x**. The camera descends now, so the fog below takes a third of
+   this back at every stop and the low stops hand most of it forward by
+   standing 5 units over the ground where §17 stood 12.5. The two layers
+   still move together; what does not move with them is the sky, which
+   turned out to be a budget of its own (stars.ts). */
+const INK = 31150;
 
 /* ── The heightfield ─────────────────────────────────────────────────────
 
@@ -253,11 +261,12 @@ export function buildTerrain(nodes: Vector3[], palette: Palette) {
     sizeAttenuation: false,
   });
   material.sizeNode = vec2(2.0);
-  material.positionNode = vec3(
+  const world = vec3(
     ground.x,
     h.add(rnd(2).sub(0.5).mul(slope.mul(0.55))),
     ground.y,
   );
+  material.positionNode = world;
 
   /* Ground that belongs to the elected node is --leader, which is the same
      rule §2 fixes and the same one the traffic above it follows: the accent
@@ -267,16 +276,18 @@ export function buildTerrain(nodes: Vector3[], palette: Palette) {
   const share = sample.y.div(h.max(0.001)).mul(smoothstep(0.5, 4.5, h)).clamp(0, 1);
   material.colorNode = mix(palette.quiet, palette.lead, share.mul(0.62)).mul(palette.contrast);
 
-  /* Distance falloff. §17 replaces this with the real exponential-squared
-     fog to --void — this is the half of it the brightness bound cannot
-     wait for, because a ground with no far limit piles its last few units
-     of radius into a bright band across the frame, and the bound is
-     measured on the busiest frame the scene can produce. Gone by the arc,
-     which is where §4.7 says the far ground fades. */
+  /* §18. The real fog, against distance from the camera rather than the
+     §16 stand-in against radius in the disc — which was the same curve
+     drawn from the disc's centre and so had no idea how high the viewer
+     was standing. It matters now that the camera moves: at 26 units up the
+     ground directly below is 26 units away and belongs in the haze, and
+     the flat version said it was underfoot.
+
+     The edge cut stays. Fog has the ground at 0.03 by the arc, and the
+     last 6% of the radius takes that to nothing, so the disc's rim can
+     never resolve as a rim on a frame that catches it. */
   const far = r.div(RADIUS);
-  material.opacityNode = exp(far.mul(1.35).pow(2).negate())
-    .mul(smoothstep(1, 0.9, far))
-    .mul(uAlpha);
+  material.opacityNode = fog(world).mul(smoothstep(1, 0.94, far)).mul(uAlpha);
 
   const floor = new Sprite(material);
   floor.count = count;

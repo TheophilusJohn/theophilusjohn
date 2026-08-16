@@ -217,6 +217,35 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   element has a CSS transform before GSAP animates it, pin `x: 0` (or
   `y: 0`) in the from-vars so only the percent drives position. Tell: the
   element lands at ~2x its intended offset.
+- Distance fog tuned at one camera altitude is tuned at one altitude only.
+  Once scroll is altitude the same `exp(-(kd)²)` that fades the far ground
+  correctly from 4 units up puts *all* of it in the haze from 26, because
+  the ground directly below is then 26 units away. Weight `dy` (0.35 here)
+  so the fog is a layer with a thickness: the horizon is a fixed
+  **horizontal** radius, so that is the axis the tuning has to live on.
+- A brightness bound over a scene with a sky is two bounds. Text high in
+  the frame sits on stars with literally no ground behind it and text low
+  in the frame sits on ground with no stars over it, so one uniform scale
+  over both solves neither. Measure each layer alone, pair the results per
+  element, and check that nothing mixes the two before scaling them apart.
+- Scroll damping must not apply to a jump. A deep link's re-jump, a
+  `keepingPlace` correction and the back button all move the page by
+  screens in one frame, and a lag makes the camera fly in from a pose
+  nobody was at. Over `innerHeight` in a frame, snap — a real flick would
+  have to cover 48,000px/s to reach it.
+- Anything that is a pure function of scroll and layout should live in a
+  module with no three and no DOM in it. That is the only part of the
+  render layer that can be checked without a GPU, and Node can import the
+  `.ts` directly, so the numbers in the report are the shipped function's
+  own output instead of a re-derivation of it.
+- A frame-derived probe is not automatically a better measurement than an
+  in-page one. Finding the horizon arc by row brightness picked the
+  traffic funnel about half the time and disagreed with itself by 400px on
+  a repeat; the pose read off `camera` was exact. Where a temporary
+  `window.__probe` is the honest instrument, use it and take it out again.
+- `page.screenshot` in a headed browser catches the Astro dev toolbar,
+  which is a lit pill at the bottom centre and outranks the whole scene on
+  a peak measurement. Peel it with the document.
 
 ---
 
@@ -225,11 +254,11 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 Check before claiming a step is done.
 
 - Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §17: 55.1 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §17: 252.0 KiB,
-  and it binds — it is why the WebGL 2 tier does not ship
-- LCP under 2.5s on throttled 4G. Measured at §17: 76ms desktop, 60ms mobile
-- Under 100 draw calls. Measured at §16: 4
+  Measured at §18: 55.3 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §18: 253.3 KiB,
+  6.7 KiB spare, and it binds — it is why the WebGL 2 tier does not ship
+- LCP under 2.5s on throttled 4G. Measured at §18: 116ms desktop, 100ms mobile
+- Under 100 draw calls. Measured at §18: 5
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
 

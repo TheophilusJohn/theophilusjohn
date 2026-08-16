@@ -90,7 +90,7 @@ html[data-intro] .hero .sub { visibility: hidden; }
 
    pointer-events: none, because the canvas covers every
    link on the page and carries nothing clickable of its
-   own. §18's laptop gets a real focusable DOM element over
+   own. §4.4's laptop gets a real focusable DOM element over
    it rather than a hit test against a mesh. */
 .field {
   position: fixed;

@@ -24,7 +24,6 @@ import {
   AdditiveBlending,
   BasicNodeLibrary,
   Color,
-  PerspectiveCamera,
   PointsNodeMaterial,
   Renderer,
   Scene,
@@ -50,7 +49,11 @@ import {
 } from 'three/tsl';
 import gsap from 'gsap';
 import { motionOff, onMotionChange } from '../motion';
+import { onLayout } from '../projects';
 import { onSection } from '../url-sync';
+import { buildCamera } from './camera';
+import { fog } from './fog';
+import { buildStars } from './stars';
 import { buildTerrain, shares } from './terrain';
 
 /* ── The cluster ─────────────────────────────────────────────────────────
@@ -139,12 +142,18 @@ const uGlow = uniform(DEFAULT.glow);
 const uContrast = uniform(1);
 const uLead = uniform(new Color());
 const uQuiet = uniform(new Color());
+const uPaper = uniform(new Color());
 const uLeader = uniform(DEFAULT.leader);
 
 const uDt = uniform(0);
 const uClock = uniform(0);
 const uSeed = uniform(0);
 const uSize = uniform(1.6);
+
+/* Wall clock, unscaled. uClock above runs at the section's own speed —
+   which is what the traffic wants and the sky must not have: the stars are
+   at effective infinity and belong to no section (§18). */
+const uTime = uniform(0);
 
 /* How bright this layer is allowed to be, which §4.7 does not leave to
    taste: text is measured against the busiest frame the scene can produce,
@@ -185,11 +194,23 @@ const uSize = uniform(1.6);
    beat is that --dim is on screen at every scroll position on the page —
    the header nav, the period row, the metric labels, the log bands.
 
-   Where the local bound does pay is beats 1 and 3, whose only text is
-   --paper display type: measured at 23x to 223x of headroom against 1.1x
-   at beat 2. A global uniform cannot spend that, and spending it is a
-   scroll-varying alpha, which is a mechanism and not a number. */
-const INK = 221;
+   Re-solved again at §18, from 221 — **2.15x** — because the camera moved
+   and the bound is measured against whatever is in frame. Two things it
+   found. The fog costs the field about a third of its light at every stop,
+   and the descent gives most of it back by standing 15 units off the
+   cluster where §17 stood 18.5. And the sky is a *separate* budget: the
+   elements bound by stars have no field or ground behind them at all
+   (0.00000, measured with the stars switched off), and the elements the
+   field binds have no stars over them, so scaling the two together solves
+   neither. See stars.ts for the other half.
+
+   §17 recorded 23x to 223x of local headroom at beats 1 and 3 and left a
+   scroll-varying alpha to this step. It is 1.11x to 36.7x now and the
+   loose end is enargeia alone, the one project still high enough that the
+   ground is far — descending is what spent it, because the stops with text
+   now have the ground close. The mechanism is still available and there is
+   much less left for it to buy. */
+const INK = 474;
 const uAlpha = uniform(0); // set at mount, from INK over the allocated count
 
 const nodes = uniformArray<'vec3'>(NODES, 'vec3');
@@ -278,15 +299,12 @@ export async function mount() {
   const count = 120_000 * (innerWidth >= 1024 ? 1 : 0.5);
 
   const scene = new Scene();
-  /* Provisional, and §17 replaces the whole of it: scroll becomes altitude
-     and the camera becomes a curve over this landscape rather than a place
-     to stand. Until then it stands off the cluster and above it, far
-     enough back that the ring reads as a ring and low enough that the
-     ground reads as a landscape rather than a map. The far plane is the
-     ground disc and the arc at the edge of it. */
-  const camera = new PerspectiveCamera(50, viewport()[0] / viewport()[1], 0.1, 260);
-  camera.position.set(0, 12.5, 18.5);
-  camera.lookAt(0, 3.5, -1);
+  /* §18. Scroll is altitude: the camera is a curve over this landscape
+     rather than a place to stand, keyed to where the pins put the beats.
+     Everything about where it is lives in camera.ts; this file only tells
+     it what time it is. */
+  const view = buildCamera(viewport()[0] / viewport()[1]);
+  const camera = view.camera;
 
   const material = new PointsNodeMaterial({
     transparent: true,
@@ -325,6 +343,11 @@ export async function mount() {
   const terrain = buildTerrain(NODES, { lead: uLead, quiet: uQuiet, contrast: uContrast });
   scene.add(terrain.floor, terrain.horizon);
 
+  /* §18. The sky, and the only thing in the world that means nothing. It
+     goes in behind the fog rather than through it. */
+  const sky = buildStars({ paper: uPaper, lead: uLead, contrast: uContrast }, uTime);
+  scene.add(sky.stars);
+
   const field = new Sprite(material);
   field.count = count;
   // The bounding sphere Sprite computes is the unit quad at the origin.
@@ -355,6 +378,7 @@ export async function mount() {
     const high = document.documentElement.dataset.contrast === 'high';
     uLead.value = token('--leader');
     uQuiet.value = token('--rule');
+    uPaper.value = token('--paper');
     gsap.set(uContrast, { value: high ? 0.20 : 1 });
     // The palette moved, so a frozen frame is now stale rather than still.
     repaint();
@@ -401,6 +425,7 @@ export async function mount() {
 
   const advance = (dt: number) => {
     uClock.value += dt * uSpeed.value;
+    uTime.value += dt;
 
     if (preset.elect > 0) {
       term += dt;
@@ -435,7 +460,9 @@ export async function mount() {
     // Lag smoothing already caps the gap a backgrounded tab hands back
     // (§11). This is the floor under it: an uncapped dt puts every
     // particle through the far side of the cluster in a single step.
-    advance(Math.min(deltaMs / 1000, 1 / 30));
+    const dt = Math.min(deltaMs / 1000, 1 / 30);
+    advance(dt);
+    view.update(dt);
     draw();
   };
 
@@ -450,8 +477,13 @@ export async function mount() {
     const run = !byMotion && !byHidden;
     if (run === running) return;
     running = run;
-    if (run) gsap.ticker.add(tick);
-    else gsap.ticker.remove(tick);
+    if (run) {
+      /* The page scrolled while this was frozen or backgrounded, and the
+         curve's lag would fly the camera in from wherever it was left.
+         Resuming is an arrival, not a move. */
+      view.snap();
+      gsap.ticker.add(tick);
+    } else gsap.ticker.remove(tick);
   }
 
   onMotionChange((off) => {
@@ -469,9 +501,20 @@ export async function mount() {
     size();
     camera.aspect = viewport()[0] / viewport()[1];
     camera.updateProjectionMatrix();
+    // The document is a different height, so every keyframe on the curve
+    // is at a different scroll position. projects.ts re-decides whether it
+    // pins on a 250ms debounce and says so; this is the half that does not
+    // wait for it, because the viewport alone moves the end of the page.
+    view.remeasure();
     // Frozen means still, not stale — the framebuffer changed shape.
     if (!running) draw();
   });
+
+  /* Pinning four sections is worth most of nine screens (§17), and it can
+     be decided or undecided long after this module mounted: the fonts land
+     late and the fit rule is re-asked on them. Rebuild the curve when it
+     does. */
+  onLayout(() => view.remeasure());
 
   /* §4.7: reduced motion freezes the scene on a single computed frame and
      keeps the canvas. A frame computed from the initial state is five dots
@@ -487,6 +530,11 @@ export async function mount() {
     attributeFilter: ['data-contrast'],
   });
 
+  /* The reader may have deep-linked into the middle of the page, so the
+     first frame is the pose the scroll position names rather than the top
+     of the curve. Undamped — there is nothing yet for the lag to lag. */
+  view.snap();
+
   for (let i = 0; i < 240; i++) advance(1 / 30);
   draw();
 
@@ -496,7 +544,7 @@ export async function mount() {
 
   sync();
 
-  return { renderer, scene, camera, field, count, terrain };
+  return { renderer, scene, camera, field, count, terrain, sky };
 }
 
 /* ── The simulation ─────────────────────────────────────────────────────
@@ -587,9 +635,14 @@ function buildCompute(count: number) {
 
   return {
     position: positions.element(instanceIndex),
+    /* Fogged like the ground (§18). The cluster is 10 units across and the
+       camera comes within 15 of it, so the near side of the ring is half
+       again as close as the far side — without this the traffic is a flat
+       badge over a landscape that has depth. */
     alpha: smoothstep(0, 0.12, life)
       .mul(smoothstep(1, 0.86, life))
       .mul(smoothstep(0.5, 2.6, arriving))
+      .mul(fog(positions.element(instanceIndex)))
       .mul(participation),
     init: () => renderer!.compute(init),
     step: (dt: number) => {

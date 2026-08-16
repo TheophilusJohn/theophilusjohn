@@ -340,6 +340,16 @@ Brightness drawn per-star from a power law, so a few are bright and most are bar
 
 Stars are the only thing in the world that does not mean anything. That is deliberate: everything else is a measurement, and a world where every single element is load-bearing reads as a diagram again.
 
+**Built (§18), with three things the description above does not settle.**
+
+*View space is the requirement, a sphere carried with the camera is the implementation.* Both halves have to hold: a star must not move when the camera translates 22 units down the curve, and must sweep when the camera turns. Locked to the screen it would fail the second; centred on the world it would fail the first. `cameraPosition + dir · 200` in the shader is both, and costs nothing per frame.
+
+*The sky starts where the ground ends, not at eye level.* The ground is a disc of `RADIUS` carried with the camera, so what lies past its edge is sky — and the angle that begins at is the angle the horizon arc is drawn at, `-y / √(y² + RADIUS²)`, which moves with altitude. Fading the stars in from that line rather than from level closes the band of nothing that otherwise opens between the two: from 26 units up the arc is half a radian below level and the band would be a third of the frame. The stars are therefore drawn over `y ∈ [-0.55, 1]` and not over a hemisphere.
+
+*Per-star alpha, not total ink.* §15's convention — a total divided by the count, so the count stays a quality setting — is right for the ground and the field and wrong here. A star is a point source, so what the brightness bound sees is the single brightest 12×12 with one star in it, and that does not move with the count. Halving the count below 1024px means fewer stars, which is what it should mean.
+
+*Off the unscaled clock.* The twinkle must not take the section's `speed`: the sky is at effective infinity and belongs to no section.
+
 #### The camera
 
 **Scroll is altitude.** One curve, and both modes read it.
@@ -360,6 +370,19 @@ Position along the curve is `scrollY / maxScroll`, driven by the same Lenis inst
 
 Damped: the camera lags the scroll by a short time constant, so a fast scroll arrives with momentum instead of teleporting. A slight pointer parallax on top — a couple of degrees of yaw and pitch, eased. This costs nothing and does more for the sense of depth than any other single thing in this section, and it matters more since §4.3: two beats in three are mostly world, and parallax is the cheapest depth cue available. Disabled under reduced motion.
 
+**Built (§18).** Not `scrollY / maxScroll`: the keyframes are the pins' own start and end positions, because a beat is a scroll range inside a pin and nothing outside `projects.ts` knows where that is. Which is also the only way the row above can be true — pinning moves nine screens of scroll distance around, and a fraction of the page would move the whole descent with it.
+
+Two keyframes the table does not name, both forced by the page:
+
+- **The bottom of the flight is project four's *last* beat.** Every other row descends toward the row after it, so the beats inherit the descent from plain interpolation. The fourth has `about` after it and `about` climbs, which would raise the camera through project four's own writeup. The "~5°" row is the pair 8° → 5°.
+- **`about` is keyed at the bottom of the document, not at its own top.** At 1512×804 the about section starts at 11,113px against a maximum scroll of 10,755, so a keyframe at its top is one no reader can reach. The climb is the ~500px after the last pin releases, which is where the section rises into frame anyway.
+
+Smoothstep between keyframes, not a straight line: the segments run 781px at the top against 2,573px between projects, so linear plunges over the hero and drifts after it. Zero velocity at each keyframe also means the camera *arrives* at a section rather than passing through the altitude the section is named for.
+
+**A jump is not a scroll.** The lag is there to give a flick weight; applied to a deep link's re-jump, to `keepingPlace`'s correction, or to the back button it flies the camera in over half a second from a pose nobody was at. More than `innerHeight` in one frame snaps. At 60fps a flick would have to cover 48,000px/s to reach that.
+
+Under reduced motion the loop is stopped, so the camera is set from the scroll position at mount and then frozen with the rest of the scene — a deep link lands at its own pose and holds it. That is the constraint below, not an oversight.
+
 #### Fog
 
 Not optional, and not atmosphere for its own sake.
@@ -367,6 +390,10 @@ Not optional, and not atmosphere for its own sake.
 Exponential-squared fog to `--void`, tuned so the far ground fades roughly where the horizon arc sits. Fog is what makes distance *legible* in a particle world — without it every point is the same brightness at every depth and the volume flattens back into the diagram this revision exists to escape.
 
 It also solves the density problem at the horizon for free, and it hides the far clip so the ground has no visible end. Stars are exempt; they are behind the fog by construction.
+
+**Built (§18): the vertical axis is squashed, and that is what makes the sentence above true at more than one altitude.** Scroll is altitude, so the same camera stands 26 units up over the hero and 4 down among the ridges. On plain radial distance the ground directly under the hero camera is 26 units away and comes back at 0.29 — measured, the first screen everybody sees fell to *half* the light §17 shipped while the low stops rose above it. Weighting `dy` at 0.35 in the distance says the fog is a layer over the ground and thin through its own thickness, which is both what an atmosphere is and what fixes the tuning: the arc is `RADIUS` away *horizontally* whatever the altitude, so 0.043 leaves the ground at 0.03 there from 26 units up and from 4. The depth gradient is 20× either way.
+
+Nothing mixes toward a colour. The canvas is cleared to `--void` and every material over it is additive, so fading a contribution to zero *is* fading it to `--void` — one multiply on opacity. The horizon arc is exempt along with the stars: it is a drawn limit, and fogging it at exactly the distance the fog is tuned to would erase it.
 
 #### Brightness
 
@@ -392,11 +419,15 @@ The measurement harness from §16 stands, but it must now sample **per region** 
 
 §16's ink figures were solved against the global bound and do not scale. The ground was landing at 0.65–0.82× of `--void-lift` outside Homonoia, which is why the hero showed an arc and one dot. Re-solve; do not multiply the old numbers.
 
+**Revised (§18): the sky is a second budget, and it does not share with the first.** Measured per element with the stars switched off, the `period` and machine-ID lines that sit high in a section have *no* ground or field behind them at all — they are bound entirely by stars — and every element the ground binds has no stars over it. Over 196 paired elements nothing mixes the two enough to bind, so they solve separately rather than as one scene. Ground and field went to the ceiling; the stars were left where they were, at 1.0 of their own 1.24× headroom, because spending decoration's budget to put a `--dim` label at exactly the AA floor is the wrong trade and this section already says which of the two is scaffolding.
+
+**And §17's local headroom is mostly gone, spent by the camera rather than by an alpha.** §17 measured 23× to 223× behind beats 1 and 3 and noted a scroll-varying alpha for §18. After the descent it is 1.11× to 36.7×, and the loose end is enargeia alone — the one project still high enough that the ground is far. Descending is what spent it: the stops with text now have the ground close. The mechanism is still available and there is much less left for it to buy.
+
 This is the honest resolution of "make it brilliant" against "text must be readable". The constraint was never about the scene; it was about the words. Where there are no words, spend the light.
 
 #### Performance
 
-Everything here is instanced points, plus the one line. Measured at §16 with ground, field and arc: **4 draw calls** — ground, arc, field, and the renderer's own blit. Stars make it 5.
+Everything here is instanced points, plus the one line. Measured at §16 with ground, field and arc: **4 draw calls** — ground, arc, field, and the renderer's own blit. Stars make it 5, and did at §18.
 
 - Ground 300k, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
 - The heightfield is evaluated in the vertex shader, not on the CPU. Nothing reads back.
@@ -404,6 +435,8 @@ Everything here is instanced points, plus the one line. Measured at §16 with gr
 - **Target: 60fps on integrated graphics.** If it does not hold, ground count is the first thing to cut and the accumulation texture is the second. The election transition is the last, because it is the point.
 
 Measure `renderer.info` with `autoReset = false` (§15 trap), and report milliseconds per frame rather than fps — fps is vsync-capped and hides regressions until it falls off a cliff. The rAF interval is vsync too, and `--disable-gpu-vsync` does not lift it; §16's number is a batch of renders between two `queue.onSubmittedWorkDone()`, because the timestamp queries under it returned negative durations. Measured there: **2.50ms** at 1512×804, and 2.32ms at DPR 1.5 — this layer is vertex-bound on 420k instanced quads, not fill-bound.
+
+§18: **2.71ms** at 1512×804, and the same 2.71ms at DPR 1.5, which is the vertex bound saying so again. 428k quads now; the stars are 0.07ms of the total and the fog is the rest.
 
 #### Constraints
 
