@@ -18,7 +18,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
   Additive. Never the only way to reach anything.
 
 Build order is strict: document mode is finished and shipped before world
-mode begins. Steps 1–14, then 15–21. See `docs/STEPS.md`.
+mode begins. Steps 1–14, then 15–23. See `docs/STEPS.md`.
 
 ---
 
@@ -168,6 +168,28 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   Shoot the whole viewport and crop when reading the pixels. Peel the
   document (`visibility: hidden` on header/main/footer) to measure the scene
   alone, and remember the custom cursor and the skip link are siblings of it.
+- `LineLoop` is not a supported object type on the new renderer — it warns
+  once per frame and draws nothing. A closed ring is a `Line` whose first
+  point is repeated at the end.
+- A WebGPU canvas cannot be read back with `drawImage` into a 2D context:
+  it comes out fully transparent, and a brightness measurement built on it
+  reports a black page rather than failing. Screenshot through the browser
+  and decode the PNG.
+- `trackTimestamp` has to be in the **backend's** parameters, not set on
+  the renderer afterwards — `new Renderer(new WebGPUBackend(params))` reads
+  it from `params`, and setting it on the renderer alone leaves the query
+  set unbuilt and every duration at 0. Even wired up correctly the pool
+  returned nonsense here (negative durations on an empty scene, one layer
+  timing slower alone than with a second on top). What does work for
+  ms/frame: stop the site's loop, render a batch of N between two
+  `device.queue.onSubmittedWorkDone()`, divide. rAF intervals are useless
+  for this — vsync pins them at the refresh rate and `--disable-gpu-vsync`
+  does not lift it.
+- Reading a token with `getComputedStyle` at mount freezes the palette the
+  page happened to load with. A control that both re-colours the page and
+  scales the scene then behaves differently depending on whether it was
+  *set before load* or *toggled after* it, and only the second path is
+  usually the one tested. Scene colours are uniforms, re-read on change.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or
@@ -181,11 +203,11 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 Check before claiming a step is done.
 
 - Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §15: 54.6 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §15: 249.5 KiB,
+  Measured at §16: 54.6 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §16: 251.6 KiB,
   and it binds — it is why the WebGL 2 tier does not ship
 - LCP under 2.5s on throttled 4G
-- Under 100 draw calls
+- Under 100 draw calls. Measured at §16: 4
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
 

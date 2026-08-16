@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–15 are done. The site is live. **Update this line at the end of
+Steps 1–16 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -421,6 +421,114 @@ the amplitudes, never snap them.
 **Done when:** the ground is visibly the cluster — raising `leaderMix` grows
 ridges toward one summit — and a term ending rearranges it without a jump.
 **Report:** ms/frame with `info.autoReset = false`, ground count, draw calls.
+
+*Done.* **The pentagon had to lie down first.** It was upright and facing
+the camera because the world was a volume with nothing in it; a cluster
+standing over a landscape is a ring on the ground plane, so the same five
+nodes — same 5.3 units to a side, same spacing the simulation was tuned
+against — turned through 90° and went up to altitude 9, with the terrain
+rising underneath them. The swirl axis went with it: taken against the view
+axis, half the traffic now curved down through the floor, so it is taken
+against world up and the routes braid across the ground instead.
+
+`h(p)` is five peaks and ten ridges, unrolled over constant geometry before
+the shader is built, so the endpoints, directions and segment lengths are
+numbers in it and only the amplitudes are uniforms. Three taps per ground
+point — the height, and two more 0.9 units out for the slope the scree
+jitter rides on. No storage, no warm-up, identical on the first frame and
+the thousandth.
+
+**The amplitudes are the cluster, not a shape.** `shares()` runs the compute
+pass's own routing rule over the whole population on the CPU: each
+participating node emits an equal share, `leaderMix` of it to the leader and
+the rest to its neighbour, and nobody addresses themselves. Peaks are what a
+node receives, ridges are what a route carries, and they sum to 1 — so a
+section cannot raise the whole world by accident, and `PEAK`/`RIDGE` are the
+only scale. Under Homonoia that is 0.80 on the leader and 0.20 on the node
+it writes to: one mountain. Under the hero it is five hills between 0.13 and
+0.28: a range. Ground belonging to the elected node is `--leader`, weighted
+by height so the plains stay `--rule` rather than taking an accent from a
+share of nearly nothing — the same rule §2 fixes and the traffic above it
+already follows.
+
+**The election, measured.** 12 seconds at Homonoia, sampled every frame:
+**4 term changes** (3.4s term), the summit moving 1→0→3→0, and the largest
+single-frame amplitude step anywhere in it is **0.0129** — about what a 2s
+eased tween covers in 16ms. It flows; it never snaps. Deep-linked to
+`/projects/homonoia` the amplitudes are **0.8 0.2 0 0 0 on the first ready
+frame**, sum 1.00, because the first section the module hears about lands
+with `gsap.set`. The landscape is a function of position, not of how long
+the page has been open.
+
+| | 1512×804 | 1000×800 |
+|---|---|---|
+| ground | 300,000 | 150,000 |
+| field | 120,000 | 60,000 |
+| draw calls | **4** | 4 |
+| triangles | 840,001 | 420,001 |
+| render pass | **2.50 ms** (2.39–2.95) | 1.12 ms |
+
+Draw calls are ground, the horizon arc, the field, and the renderer's blit.
+ms/frame is a batch of 20 renders between two `queue.onSubmittedWorkDone()`
+with the site's own loop stopped — `renderer.info`'s timestamp queries were
+tried first and are in CLAUDE.md as a trap, not as a number. At DPR 1.5
+(framebuffer 2268×1206) the same frame is **2.32 ms**, no worse than at DPR
+1: 420k instanced quads of 1.4–2 px are vertex-bound, not fill-bound. The
+compute pass is untouched from §15.
+
+**Count was the wrong knob; radius was the right one.** §4.7's 200,000 said
+to measure it. At the disc radius the world started with (92) the massif was
+an island in an empty plain and the ground never read as a surface at all —
+the visible wedge of a camera-relative disc is about a quarter of it, and
+spread over that much ground the points are further apart than the eye can
+join. Radius 42 puts the same points on a quarter of the area. 300,000 is
+what closed the rest of the gap, and it costs 1.6 ms of the 2.50.
+
+**Brightness: the bound holds, and it moved the whole layer.** Sampled 16
+frames per section 350 ms apart, document peeled away, brightest 12×12 mean
+in relative luminance:
+
+| | worst 12×12 | vs `--void-lift` | `--paper` | `--muted` | `--dim` |
+|---|---|---|---|---|---|
+| hero / about / basis / enargeia | 0.0076–0.0095 | 0.65–0.82× | | | |
+| philoi | 0.01064 | 0.92× | | | |
+| **homonoia** (binds) | **0.01154** | **0.994×** | 14.43 | 5.94 | **4.68** |
+| homonoia, high contrast | 0.00791 | 0.68× | 15.34 | 6.31 | 7.28¹ |
+
+¹ against high contrast's own `--dim`, `#A5A0C5`.
+
+The busiest frame is mid-election, where two mountains are up and 120k
+messages are redirecting at once. Total ink is now **88 for the field and
+6,800 for the ground** — the field's 696 was tuned when the cluster filled
+the frame at 9 units away and it is 18.5 units away now, so the same ink
+landed 5× over the bound in a third of the area.
+
+**One thing that failed here was §15's, and it was invisible until the
+ground arrived.** The scene read `--leader` and `--rule` once at mount and
+scaled by 0.45 for high contrast — so a page *toggled* into high contrast
+got the darker palette dimmed, and a page *loaded* in it got the brighter
+one (high contrast lifts `--rule` from `#2A2640` to `#4A4470`, 2.6× the
+luminance) dimmed by the same number. Measured on the loaded path: **0.92×
+against 0.90× normal**, i.e. the legibility toggle was not moving the
+busiest frame at all. Both tokens are uniforms now, re-read on every change,
+so the two paths are the same page, and the factor is 0.20, measured to land
+the loudest section at 0.68×. A frozen frame repaints on the change, because
+a palette that moved makes it stale rather than still.
+
+**Everything else, checked.** Motion off: canvas kept, two frames 2s apart
+**byte-identical**, and the still frame has the landscape in it. Resize
+1512×804 → 1000×700: framebuffer follows, counts do not (the scene never
+reinitialises). 900px: ground 150k, field 60k. 360px: no canvas at all.
+Bundle **54.6 KiB eager / 251.6 KiB desktop** against 120 and 260 — the
+terrain, the arc and `LineBasicNodeMaterial` cost **2.1 KiB gzipped**, and
+8.4 KiB of the desktop budget is left.
+
+**Left for §17, deliberately:** the camera is one fixed pose (25° down, 18.5
+units back) and not the altitude curve — §17 owns that, and the ground's
+distance falloff here is a stand-in for the fog it owns too. The ground disc
+is camera-relative per §4.7, so it *slides* over the terrain when the camera
+moves; nothing moves yet, and whether that reads as texture swimming is a
+question for the first session where the camera does.
 
 ### 17. Starfield, fog, camera altitude curve
 8k stars in view space so they never parallax, power-law brightness, slow

@@ -51,18 +51,28 @@ import {
 import gsap from 'gsap';
 import { motionOff, onMotionChange } from '../motion';
 import { onSection } from '../url-sync';
+import { buildTerrain, shares } from './terrain';
 
 /* ── The cluster ─────────────────────────────────────────────────────────
    Five nodes, which is the cluster Homonoia simulates and the number on
    its own metric list. A pentagon rather than a cloud: every particle is
    travelling between two of these, and if the endpoints are not legible
-   the traffic reads as smoke. */
+   the traffic reads as smoke.
+
+   §16 laid the pentagon down. It was upright and facing the camera when
+   the world was a volume with nothing in it; it is a cluster standing over
+   a landscape now, so it is a ring on the ground plane held at altitude,
+   with the terrain rising underneath it. The shape and the spacing are the
+   ones the simulation was tuned against — the same 5.3 units to a side —
+   turned through 90°, with a little height left in the third axis so the
+   five are not a flat disc. */
+const ALT = 9.0;
 const NODES = [
-  new Vector3(0.0, 3.5, -0.7),
-  new Vector3(4.7, 1.0, 1.3),
-  new Vector3(2.9, -3.2, -1.7),
-  new Vector3(-2.9, -3.2, 0.9),
-  new Vector3(-4.7, 1.0, -1.3),
+  new Vector3(0.0, ALT - 0.42, -3.5),
+  new Vector3(4.7, ALT + 0.78, -1.0),
+  new Vector3(2.9, ALT - 1.02, 3.2),
+  new Vector3(-2.9, ALT + 0.54, 3.2),
+  new Vector3(-4.7, ALT - 0.78, 1.0),
 ];
 const N = NODES.length;
 
@@ -122,6 +132,8 @@ const uNodes = uniform(DEFAULT.nodes);
 const uSpread = uniform(DEFAULT.spread);
 const uGlow = uniform(DEFAULT.glow);
 const uContrast = uniform(1);
+const uLead = uniform(new Color());
+const uQuiet = uniform(new Color());
 const uLeader = uniform(DEFAULT.leader);
 
 const uDt = uniform(0);
@@ -145,8 +157,14 @@ const uSize = uniform(1.6);
    The figure is total ink, not per-particle opacity: the alpha a particle
    is drawn at is this over however many particles were allocated. The count
    is a quality setting — 120k at full width, half that on a small viewport
-   — and neither of those is a decision about how bright the page is. */
-const INK = 696;
+   — and neither of those is a decision about how bright the page is.
+
+   Re-measured at §16 and it fell a long way, from 696. Nothing about the
+   simulation changed: the cluster was 9 units from the camera and filled
+   the frame, and it is 18.5 units away over a landscape now, so the same
+   ink lands in about a third of the area. Measured against the same bound,
+   with the ground under it, the loudest section is 0.99x of --void-lift. */
+const INK = 88;
 const uAlpha = uniform(0); // set at mount, from INK over the allocated count
 
 const nodes = uniformArray<'vec3'>(NODES, 'vec3');
@@ -235,8 +253,15 @@ export async function mount() {
   const count = 120_000 * (innerWidth >= 1024 ? 1 : 0.5);
 
   const scene = new Scene();
-  const camera = new PerspectiveCamera(50, viewport()[0] / viewport()[1], 0.1, 100);
-  camera.position.z = 9;
+  /* Provisional, and §17 replaces the whole of it: scroll becomes altitude
+     and the camera becomes a curve over this landscape rather than a place
+     to stand. Until then it stands off the cluster and above it, far
+     enough back that the ring reads as a ring and low enough that the
+     ground reads as a landscape rather than a map. The far plane is the
+     ground disc and the arc at the edge of it. */
+  const camera = new PerspectiveCamera(50, viewport()[0] / viewport()[1], 0.1, 260);
+  camera.position.set(0, 12.5, 18.5);
+  camera.lookAt(0, 3.5, -1);
 
   const material = new PointsNodeMaterial({
     transparent: true,
@@ -252,20 +277,28 @@ export async function mount() {
 
   /* --leader is the accent and it means elected (§2). That is exactly what
      it marks here: a particle carrying a message addressed to the leader.
-     Everything else is --rule, a hairline's worth above the page. */
-  const lead = token('--leader');
-  const quiet = token('--rule');
-  material.colorNode = select(
-    routed,
-    vec3(lead.r, lead.g, lead.b),
-    vec3(quiet.r, quiet.g, quiet.b),
-  ).mul(uGlow).mul(uContrast);
+     Everything else is --rule, a hairline's worth above the page.
+
+     Uniforms rather than constants folded into the shader, because both
+     tokens move under high contrast and §15 read them once at mount: a
+     page *loaded* in high contrast got the brighter palette and a page
+     *toggled* into it kept the darker one, and only the second was ever
+     measured. They are re-read on every change now, so the two paths are
+     the same page. */
+  material.colorNode = select(routed, uLead, uQuiet).mul(uGlow).mul(uContrast);
 
   uAlpha.value = INK / count;
 
   const built = buildCompute(count);
   material.positionNode = built.position;
   material.opacityNode = built.alpha;
+
+  /* §16. The floor, and it is this cluster: peaks under the nodes with the
+     amplitude of the traffic they are receiving, ridges along the routes
+     carrying it. Built here so it reads the same node positions the
+     simulation does — one definition of where the cluster is. */
+  const terrain = buildTerrain(NODES, { lead: uLead, quiet: uQuiet, contrast: uContrast });
+  scene.add(terrain.floor, terrain.horizon);
 
   const field = new Sprite(material);
   field.count = count;
@@ -284,18 +317,23 @@ export async function mount() {
   let term = 0;
   let applied = false;
 
-  const syncContrast = () =>
-    gsap.set(uContrast, {
-      /* High contrast is a legibility setting and this layer sits under
-         every word on the page, so it gets darker, never brighter. §4.7
-         measures text against the busiest frame the scene can produce, so
-         the busiest frame is the thing the toggle has to move. */
-      value: document.documentElement.dataset.contrast === 'high' ? 0.45 : 1,
-    });
-  syncContrast();
-  new MutationObserver(syncContrast).observe(document.documentElement, {
-    attributeFilter: ['data-contrast'],
-  });
+  /* High contrast is a legibility setting and this layer sits under every
+     word on the page, so it gets darker, never brighter. §4.7 measures
+     text against the busiest frame the scene can produce, so the busiest
+     frame is the thing the toggle has to move — and it has to move it
+     *down*, which the 0.45 §15 chose no longer did once the palette came
+     with it: high contrast lifts --rule from #2A2640 to #4A4470, which is
+     2.6x the luminance, and the ground is mostly --rule. 0.20 is measured
+     against the same 12x12 bound: the loudest section goes from 0.97x of
+     --void-lift to 0.69x, and every section lands within 0.03 of that. */
+  function syncContrast() {
+    const high = document.documentElement.dataset.contrast === 'high';
+    uLead.value = token('--leader');
+    uQuiet.value = token('--rule');
+    gsap.set(uContrast, { value: high ? 0.20 : 1 });
+    // The palette moved, so a frozen frame is now stale rather than still.
+    repaint();
+  }
 
   onSection((path) => {
     preset = PRESETS[path] ?? DEFAULT;
@@ -318,8 +356,21 @@ export async function mount() {
       if (instant) gsap.set(u, { value });
       else gsap.to(u, { value, duration: 1.6, ease: 'power2.out', overwrite: true });
     }
+    // The ground is the same change, so it takes the same duration: the
+    // landscape and the traffic over it arrive together.
+    retarget(instant ? 0 : 1.6);
     applied = true;
   });
+
+  /* The floor is a function of who is receiving what, which is a function
+     of the preset and of who currently holds the term. Both ends of that
+     are here, so this is the only place the ground is told anything. */
+  function retarget(duration: number) {
+    terrain.retarget(
+      shares(Math.round(preset.nodes), preset.leaderMix, uLeader.value),
+      duration,
+    );
+  }
 
   /* ── The loop ──────────────────────────────────────────────────────── */
 
@@ -333,10 +384,26 @@ export async function mount() {
         // A term ends and another node takes it. Never the incumbent: a
         // cluster that re-elects the same node reads as a stuck animation.
         uLeader.value = (uLeader.value + 1 + Math.floor(Math.random() * (N - 1))) % N;
+        /* The set piece. The traffic redirects this frame — it is one
+           uniform and the compute pass reads it — and the landscape takes
+           two seconds to agree, one summit subsiding while another rises.
+           Under motion off no term ever ends, so there is nothing here to
+           skip. */
+        retarget(2.0);
       }
     }
 
     built.step(dt);
+  };
+
+  function repaint() {
+    if (!running) draw();
+  }
+
+  const draw = () => {
+    // The floor is a disc carried with the camera and the arc is its edge.
+    terrain.follow(camera);
+    renderer!.render(scene, camera);
   };
 
   const tick = (_time: number, deltaMs: number) => {
@@ -344,7 +411,7 @@ export async function mount() {
     // (§11). This is the floor under it: an uncapped dt puts every
     // particle through the far side of the cluster in a single step.
     advance(Math.min(deltaMs / 1000, 1 / 30));
-    renderer!.render(scene, camera);
+    draw();
   };
 
   let running = false;
@@ -378,7 +445,7 @@ export async function mount() {
     camera.aspect = viewport()[0] / viewport()[1];
     camera.updateProjectionMatrix();
     // Frozen means still, not stale — the framebuffer changed shape.
-    if (!running) renderer!.render(scene, camera);
+    if (!running) draw();
   });
 
   /* §4.7: reduced motion freezes the scene on a single computed frame and
@@ -386,9 +453,17 @@ export async function mount() {
      at five nodes — the simulation before it has done anything — so the
      still frame is the field run forward to where it would have been and
      then stopped. With motion on it does the same job: the reveal is a
-     field rather than an empty page filling in. */
+     field rather than an empty page filling in.
+
+     The palette is read here rather than where it is declared, because the
+     first frame has to have it and `repaint` has to exist by then. */
+  syncContrast();
+  new MutationObserver(syncContrast).observe(document.documentElement, {
+    attributeFilter: ['data-contrast'],
+  });
+
   for (let i = 0; i < 240; i++) advance(1 / 30);
-  renderer.render(scene, camera);
+  draw();
 
   document.documentElement.dataset.field = '';
   document.body.prepend(canvas);
@@ -396,7 +471,7 @@ export async function mount() {
 
   sync();
 
-  return { renderer, scene, camera, field, count };
+  return { renderer, scene, camera, field, count, terrain };
 }
 
 /* ── The simulation ─────────────────────────────────────────────────────
@@ -439,10 +514,13 @@ function buildCompute(count: number) {
     const to = nodes.element(target).sub(p);
     const d = to.length();
     const dir = to.div(d.max(0.0001));
-    // Around the view axis, so the curve is visible from where the reader
-    // is rather than edge-on. Guarded: a message travelling along Z has no
-    // tangent, and an unguarded normalize() there is a NaN that sticks.
-    const raw = cross(dir, vec3(0, 0, 1));
+    /* Around world up, since §16 laid the cluster down: the routes are
+       near-horizontal now, so a tangent taken against up braids them
+       across the ground where the camera can see it, where one taken
+       against the view axis would swing half the traffic down into the
+       terrain. Guarded: a message travelling straight up has no tangent,
+       and an unguarded normalize() there is a NaN that sticks. */
+    const raw = cross(dir, vec3(0, 1, 0));
     const tang = raw.div(raw.length().max(0.0001));
     const flow = mx_noise_vec3(p.mul(0.28).add(vec3(0, 0, uClock.mul(0.08))));
 

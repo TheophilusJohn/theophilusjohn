@@ -254,7 +254,7 @@ A dark volume with a floor and a sky.
 
 The floor is a heightfield **computed from the cluster** — ground rises where message traffic is dense and falls where it is quiet, with the highest ground under whichever node currently holds leadership. It is not decorated terrain and it is not noise. Fly over it and the shape you are flying over is the shape of a consensus algorithm running.
 
-The sky is a starfield at effective infinity. Between them is the field from §15, unchanged: messages in flight between five nodes.
+The sky is a starfield at effective infinity. Between them is the field from §15: messages in flight between five nodes. **Turned, at §16** — the pentagon was upright and facing the camera when there was nothing under it, and a cluster standing over a landscape is a ring on the ground plane. Same shape, same spacing, same simulation, laid flat at altitude 9 with the terrain rising underneath it, and the swirl taken against world up so the routes braid across the ground rather than through it.
 
 **Why this rather than a landscape.** A landscape would be prettier faster and would say nothing. The reference site's terrain works because its author is an illustrator and the terrain is the artwork. Here the terrain has to be the work, or it is decoration on a portfolio about not decorating things.
 
@@ -291,9 +291,9 @@ Points on a **camera-relative grid**, not a world-fixed one. Each particle holds
 
 Radial density falls as `1/r`, which cancels the perspective gathering and gives even screen-space coverage rather than a dense smear at the horizon. Per-point `y` jitter proportional to local slope, so cliffs read as scree and flats read as flats.
 
-Count: **200,000** at the compute tier, halved below 1024px. Measure before trusting that number.
+Count: **300,000** at the compute tier, halved below 1024px. 200,000 was the number here and §16 measured it: count was the wrong knob. A camera-relative disc only ever shows about a quarter of itself, so what decides whether the ground reads as a surface is the radius it is spread over — 92 units made the massif an island in an empty plain, 42 made it a landscape. 300,000 closed the rest and costs 1.6ms of a 2.5ms frame.
 
-**The horizon.** Particle ground has no edge, and an edge is what makes a floor a floor. Draw one: a thin great-circle arc at the far clip in `--rule`, one pixel, never brighter. That is the only non-particle geometry in the world and it is what turns a field of dots into a place with a limit. At grazing angles the ground densifies toward that line on its own, so the arc is confirming a boundary the eye already believes rather than inventing one.
+**The horizon.** Particle ground has no edge, and an edge is what makes a floor a floor. Draw one: a thin great-circle arc at the far clip in `--rule`, one pixel, never brighter. Built as a `Line` closed by repeating its first point — the new renderer does not support `LineLoop` at all. That is the only non-particle geometry in the world and it is what turns a field of dots into a place with a limit. At grazing angles the ground densifies toward that line on its own, so the arc is confirming a boundary the eye already believes rather than inventing one.
 
 #### The starfield
 
@@ -337,6 +337,8 @@ Text contrast is measured *against the busiest frame the scene can produce*, not
 
 **Decided (§15): the rule, made measurable.** "The busiest frame" is the brightest **glyph-sized local average** the scene draws — a 12×12 mean, not the brightest pixel, because that is the background a piece of text actually sits on. The bound is `--void-lift`: the scene may look raised and never more. Measured at that bound, every text token clears 4.5:1 against the worst background on the page.
 
+**Corrected (§16): the toggle reads the palette, not a remembered one.** High contrast has to move the busiest frame *down*, and it was not: the scene read `--leader` and `--rule` once at mount, so a page loaded in high contrast got the brighter palette — `--rule` goes from `#2A2640` to `#4A4470`, 2.6× the luminance — scaled by the same 0.45 as a page toggled into it, and the two paths differed. Both tokens are uniforms now, re-read on every change; the factor is 0.20, measured. Normal 0.99× of the bound, high contrast 0.68×.
+
 **Revised: that bound applies where text is.** It is a document-mode constraint, not a property of the scene.
 
 - **Document mode** — the bound holds unchanged. The terrain is far below the camera through the whole scroll, fogged, and dim. It is a floor glimpsed under the content, not a landscape competing with it.
@@ -346,14 +348,14 @@ This is the honest resolution of "make it brilliant" against "text must be reada
 
 #### Performance
 
-Everything here is instanced points. Three draw calls: ground, field, stars.
+Everything here is instanced points, plus the one line. Measured at §16 with ground, field and arc: **4 draw calls** — ground, arc, field, and the renderer's own blit. Stars make it 5.
 
-- Ground 200k, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
+- Ground 300k, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
 - The heightfield is evaluated in the vertex shader, not on the CPU. Nothing reads back.
 - Frustum culling is off on all three — the bounding sphere an instanced sprite computes is the unit quad at the origin (§15). The camera-relative ground grid is the culling: points behind the viewer wrap to in front of it.
 - **Target: 60fps on integrated graphics.** If it does not hold, ground count is the first thing to cut and the accumulation texture is the second. The election transition is the last, because it is the point.
 
-Measure `renderer.info` with `autoReset = false` (§15 trap), and report milliseconds per frame rather than fps — fps is vsync-capped and hides regressions until it falls off a cliff.
+Measure `renderer.info` with `autoReset = false` (§15 trap), and report milliseconds per frame rather than fps — fps is vsync-capped and hides regressions until it falls off a cliff. The rAF interval is vsync too, and `--disable-gpu-vsync` does not lift it; §16's number is a batch of renders between two `queue.onSubmittedWorkDone()`, because the timestamp queries under it returned negative durations. Measured there: **2.50ms** at 1512×804, and 2.32ms at DPR 1.5 — this layer is vertex-bound on 420k instanced quads, not fill-bound.
 
 #### Constraints
 
