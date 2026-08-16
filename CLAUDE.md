@@ -52,7 +52,7 @@ These are not preferences. Violating one is a bug.
 | Styling | Plain CSS + custom properties. Scoped `<style>` in components |
 | Animation | GSAP (ScrollTrigger, SplitText) — free for commercial use since 3.13 |
 | Smooth scroll | Lenis |
-| 3D | Three.js r171+ via `three/webgpu`. TSL shaders. Pin the version |
+| 3D | Three.js **pinned at 0.185.1** via `three/webgpu`. TSL shaders |
 | Content | Astro content collections + MDX |
 | Deploy | Cloudflare Pages, `npm run build`, output `dist` |
 
@@ -134,6 +134,40 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   Measured: hold cleared at 48ms, LCP entry on the hero line at 76ms, ink
   actually settled at 856ms. Report the settle time next to the LCP or the
   number flatters the page.
+- `three/webgpu` is one module, so a bundler can tree-shake inside it but
+  cannot split it across chunks. Naming `WebGPURenderer` is what pulls the
+  WebGL 2 backend in — it is that class's `getFallback` that imports it —
+  and there is no arrangement of dynamic imports that gets one backend per
+  browser. `new Renderer(new WebGPUBackend(params), params)` is the same
+  renderer without it, 23.1KB gzipped lighter; `BasicNodeLibrary` in place
+  of the standard one is 8.0KB more.
+- WebGPU only supports point primitives at 1 pixel, so `Points` cannot have
+  a size there. Sized particles are a `Sprite` with `count`, which is
+  instanced the same way — and its bounding sphere is the unit quad at the
+  origin, so `frustumCulled = false` or the whole field disappears the
+  moment the origin leaves the frustum.
+- Additive blending has no ceiling, and the contrast rule in §4.7 is the
+  only thing standing between a compute field and white. Measure it as the
+  brightest **glyph-sized local average** (12×12), not the brightest pixel:
+  that is the background text actually sits on. `--void-lift` is the bound
+  — at it every text token clears 4.5:1. Peak density lives where routes
+  converge, so the fixes are structural (fade over the last stretch of the
+  journey, sign the tangential force per particle) before they are an alpha.
+- `renderer.info` counters on the new renderer are zeroed by its own rAF,
+  not by `render()`, so reading `drawCalls` from outside a frame gives 0 or
+  a partial count. Set `info.autoReset = false`, reset, render, read. There
+  is no `info.render.frame` on it at all — count renders yourself.
+- A `position: fixed` canvas is sized from `documentElement.clientWidth`,
+  never `innerWidth`. A classic scrollbar is outside the initial containing
+  block, so `innerWidth` is ~15px wider than the box the canvas is drawn in
+  and the whole scene is stretched by that much. It also answers while the
+  element is still detached, which its own `clientWidth` does not.
+- Puppeteer's `screenshot({ clip })` is in **page** coordinates and captures
+  beyond the viewport, which puts a fixed element somewhere other than where
+  it is on screen — a scrolled page reads back as if the canvas were blank.
+  Shoot the whole viewport and crop when reading the pixels. Peel the
+  document (`visibility: hidden` on header/main/footer) to measure the scene
+  alone, and remember the custom cursor and the skip link are siblings of it.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or
@@ -146,8 +180,10 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 
 Check before claiming a step is done.
 
-- Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px)
-- Homepage JS, desktop: **under 260KB gzipped**
+- Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
+  Measured at §15: 54.6 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §15: 249.5 KiB,
+  and it binds — it is why the WebGL 2 tier does not ship
 - LCP under 2.5s on throttled 4G
 - Under 100 draw calls
 - Lighthouse accessibility **100**

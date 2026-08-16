@@ -223,6 +223,10 @@ Compute-driven particle counts in the hundreds of thousands are realistic on Web
 
 #### Constraints
 
+**Decided (§15): two tiers, not three.** The reduced WebGL 2 tier was built and measured and does not ship. `three/webgpu` is one module, so no bundler can put one backend in each chunk; carrying both costs every desktop load 23.1KB gzipped and puts the page 12.4 KiB over the hard budget in §6. WebGPU only lands at 249.5 KiB. A browser without WebGPU gets the bottom tier, which this section already says is the whole site.
+
+**Decided (§15): the contrast rule, made measurable.** "The busiest frame the scene can produce" is the brightest **glyph-sized local average** the field draws, not its brightest pixel — that is the background a piece of text actually sits on. The bound is `--void-lift`: the field may look raised and never more. Measured at that bound, every text token clears 4.5:1 against the worst background on the page.
+
 - Cap DPR at 1.5 for the background layer; it is out of focus behind text and does not need retina resolution
 - Halve the simulation resolution below 1024px; disable entirely below 768px
 - Reduced motion → freeze on a single computed frame, do not remove the canvas

@@ -17,8 +17,30 @@ for (const s of sections) byPath.set(s.dataset.path!, s);
 
 const norm = (p: string) => p.replace(/\/+$/, '') || '/';
 
+/* Which range the reader is in is already computed here, once, to keep the
+   address bar honest. §4.7's render layer needs the same answer, so it
+   subscribes rather than measuring the page a second time — one authority
+   for position, the way there is one for scroll.
+
+   `active` is separate from `current` below, which the click handler
+   clears to force a rewrite. A subscriber wants the section, not the state
+   of the address bar, and it is handed the standing answer on subscribe:
+   the field arrives on a dynamic import, long after the observer's first
+   callback, and it must not sit at the default state until the next scroll. */
+let activePath: string | null = null;
+const watchers = new Set<(path: string) => void>();
+
+export function onSection(fn: (path: string) => void) {
+  watchers.add(fn);
+  if (activePath !== null) fn(activePath);
+}
+
 let current: string | null = null;
 function setPath(path: string) {
+  if (path !== activePath) {
+    activePath = path;
+    for (const fn of watchers) fn(path);
+  }
   if (path === current) return;
   current = path;
   history.replaceState(history.state, '', path);

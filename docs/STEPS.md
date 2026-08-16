@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–14 are done. The site is live. **Update this line at the end of
+Steps 1–15 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -311,6 +311,97 @@ at the bottom tier.
 
 **Done when:** navigating between all four projects never resets or flashes
 the canvas.
+
+*Done.* One `Renderer` on a `WebGPUBackend`, built detached and prepended to
+`body` only once there is a frame in it, then never touched again. Three
+pinned at **0.185.1**. Measured across the whole page top to bottom and
+back: same renderer object, **1 canvas, 0 inserts, 0 removals, 0 context
+losses**, and the composited frame never blanks. §4.6 already made this
+free — there is no navigation to survive — so what had to be proved instead
+is that the state is a function of *position*: `/projects/philoi` loaded
+directly lands on Philoi's uniforms with no transition, because the first
+section this module is told about is applied with `gsap.set` and only later
+ones tween.
+
+**The field is the cluster.** Five attractors are Homonoia's five nodes;
+each particle is one message, emitted at its sender and consumed at the node
+it is addressed to, `--leader` if that node is the elected one and `--rule`
+if not — the accent means *elected* here in the same sense §5 already fixed.
+A section sets how the cluster behaves rather than what it looks like:
+`leaderMix` is the share of traffic addressed to the leader, `nodes` how
+many are participating, plus speed, pull, swirl, jitter, spread. Under
+Homonoia `leaderMix` is 1.0 and the **term ends every 3.4s** — measured 4
+changes in 12s, never re-electing the incumbent — and the whole field
+redirects mid-flight. Philoi is two emitters converging on one; Basis is
+three nodes near-still; Enargeia routes almost nothing to a leader and lets
+the noise term carry it. `onSection` is a new export from url-sync, so
+"which range is this" is still computed once and the URL and the field read
+the same answer.
+
+**Two tiers, not three, and that was the budget's call.** The static WebGL 2
+tier was built and measured — the same five nodes with the journey as a
+quadratic Bézier in the vertex shader, since that backend has no compute
+pass — and does not ship. `three/webgpu` is a single module, so no bundler
+can split the two backends into separate chunks: carrying both costs every
+desktop load **23.1KB gzipped** and puts the page at **272.4 KiB** against a
+hard 260. WebGPU only is **249.5 KiB**. §4.7 says the site is complete at
+the bottom tier, so a browser without WebGPU now gets the document, which is
+the whole site. Not naming `WebGPURenderer` is what does it — that class is
+the WebGL fallback's only importer. `BasicNodeLibrary` over the standard one
+is a further **8.0KB**, and keeps the lights §4.4 will need.
+
+| | gzipped | budget |
+|---|---|---|
+| Mobile / no-WebGPU (eager only) | **55,872** (54.6 KiB) | 120 KiB |
+| Desktop (eager + scene chunk) | **255,508** (249.5 KiB) | 260 KiB, 10.5 KiB spare |
+| — scene chunk alone | 199,636 | |
+| CSS 1,989 · document 6,625 | | |
+
+**Draw calls: 2.** One instanced sprite of 120,000 (240,000 triangles) and
+the renderer's own output blit. 1 scene object, 2 geometries, 2 textures,
+120 fps on an M-series GPU (vsync). Points are not an option: WebGPU only
+supports 1px point primitives, so sized particles are a `Sprite` with
+`count`, which also means `frustumCulled = false` — the bounding sphere it
+computes is the unit quad at the origin and would cull the entire field.
+
+**Brightness is measured, not chosen.** §4.7 says text is measured against
+the busiest frame the scene can produce, and additive blending has no
+ceiling: the first working version peaked at **pure white** under Homonoia.
+The bound, stated so it can be checked: the brightest **12×12 average** the
+field draws anywhere on the page never exceeds `--void-lift`. A glyph-sized
+local mean because that is the background a piece of text actually sits on,
+and `--void-lift` because the palette already names that level "raised". At
+that bound, walked over all six sections with the document peeled away:
+
+| | worst 12×12 | `--paper` | `--muted` | `--dim` |
+|---|---|---|---|---|
+| glyph scale (the bound) | 0.01160 = `--void-lift` | 14.42 | 5.93 | **4.68** |
+| single brightest pixel | 0.02050 | 12.60 | 5.19 | 4.09 |
+
+Per section the worst runs 0.0098–0.0116, so no section is the loud one.
+Getting there took three structural fixes, not just a lower alpha: messages
+launch *toward* their receiver rather than from rest (five nodes each wore a
+cloud before that); the tangential force is signed per particle, which fans
+a route into a braid instead of one saturated tube; and particles fade over
+the last 2.6 units of the journey, where a funnel would otherwise converge
+on a point. Brightness is expressed as **total ink over the particle count**,
+so halving the count below 1024px is a quality setting and not a change to
+the page. High contrast takes the field to **0.45×** — it sits under every
+word, so the toggle has to move the busiest frame, and only downward.
+
+**Everything else, measured.** Canvas inserted at **128ms**, first frame at
+129ms; LCP **76ms**, CLS **0**, zero shift entries. Lighthouse 12.8.2 against
+`astro preview` of the real build: desktop **accessibility 100, performance
+100**, LCP 0.6s, CLS 0, TBT 0ms with the scene chunk loaded; mobile 360×640
+**100 / 99**, LCP 2.0s, and the chunk never requested. axe-core **0
+violations** in all four states with the canvas present. 13 focusables,
+unchanged — the canvas is `aria-hidden`, `pointer-events: none` and carries
+no node the keyboard can reach. DPR capped at 1.5 (verified 1→1, 2→1.5,
+3→1.5). Motion off: **0 frames rendered**, canvas kept, two screenshots 2s
+apart byte-identical, and the still frame is the field run forward 8s rather
+than five dots at five nodes. Backgrounded: **0 frames**, resumes on return.
+Both reasons to pause are held separately, or a tab backgrounded with motion
+off wakes up running.
 
 ### 16. The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene

@@ -76,6 +76,43 @@ html[data-intro] .site-head > *,
 html[data-intro] .hero h1,
 html[data-intro] .hero .sub { visibility: hidden; }
 
+/* ── The render layer ────────────────────────────────────
+   §4.7. One canvas, fixed and full-viewport, mounted once
+   and never removed. It is not a hero element — it is the
+   environment the whole document sits inside, so it is the
+   bottom of the stack and everything else is above it.
+
+   Both selectors are keyed on data-field, which scene.ts
+   sets only once there is a frame in the canvas. Below
+   768px, with no WebGL 2, with JS off, or on a renderer
+   that failed to start, neither the attribute nor the node
+   exists and this whole block matches nothing.
+
+   pointer-events: none, because the canvas covers every
+   link on the page and carries nothing clickable of its
+   own. §16's laptop gets a real focusable DOM element over
+   it rather than a hit test against a mesh. */
+.field {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms linear;   /* motion off: the block below zeroes this */
+}
+.field[data-ready] { opacity: 1; }
+
+/* The canvas is positioned and the content is not, so without
+   this the content paints under it however low its z-index.
+   z-index 1 is §4.7's number; .skip at 99 and .cursor at 100
+   are already above both. */
+html[data-field] :is(.site-head, main, .site-foot) {
+  position: relative;
+  z-index: 1;
+}
+
 /* ── The cursor ──────────────────────────────────────────
    §4.10. cursor.ts builds the element and puts data-cursor
    on the root, and it does neither on a touch device, under
