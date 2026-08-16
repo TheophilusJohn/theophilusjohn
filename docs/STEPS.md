@@ -403,38 +403,84 @@ than five dots at five nodes. Backgrounded: **0 frames**, resumes on return.
 Both reasons to pause are held separately, or a tab backgrounded with motion
 off wakes up running.
 
-### 16. The laptop
+### 16. Terrain
+**The step that changes the site more than 8–14 combined.** Do it, ship it,
+and look at it before committing to the rest. See SPEC §4.7.
+
+Analytic heightfield first — node peaks and route ridges, closed-form off
+the uniforms already in `scene.ts`, evaluated in the vertex shader. No
+storage, no warm-up. Particle ground on a camera-relative grid, radial
+density falling as `1/r`, 200k at the compute tier and halved below 1024px.
+Horizon arc in `--rule`, one pixel, the only non-particle geometry there is.
+
+The election is the point: under Homonoia the amplitudes retarget every
+3.4s and the landscape redistributes over ~2s of eased transition. Tween
+the amplitudes, never snap them.
+
+**Done when:** the ground is visibly the cluster — raising `leaderMix` grows
+ridges toward one summit — and a term ending rearranges it without a jump.
+**Report:** ms/frame with `info.autoReset = false`, ground count, draw calls.
+
+### 17. Starfield, fog, camera altitude curve
+8k stars in view space so they never parallax, power-law brightness, slow
+per-star opacity phases spread 4–14s. Exponential-squared fog to `--void`,
+tuned so the far ground fades where the horizon arc sits; stars exempt.
+
+Scroll is altitude, per the table in SPEC §4.7 — high and looking down at
+the hero, lowest and near-level at project four, rising again at about.
+Same Lenis instance, damped, plus a couple of degrees of eased pointer
+parallax. Parallax off under reduced motion.
+
+**Done when:** scrolling the page top to bottom reads as a descent and a
+climb; the camera is still a pure function of scroll position.
+
+### 18. The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
 from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,
 updated at ~8fps. Log lines duplicated into a visually-hidden `<pre>` for
 screen readers.
 
-**Done when:** particles depth-test correctly against the lid; a focusable
-DOM element over the laptop routes to Homonoia by keyboard.
+Landmark one, and it **stands on the ground** — which is why it moved
+behind the terrain rather than in front of it.
 
-### 17. Depth and camera spline
-`CatmullRomCurve3`. Scroll maps to distance along it, driven by the same
-Lenis instance — one scroll authority.
+**Done when:** particles depth-test correctly against the lid; the laptop
+sits on `h(x, z)` rather than floating; a focusable DOM element over it
+routes to Homonoia by keyboard.
 
-### 18. Landmarks
-Four structures, one per project, in `order`. Three states: distant
-(silhouette), approaching (label + machine ID resolve), arrived (writeup
-opens in DOM). Laptop is landmark one.
+### 19. Landmarks 2–4
+Three more structures, one per remaining project, standing on the ground in
+`order`. Three states: distant (silhouette), approaching (label + machine
+ID resolve), arrived (writeup opens in the panel). LOD: silhouette at
+distance, detail only on approach.
 
-**Design work not yet done:** what the four structures actually *are*.
+**Design work not yet done:** what the three structures actually *are*.
 Ask before modelling.
 
-### 19. Mode switch and URL sync
-Arriving at a landmark pushes its route. Loading that route in world mode
-flies the camera there. Both directions.
+### 20. Mode switch and scroll ↔ camera sync
+Visible persistent control, choice in `localStorage`. Arriving at a landmark
+replaces its route; loading that route flies the camera there. The writeup
+panel and its backing — the only place text lives in world mode, and the
+reason the brightness bound can lift outside it (SPEC §4.7).
 
 **Done when:** deep links work, browser back works, `Esc` returns to path,
-mode switch reachable by keyboard from anywhere.
+mode switch reachable by keyboard from anywhere, and switching modes at
+Philoi lands at Philoi rather than at the start of the curve.
 
-### 20. Free flight
-Unlocks at the fourth landmark or via a control. Bounded volume. Always-
-visible return-to-path control.
+### 21. Free flight, bounds, altitude clamp
+Unlocks at the fourth landmark or via a control. Bounded volume, camera
+clamped above `h(x, z)` — a floor it may not go under, not collision.
+Always-visible return-to-path control.
 
-### 21. Performance pass
-Instancing, LOD, frustum culling. 60fps on integrated graphics.
-**Report:** draw calls, frame time, particle count.
+### 22. Accumulation texture
+Only if the budget allows, and only once 16–21 are measured with everything
+in place. 512×512 `r32uint`, `atomicAdd` one per particle per frame in the
+existing compute pass, decayed 2% per frame, sampled into `h` at low
+amplitude. It lags the simulation, so a leader change leaves the old
+mountain subsiding for a few seconds after the traffic has left it.
+
+**If it does not fit, the world is complete without it.** Cut it before
+cutting the election.
+
+### 23. Performance pass
+Instancing, LOD, frustum culling, 60fps on integrated graphics.
+**Report:** ms/frame, draw calls, particle counts per buffer.

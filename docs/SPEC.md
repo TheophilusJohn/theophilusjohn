@@ -184,96 +184,189 @@ Everything about loading, DPR, mobile, fallbacks and pausing is inherited from �
 - Clicking the laptop routes to the Homonoia writeup. It needs a real focusable DOM element over it — a mesh is not keyboard reachable
 - The static fallback PNG in §4.7 must include the laptop, since there is no path where the field renders and the laptop doesn't
 
-### 4.7 Persistent render layer
+### 4.7 The render layer, and the world it contains
 
 **The architectural decision that separates this from a normal page.** Read before building anything in §4.
 
 A fixed, full-viewport canvas at `z-index: 0` that mounts once and never unmounts. All content is normal DOM above it at `z-index: 1`. The canvas is *not* a hero element — it is the environment the entire site sits inside.
 
-This is the **only** WebGL context on the site, and it is created once for the session. The laptop in §4.4 is an object within this scene, not a second canvas.
+This is the **only** GPU context on the site, and it is created once for the session. The laptop in §4.4 is an object within this scene, not a second canvas.
 
-#### Persistence is free
+#### Built, and standing (§15)
 
-Because the site is one page (§4.6), the canvas mounts once and is never torn down. There is no navigation to survive.
+One `Renderer` on a `WebGPUBackend`, one canvas, mounted once, built detached and inserted only when there is a frame in it. Everything below is what that scene *contains*; none of it changes the architecture above.
 
-What replaces the old requirement: the scene must react to **scroll position**, not to route. Section boundaries drive the simulation state. Verify by scrolling the full page top to bottom and back — the scene must never reset, flash, or reinitialise, and its state must be a pure function of scroll position so that landing deep-linked mid-page looks identical to having scrolled there.
+Because the site is one page (§4.6), the canvas mounts once and is never torn down. There is no navigation to survive. What replaces the old requirement: the scene reacts to **scroll position**, not to route, and its state must be a pure function of that position so landing deep-linked mid-page looks identical to having scrolled there. Verify by scrolling the full page top to bottom and back — the scene must never reset, flash, or reinitialise.
 
-#### Compute-driven, not decorative
+**Decided (§15): two tiers, not three.** The reduced WebGL 2 tier was built and measured and does not ship. `three/webgpu` is one module, so no bundler can put one backend in each chunk; carrying both costs every desktop load 23.1KB gzipped and puts the page 12.4 KiB over the hard budget in §6. WebGPU only lands at 249.5 KiB. A browser without WebGPU gets the bottom tier, which is the document, which is the whole site.
 
-The scene is a GPU compute simulation, and its state is driven by whatever section is in view:
+#### What the world is
 
-- **Homonoia** — consensus message passing as a field: five attractors, messages as advected particles, leader shifts redistributing the flow
-- **Enargeia** — token activations; the field driven by actual inference output
-- **Philoi** — concurrent edits converging; two divergent states resolving into one
-- **Basis** — quietest state, near-still
+A dark volume with a floor and a sky.
 
-This is the part that makes the site un-copyable. A generic particle field says nothing. A field computed by the same class of kernel that runs the inference engine is the portfolio arguing for itself.
+The floor is a heightfield **computed from the cluster** — ground rises where message traffic is dense and falls where it is quiet, with the highest ground under whichever node currently holds leadership. It is not decorated terrain and it is not noise. Fly over it and the shape you are flying over is the shape of a consensus algorithm running.
 
-#### Renderer
+The sky is a starfield at effective infinity. Between them is the field from §15, unchanged: messages in flight between five nodes.
 
-**Resolved: Three.js `WebGPURenderer` with shaders authored in TSL.**
+**Why this rather than a landscape.** A landscape would be prettier faster and would say nothing. The reference site's terrain works because its author is an illustrator and the terrain is the artwork. Here the terrain has to be the work, or it is decoration on a portfolio about not decorating things.
 
-Since r171 (September 2025) the WebGPU renderer is production-ready via `import * as THREE from 'three/webgpu'`, with automatic WebGL 2 fallback. Safari 26 shipped WebGPU, so coverage is effectively universal. TSL compiles the same shader source to WGSL or GLSL depending on the active renderer, so there is no second shader codebase to maintain.
+The complaint this answers, recorded so it does not get re-litigated: five emitters trading particles at one depth is a legible diagram and reads as one. It has no near and no far, so there is nothing to be inside of.
 
-This removes the earlier WebGPU-vs-WebGL2 fork entirely: WGSL knowledge from Enargeia transfers, compute passes are available, and the fallback path is handled by the library rather than hand-written.
+#### The heightfield
 
-Note `await renderer.init()` before the first render — WebGPU initialisation is async, unlike WebGL.
+Two terms, summed.
 
-Compute-driven particle counts in the hundreds of thousands are realistic on WebGPU, against roughly 50k on WebGL. Size the field for WebGPU and let the fallback reduce density rather than designing for the floor.
+**Structure — analytic, evaluated per vertex.** Every node contributes a radially symmetric peak whose amplitude is that node's current traffic share. Every active route contributes a ridge along the line between its endpoints, falling off with perpendicular distance. This is a closed-form function of the node positions and the section uniforms already in `scene.ts`, so it costs no storage, has no warm-up, and is identical on the first frame and the thousandth.
+
+```
+h(p) = Σ_nodes  A_i · exp(-|p - n_i|² / σ²)
+     + Σ_routes B_ij · exp(-d_perp(p, n_i, n_j)² / τ²) · window(t_along)
+```
+
+`A_i` is the node's share of addressed traffic — under Homonoia the leader's term dominates and the landscape is one mountain; under Enargeia the five are even and it is a ring of hills. `B_ij` is nonzero only for routes carrying traffic, so raising `leaderMix` visibly grows ridges toward one summit.
+
+**Texture — accumulated, optional, and the second thing to build.** A 512×512 `r32uint` storage texture, into which the particle compute pass `atomicAdd`s one per particle per frame, decayed 2% per frame. Sampled and added to `h` at a low amplitude. This is what makes the ground feel *alive* rather than *computed* — it lags the simulation, so a leader change leaves the old mountain visibly subsiding for a few seconds after the traffic has left it.
+
+Build the analytic term first and ship it. Add accumulation only once the frame budget is measured with everything else in place. If it does not fit, the world is complete without it.
+
+**An election is the set piece.** Under Homonoia the term ends every 3.4s. `A_i` retargets, the ridges swing, and **the landscape itself redistributes** — one summit subsiding while another rises, over roughly two seconds of eased transition. Tween the amplitudes, never snap them. A heightfield that jumps is a glitch; one that flows is a mountain range rearranging itself.
+
+#### The floor is particles, not a mesh
+
+Decided. A second instanced sprite buffer, positions sampled on the heightfield rather than a lit surface.
+
+- One material for the whole world. No second lighting model, no normals, no shadow story, no mesh LOD. The ground is made of the same stuff as the traffic above it, which is true and also cheap.
+- Nothing occludes. A solid floor would hide half the field the moment the camera descends; particles keep the volume readable from inside it.
+- It is the version that could only come from this project. A lit mesh is a landscape; a resolved density is a measurement.
+
+Points on a **camera-relative grid**, not a world-fixed one. Each particle holds a fixed `(u, v)` in a disc around the camera's ground position; its world position is that offset plus the camera, wrapped, with `y = h(x, z)`. The grid moves with the viewer, so ground detail is always where the eye is and the far field never needs more points than it can resolve.
+
+Radial density falls as `1/r`, which cancels the perspective gathering and gives even screen-space coverage rather than a dense smear at the horizon. Per-point `y` jitter proportional to local slope, so cliffs read as scree and flats read as flats.
+
+Count: **200,000** at the compute tier, halved below 1024px. Measure before trusting that number.
+
+**The horizon.** Particle ground has no edge, and an edge is what makes a floor a floor. Draw one: a thin great-circle arc at the far clip in `--rule`, one pixel, never brighter. That is the only non-particle geometry in the world and it is what turns a field of dots into a place with a limit. At grazing angles the ground densifies toward that line on its own, so the arc is confirming a boundary the eye already believes rather than inventing one.
+
+#### The starfield
+
+Third instanced buffer, **8,000 points** on a sphere of effectively infinite radius — positioned in view space so they never parallax, which is what makes them read as far away rather than as nearby dots.
+
+Brightness drawn per-star from a power law, so a few are bright and most are barely there. A slow per-star phase on opacity, periods spread between 4 and 14 seconds, so the sky is never uniformly still and never visibly twinkling in unison.
+
+`--paper` at low alpha for most; a scattering in `--leader` at maybe one in forty, so the sky belongs to the palette without being violet.
+
+Stars are the only thing in the world that does not mean anything. That is deliberate: everything else is a measurement, and a world where every single element is load-bearing reads as a diagram again.
+
+#### The camera
+
+**Scroll is altitude.** One curve, and both modes read it.
+
+| scroll | altitude | pitch | what you see |
+|---|---|---|---|
+| hero | high above | looking down ~60° | the whole cluster as a map, ground far below |
+| project 1 | descending | ~35° | peaks resolving, horizon entering frame |
+| project 2–3 | low | ~15° | among the ridges, traffic passing at eye level |
+| project 4 | lowest | ~5° | inside it, horizon across the frame, stars above |
+| about | rising | ~30° | pulling back out |
+
+This is the whole answer to "both — above it and down in it". The descent is the read, and it means document mode is not a lesser version of world mode: scrolling the page *is* the flight, and world mode adds control rather than adding the world.
+
+Position along the curve is `scrollY / maxScroll`, driven by the same Lenis instance as everything else — one scroll authority (§4.6), and the camera is a pure function of scroll position exactly as this section requires of the scene state.
+
+Damped: the camera lags the scroll by a short time constant, so a fast scroll arrives with momentum instead of teleporting. A slight pointer parallax on top — a couple of degrees of yaw and pitch, eased. This costs nothing and does more for the sense of depth than any other single thing in this section. Disabled under reduced motion.
+
+#### Fog
+
+Not optional, and not atmosphere for its own sake.
+
+Exponential-squared fog to `--void`, tuned so the far ground fades roughly where the horizon arc sits. Fog is what makes distance *legible* in a particle world — without it every point is the same brightness at every depth and the volume flattens back into the diagram this revision exists to escape.
+
+It also solves the density problem at the horizon for free, and it hides the far clip so the ground has no visible end. Stars are exempt; they are behind the fog by construction.
+
+#### Brightness
+
+Text contrast is measured *against the busiest frame the scene can produce*, not against the average. If the scene can ever wash out body copy, the scene is wrong — darken it, don't lighten the text.
+
+**Decided (§15): the rule, made measurable.** "The busiest frame" is the brightest **glyph-sized local average** the scene draws — a 12×12 mean, not the brightest pixel, because that is the background a piece of text actually sits on. The bound is `--void-lift`: the scene may look raised and never more. Measured at that bound, every text token clears 4.5:1 against the worst background on the page.
+
+**Revised: that bound applies where text is.** It is a document-mode constraint, not a property of the scene.
+
+- **Document mode** — the bound holds unchanged. The terrain is far below the camera through the whole scroll, fogged, and dim. It is a floor glimpsed under the content, not a landscape competing with it.
+- **World mode** — text is confined to the writeup panel, which has its own backing. Outside that panel the scene may go to **4× the document bound**, measured the same way. Where the panel is open, the region behind it returns to the document bound.
+
+This is the honest resolution of "make it brilliant" against "text must be readable". The constraint was never about the scene; it was about the words. Where there are no words, spend the light.
+
+#### Performance
+
+Everything here is instanced points. Three draw calls: ground, field, stars.
+
+- Ground 200k, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
+- The heightfield is evaluated in the vertex shader, not on the CPU. Nothing reads back.
+- Frustum culling is off on all three — the bounding sphere an instanced sprite computes is the unit quad at the origin (§15). The camera-relative ground grid is the culling: points behind the viewer wrap to in front of it.
+- **Target: 60fps on integrated graphics.** If it does not hold, ground count is the first thing to cut and the accumulation texture is the second. The election transition is the last, because it is the point.
+
+Measure `renderer.info` with `autoReset = false` (§15 trap), and report milliseconds per frame rather than fps — fps is vsync-capped and hides regressions until it falls off a cliff.
 
 #### Constraints
-
-**Decided (§15): two tiers, not three.** The reduced WebGL 2 tier was built and measured and does not ship. `three/webgpu` is one module, so no bundler can put one backend in each chunk; carrying both costs every desktop load 23.1KB gzipped and puts the page 12.4 KiB over the hard budget in §6. WebGPU only lands at 249.5 KiB. A browser without WebGPU gets the bottom tier, which this section already says is the whole site.
-
-**Decided (§15): the contrast rule, made measurable.** "The busiest frame the scene can produce" is the brightest **glyph-sized local average** the field draws, not its brightest pixel — that is the background a piece of text actually sits on. The bound is `--void-lift`: the field may look raised and never more. Measured at that bound, every text token clears 4.5:1 against the worst background on the page.
 
 - Cap DPR at 1.5 for the background layer; it is out of focus behind text and does not need retina resolution
 - Halve the simulation resolution below 1024px; disable entirely below 768px
 - Reduced motion → freeze on a single computed frame, do not remove the canvas
 - Pause the loop on `visibilitychange` — a compute simulation running in a background tab is a battery complaint
-- Text contrast is measured *against the busiest frame the scene can produce*, not against the average. If the scene can ever wash out body copy, the scene is wrong — darken it, don't lighten the text
+
+#### What this does not include
+
+Stated so nobody builds them by inference:
+
+- No mesh terrain, no normals, no lit surface, no shadows.
+- No trees, rocks, water, clouds, or any other landscape furniture.
+- No texture maps of any kind. Everything is procedural or accumulated.
+- No collision. The ground is a height function, and free flight (§4.9) clamps the camera above it rather than colliding with it.
+- No time of day, no sun, no directional lighting. There is no light source in this world; every point emits.
+
+#### The one thing to get right
+
+Not the terrain. The **election**.
+
+Everything else here is scaffolding for a single moment: a term ends, and the landscape a visitor is flying over rearranges itself because a distributed system elected a different leader. Nobody else's portfolio does that, and it is the only thing on this site that could not be built by someone who had not implemented Raft.
+
+If the frame budget forces a choice, that survives and everything else goes.
 
 ### 4.9 World mode
 
-The render layer given a camera path and depth. Not a separate build — the same scene, same renderer, same simulation, extended into Z.
+The same scene given control of the camera. Not a separate build — same renderer, same simulation, same world as §4.7. Document mode already flies it; world mode hands over the stick.
 
 #### Two modes, one content
 
 | | Document mode | World mode |
 |---|---|---|
-| Default for | Crawlers, reduced motion, no WebGL, mobile, `?mode=doc` | Capable desktop hardware |
-| Navigation | Normal scroll | Same scroll, driving a camera. Free flight unlockable |
-| Content | DOM | DOM, opened from landmarks |
+| Default for | Crawlers, reduced motion, no WebGPU, mobile, `?mode=doc` | Capable desktop hardware |
+| Navigation | Normal scroll | Same scroll, driving the same camera. Free flight unlockable |
+| Content | DOM | DOM, opened from landmarks into the writeup panel |
 
-**The writeups are identical in both.** Document mode is not a fallback stub — it is the full site from steps 1–3, and world mode is a shell around the same HTML. Anything true only in world mode is atmosphere, never information.
+**The writeups are identical in both.** Document mode is not a fallback stub — it is the full site from steps 1–14, and world mode is a shell around the same HTML. Anything true only in world mode is atmosphere, never information.
 
 A visible, persistent control switches modes. Remember the choice in `localStorage`.
 
 #### Movement
 
-Camera follows a spline. Scroll position maps to distance along it, driven by the same Lenis instance as document mode — one scroll authority, not two. Since both modes are the same page and the same scroll, switching modes is a change of representation, not of position.
+The camera altitude curve in §4.7 is the whole of the movement in both modes, driven by the same Lenis instance — one scroll authority, not two. Since both modes are the same page and the same scroll, switching modes is a change of representation, not of position.
 
-Free flight unlocks once the visitor reaches the fourth landmark, or immediately via a control. Pointer-drag to look, WASD or drag-to-move. Bound the volume; a visitor who flies into empty black and can't find their way back is a lost visitor. Provide a *return to path* control that is always visible in free flight.
+Free flight unlocks once the visitor reaches the fourth landmark, or immediately via a control. Pointer-drag to look, WASD or drag-to-move. Bound the volume, and clamp the camera above `h(x, z)` — there is no collision, only a floor it may not go under. A visitor who flies into empty black and can't find their way back is a lost visitor: provide a *return to path* control that is always visible in free flight.
 
 #### Landmarks
 
-Four structures in the volume, one per project, positioned along the spline in the order set in §3. Each has three states: distant (silhouette only), approaching (label and machine ID resolve), arrived (writeup opens in DOM).
+Four structures standing on the ground, one per project, positioned along the curve in the order set in §3. Each has three states: distant (silhouette only), approaching (label and machine ID resolve), arrived (writeup opens in the panel).
 
-The laptop from §4.4 is the first landmark — the hero object becomes the entry point rather than a separate thing.
+The laptop from §4.4 is the first landmark — the hero object becomes the entry point rather than a separate thing. It stands on the terrain, which is why it is built after the ground rather than before it.
+
+LOD on landmarks: silhouette geometry at distance, detail only on approach. Preload nothing beyond the next landmark.
 
 #### Scroll position is the source of truth
 
 One page (§4.6), so a landmark is a scroll range, not a route. Arriving at Homonoia does `replaceState` to `/projects/homonoia`; loading that URL flies the camera to that range. Both directions must work.
 
-Because scroll drives both modes, switching between them mid-page must land in the same place. Test this specifically: scroll to Philoi in document mode, switch to world, and the camera should already be at Philoi rather than at the start of the spline.
-
-#### Performance
-
-- Instance the field; never one draw call per particle
-- LOD on landmarks: silhouette geometry at distance, detail only on approach
-- Frustum cull aggressively — the volume is mostly empty and mostly behind you
-- Hold 60fps on integrated graphics, or reduce field density until it does
-- Preload nothing beyond the next landmark on the spline
+Because scroll drives both modes, switching between them mid-page must land in the same place. Test this specifically: scroll to Philoi in document mode, switch to world, and the camera should already be at Philoi rather than at the start of the curve.
 
 #### Accessibility
 
