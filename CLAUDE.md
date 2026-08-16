@@ -74,6 +74,10 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - Dispose geometries, materials, textures, render targets. The scene never
   unmounts, so leaks accumulate silently.
 - Custom cursor only on `(pointer: fine)`. Never initialise on touch.
+- `gsap.ticker.lagSmoothing(0)` means a backgrounded tab applies the whole
+  elapsed wall-clock gap in one frame on return. Invisible on a looping
+  marquee; scrubbed pins (step 11) will inherit it and jump. Decide there
+  whether to re-enable lag smoothing or clamp.
 
 ---
 
