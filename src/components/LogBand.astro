@@ -1,0 +1,53 @@
+---
+/* §2 ambient texture. Decorative by construction: it is set at --dim,
+   which §5 reserves for texture that carries nothing not said elsewhere,
+   so it is hidden from the accessibility tree outright rather than left
+   for a screen reader to read four hundred log lines of. */
+interface Props {
+  lines: string[];
+  direction?: 'left' | 'right';
+}
+const { lines, direction = 'left' } = Astro.props;
+---
+<div class="log-band" data-drift={direction} aria-hidden="true">
+  {/* Twice, so the -50% translate in log-band.ts loops without a seam. */}
+  <div class="track">
+    {[0, 1].map(() => (
+      <div class="run">
+        {lines.map((line) => <span class="line">{line}</span>)}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  /* clip, not hidden, for the reason spelled out on .hero in index.astro:
+     hidden would make this a scroll container and put a scrollport in the
+     middle of the document for §11's sticky pins to resolve against. */
+  .log-band {
+    overflow: clip;
+    padding-block: var(--s-3);
+    user-select: none;
+    contain: content;
+  }
+
+  .track { display: flex; width: max-content; }
+  .run { display: flex; gap: var(--s-8); padding-right: var(--s-8); }
+
+  .line {
+    font-family: var(--font-mono);
+    font-size: var(--t-meta);
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+  .line::after {
+    content: '·';
+    margin-left: var(--s-8);
+    color: var(--rule);
+  }
+</style>
+
+<script>
+  import '../scripts/log-band';
+</script>

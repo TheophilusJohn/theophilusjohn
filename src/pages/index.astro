@@ -2,20 +2,33 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import ProjectSection from '../components/ProjectSection.astro';
+import LogBand from '../components/LogBand.astro';
+import { raftTrace } from '../lib/raft-log';
 
 const projects = (await getCollection('projects', ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order);
+
+/* One run of the cluster, sliced across the three bands in page order, so
+   scrolling down is also moving forward through the trace. Fixed seed —
+   the trace is content, and content should not change on rebuild. */
+const trace = raftTrace(0x686d_6e61, 48);
 ---
 <Base title="Theophilus John — Distributed systems and infrastructure">
+  <LogBand lines={trace.slice(0, 16)} />
+
   <section class="wrap hero" id="top" data-path="/">
     <h1>Theophilus<br />John</h1>
     <p class="sub">Builds systems that have to agree with each other.</p>
   </section>
 
+  <LogBand lines={trace.slice(16, 32)} direction="right" />
+
   <section class="work" id="work" aria-labelledby="work-h">
     <h2 id="work-h" class="meta wrap">Work — {String(projects.length).padStart(2, '0')}</h2>
     {projects.map((p) => <ProjectSection project={p} level={3} />)}
   </section>
+
+  <LogBand lines={trace.slice(32, 48)} />
 
   <section class="wrap about" id="about" data-path="/about" aria-labelledby="about-h">
     <h2 id="about-h" class="meta">About</h2>
@@ -27,6 +40,7 @@ const projects = (await getCollection('projects', ({ data }) => !data.draft))
 </Base>
 
 <script>
+  import '../scripts/motion';
   import '../scripts/url-sync';
 </script>
 

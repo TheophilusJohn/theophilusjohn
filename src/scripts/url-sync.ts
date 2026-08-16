@@ -5,6 +5,8 @@
    replaceState only. pushState on scroll would add an entry per section
    crossed and make the back button useless. */
 
+import { jumpTo, jumpToTop } from './motion';
+
 const sections = Array.from(
   document.querySelectorAll<HTMLElement>('[data-path]'),
 );
@@ -45,10 +47,10 @@ for (const s of sections) io.observe(s);
 
 function goTo(el: HTMLElement | null) {
   if (!el) {
-    scrollTo(0, 0);
+    jumpToTop();
     return;
   }
-  el.scrollIntoView();
+  jumpTo(el);
   // preventDefault below costs us the focus move a real hash link performs.
   if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
   el.focus({ preventScroll: true });
@@ -84,7 +86,7 @@ addEventListener('popstate', () => {
     (location.hash ? document.getElementById(location.hash.slice(1)) : null);
   if (el) {
     current = el.dataset.path ?? null;
-    el.scrollIntoView();
+    jumpTo(el);
   }
 });
 
