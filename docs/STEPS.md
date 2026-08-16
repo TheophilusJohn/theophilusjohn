@@ -13,6 +13,7 @@ Steps 1–4 are done. The site is live.
 ## Document mode
 
 ### 5. Self-host fonts
+Self-host fonts
 **Scope:** fonts only. No layout changes.
 
 - **Archivo, variable, with the `wdth` axis.** Used at 110 (body) and 125
@@ -29,6 +30,7 @@ the `h1` on `/` visibly wider at 125 than at 110; total woff2 under 100KB.
 **Stop if:** you can't find a source with the width axis. Ask, don't substitute.
 
 ### 6. Write the four writeups
+Write the four writeups
 **Scope:** MDX bodies only. No code.
 
 Four beats each, in order: **constraint** (what was actually hard — not
@@ -44,14 +46,31 @@ specifics, and flag where a claim needs a number. Do not invent metrics.
 **Done when:** all four have real content in all four sections, and every
 `metrics` entry in frontmatter is a real measured figure.
 
-### 7. Both toggles, verified
-Already scaffolded in `src/components/Toggles.astro`. Audit rather than rebuild.
+### 7. Collapse to one page
+Collapse to one page
+**Do this before any motion work.** Every step after this builds on the page
+structure — collapsing later means doing the motion work twice.
 
-**Done when:** state survives refresh; no flash on load; contrast mode hits
-7:1 on `--muted` and 4.5:1 on `--dim` against `--void` (measure, don't
-eyeball); `[data-motion="off"]` set from OS preference when no stored value.
+All content moves to `/`: hero, four projects, about. No `<ClientRouter />`,
+no route changes, no View Transitions.
+
+Deep links must still work, via the History API rather than routes:
+- Scrolling a project section past a threshold → `history.replaceState` to
+  `/projects/enargeia`. **`replaceState`, not `push`** — pushing on scroll
+  floods the back stack and kills the back button.
+- Loading `/projects/enargeia` directly lands at that section without
+  animating from the top.
+- `popstate` moves to the matching section.
+
+Keep `getStaticPaths` emitting a real page per project, so those URLs resolve
+on Cloudflare, stay crawlable, and work with JS off.
+
+**Done when:** all content reachable by scrolling `/`; each project URL loads
+directly and lands in the right place; back button behaves after scrolling
+the whole page; `npm run build` still emits the four project pages.
 
 ### 8. Lenis + ScrollTrigger wiring, log band drift
+Lenis + ScrollTrigger wiring, log band drift
 ```js
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
@@ -62,38 +81,43 @@ numbers, real state transitions. Not lorem, not decorative binary.
 
 **Done when:** drift stops entirely under `[data-motion="off"]`.
 
-### 9. Hero type reveal
+### 9. Both toggles, verified
+Both toggles, verified
+Already scaffolded in `src/components/Toggles.astro`. Audit rather than rebuild.
+
+**Done when:** state survives refresh; no flash on load; contrast mode hits
+7:1 on `--muted` and 4.5:1 on `--dim` against `--void` (measure, don't
+eyeball); `[data-motion="off"]` set from OS preference when no stored value.
+
+### 10. Hero type reveal
+Hero type reveal
 GSAP SplitText, masked line reveal out of an `overflow: hidden` clip.
 
 **Done when:** VoiceOver reads the hero as a sentence, not character
 fragments. Test it, don't assume SplitText handles it.
 
-### 10. Pinned project sections
+### 11. Pinned project sections
+Pinned project sections
 `pin: true`, `scrub: 1`, `anticipatePin: 1`. Disable pinning below 900px —
 falls back to a stacked reveal.
 
 **Done when:** no jump at pin start; scroll never traps on mobile.
 
-### 11. Page-load intro
+### 12. Page-load intro
+Page-load intro
 Once per session, gated on `sessionStorage`. Under 1400ms. Skipped entirely
 under reduced motion. Start on `document.fonts.ready` with an 800ms timeout
 fallback — never block content on font load.
 
 **Done when:** CLS under 0.1; second visit in the same session shows no intro.
 
-### 12. Custom cursor
+### 13. Custom cursor
+Custom cursor
 Only on `(pointer: fine)`. `quickTo()`, not per-frame `set()`. Not
 initialised at all under reduced motion.
 
 **Done when:** touch devices unaffected; native cursor never hidden over
 text inputs without a visible substitute.
-
-### 13. Page transitions
-Astro 7 `<ClientRouter />`, masked wipe. **The teardown in CLAUDE.md is the
-whole step.** Verify event names against Astro 7 docs first.
-
-**Done when:** navigating all four project pages and back twice leaves
-pinning and smooth scroll working. Test this specific sequence.
 
 ### 14. Budget and accessibility pass
 Lighthouse accessibility 100. Keyboard reach and visible focus on everything.
@@ -114,6 +138,7 @@ in production.
 ## World mode
 
 ### 15. Persistent scene
+Persistent scene
 One `WebGPURenderer`, mounted once, never unmounted. Survives View
 Transitions — mount outside the transition root or `transition:persist`.
 Compute-driven particle field, state driven by the section in view.
@@ -125,6 +150,7 @@ at the bottom tier.
 the canvas.
 
 ### 16. The laptop
+The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
 from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,
 updated at ~8fps. Log lines duplicated into a visually-hidden `<pre>` for
@@ -134,10 +160,12 @@ screen readers.
 DOM element over the laptop routes to Homonoia by keyboard.
 
 ### 17. Depth and camera spline
+Depth and camera spline
 `CatmullRomCurve3`. Scroll maps to distance along it, driven by the same
 Lenis instance — one scroll authority.
 
 ### 18. Landmarks
+Landmarks
 Four structures, one per project, in `order`. Three states: distant
 (silhouette), approaching (label + machine ID resolve), arrived (writeup
 opens in DOM). Laptop is landmark one.
@@ -146,6 +174,7 @@ opens in DOM). Laptop is landmark one.
 Ask before modelling.
 
 ### 19. Mode switch and URL sync
+Mode switch and URL sync
 Arriving at a landmark pushes its route. Loading that route in world mode
 flies the camera there. Both directions.
 
@@ -153,9 +182,11 @@ flies the camera there. Both directions.
 mode switch reachable by keyboard from anywhere.
 
 ### 20. Free flight
+Free flight
 Unlocks at the fourth landmark or via a control. Bounded volume. Always-
 visible return-to-path control.
 
 ### 21. Performance pass
+Performance pass
 Instancing, LOD, frustum culling. 60fps on integrated graphics.
 **Report:** draw calls, frame time, particle count.

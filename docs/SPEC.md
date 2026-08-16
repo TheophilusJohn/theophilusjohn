@@ -190,15 +190,13 @@ Everything about loading, DPR, mobile, fallbacks and pausing is inherited from �
 
 A fixed, full-viewport canvas at `z-index: 0` that mounts once and never unmounts. All content is normal DOM above it at `z-index: 1`. The canvas is *not* a hero element — it is the environment the entire site sits inside.
 
-This is the **only** WebGL context on the site. The laptop in §4.4 is an object within this scene, not a second canvas.
+This is the **only** WebGL context on the site, and it is created once for the session. The laptop in §4.4 is an object within this scene, not a second canvas.
 
-#### Survives navigation
+#### Persistence is free
 
-The canvas must persist across View Transitions. When the DOM swaps on route change, the render loop keeps running uninterrupted and the scene reacts to the new route.
+Because the site is one page (§4.6), the canvas mounts once and is never torn down. There is no navigation to survive.
 
-This is the single thing that makes the site feel rendered rather than animated. If the canvas tears down and remounts per page, the illusion collapses and you've built a decorated document.
-
-Practically: mount the canvas outside the transition root, or mark it `transition:persist`. Verify by navigating between all four project pages — the scene must never flash, reset, or re-initialise.
+What replaces the old requirement: the scene must react to **scroll position**, not to route. Section boundaries drive the simulation state. Verify by scrolling the full page top to bottom and back — the scene must never reset, flash, or reinitialise, and its state must be a pure function of scroll position so that landing deep-linked mid-page looks identical to having scrolled there.
 
 #### Compute-driven, not decorative
 
@@ -240,7 +238,7 @@ The render layer given a camera path and depth. Not a separate build — the sam
 | | Document mode | World mode |
 |---|---|---|
 | Default for | Crawlers, reduced motion, no WebGL, mobile, `?mode=doc` | Capable desktop hardware |
-| Navigation | Normal scroll and links | Camera on rails, free flight unlockable |
+| Navigation | Normal scroll | Same scroll, driving a camera. Free flight unlockable |
 | Content | DOM | DOM, opened from landmarks |
 
 **The writeups are identical in both.** Document mode is not a fallback stub — it is the full site from steps 1–3, and world mode is a shell around the same HTML. Anything true only in world mode is atmosphere, never information.
@@ -249,7 +247,7 @@ A visible, persistent control switches modes. Remember the choice in `localStora
 
 #### Movement
 
-Camera follows a spline. Scroll position maps to distance along it, driven by the same Lenis instance as document mode — one scroll authority, not two.
+Camera follows a spline. Scroll position maps to distance along it, driven by the same Lenis instance as document mode — one scroll authority, not two. Since both modes are the same page and the same scroll, switching modes is a change of representation, not of position.
 
 Free flight unlocks once the visitor reaches the fourth landmark, or immediately via a control. Pointer-drag to look, WASD or drag-to-move. Bound the volume; a visitor who flies into empty black and can't find their way back is a lost visitor. Provide a *return to path* control that is always visible in free flight.
 
@@ -259,11 +257,11 @@ Four structures in the volume, one per project, positioned along the spline in t
 
 The laptop from §4.4 is the first landmark — the hero object becomes the entry point rather than a separate thing.
 
-#### URL is the source of truth
+#### Scroll position is the source of truth
 
-Every landmark maps to a real route. Arriving at Homonoia pushes `/projects/homonoia`; loading that URL directly in world mode flies the camera there. Both directions must work.
+One page (§4.6), so a landmark is a scroll range, not a route. Arriving at Homonoia does `replaceState` to `/projects/homonoia`; loading that URL flies the camera to that range. Both directions must work.
 
-Get this wrong and you lose deep links, browser back, and the ability to send someone straight to one project — which is the single most common thing you'll want to do with a portfolio.
+Because scroll drives both modes, switching between them mid-page must land in the same place. Test this specifically: scroll to Philoi in document mode, switch to world, and the camera should already be at Philoi rather than at the start of the spline.
 
 #### Performance
 
@@ -287,25 +285,29 @@ Every piece of information in world mode must exist in document mode. That is th
 - States: default dot, expanded ring over project rows, amber over links
 - Reduced motion → don't initialise at all, native cursor only
 
-### 4.6 Page transitions
+### 4.6 One page, no transitions
 
-Astro `<ClientRouter />`, with a masked wipe out and in.
+**The site is a single document.** Everything — hero, all four projects, about — lives on `/`. There are no route changes and no `<ClientRouter />`.
 
-**The gotcha that will eat an afternoon:** View Transitions swap the DOM without a full page load, so GSAP ScrollTriggers, Lenis, and the cursor all keep references to dead nodes. Every one of them must be torn down and re-created:
+This is the decision that simplifies everything else. Nothing to tear down, nothing to re-init, no dead node references. The canvas persists because it never unmounts; the camera and the scroll position are the same variable.
 
-```js
-document.addEventListener('astro:before-swap', () => {
-  ScrollTrigger.getAll().forEach(t => t.kill());
-  lenis.destroy();
-});
-document.addEventListener('astro:page-load', () => {
-  initLenis();
-  initScrollTriggers();
-  ScrollTrigger.refresh();
-});
-```
+Total prose across the whole site is roughly 600 words. Four separate routes was heavy machinery for that, and a continuous 3D space that hard-navigates between documents fights itself.
 
-Get this wrong and the second page navigated to has broken pinning and no smooth scroll. Test by navigating between all four project pages and back twice.
+#### URLs still work
+
+Deep links are not negotiable — sending someone straight to one project is the most common thing this site will be used for. The History API carries them without routes:
+
+- Scrolling a project section past a threshold does `history.replaceState` to `/projects/enargeia`. **`replaceState`, not `push`** — pushing on scroll floods the back stack and makes the back button useless.
+- Loading `/projects/enargeia` directly scrolls (document mode) or flies (world mode) to that section, without animating from the top.
+- `popstate` moves to the matching section.
+
+Astro still needs to emit those paths so they resolve on Cloudflare rather than 404ing. Keep `getStaticPaths` and render a real page per project containing that project's content — crawlable, and the fallback if JS never runs. On load with JS, redirect to `/#enargeia` equivalent or hydrate in place; decide which and write it down.
+
+#### What this deletes
+
+- The View Transitions teardown, formerly the most likely thing in this build to break
+- Canvas persistence machinery in §4.7
+- Two scroll authorities. Document scroll and camera-along-spline become one mechanism
 
 ### Lenis ↔ ScrollTrigger wiring
 
@@ -370,14 +372,14 @@ Get the domain resolving on day one, then layer motion on top of a site that alr
 8. Page-load intro
 9. 3D laptop hero — geometry first, then the canvas terminal, then the static PNG fallback. Render the PNG *from* the finished scene so they match
 10. Custom cursor
-11. Page transitions + the teardown work in §4.6
+11. Collapse to one page — all content on `/`, plus `replaceState` URL sync and deep-link entry (§4.6)
 12. Budget and accessibility pass
 
 **Ship here.** Steps 1–12 are the complete document-mode site and it stands entirely on its own. Everything below is world mode, which is a second project layered on top of a finished one.
 
 13. Give the scene depth — field extends into Z, camera spline laid out
 14. Landmarks: geometry, three states, positions along the spline
-15. Mode switch, `localStorage` persistence, URL ↔ camera sync both directions
+15. Mode switch, `localStorage` persistence, scroll ↔ camera sync both directions
 16. Rails movement wired to Lenis
 17. Free flight, bounds, return-to-path control
 18. LOD, instancing, culling, 60fps pass on integrated graphics

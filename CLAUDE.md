@@ -1,113 +1,103 @@
-# Homonoia
+# theophilusjohn.com
 
-A browser-based implementation and visualization of the Raft consensus algorithm.
-Five simulated nodes, a controllable message bus, and a fuzz harness that asserts
-Raft's safety properties across thousands of seeded runs.
+Personal portfolio for Theophilus Biju John. Astro 7, deployed to Cloudflare Pages.
+Live at https://theophilusjohn.com — every commit to `main` deploys.
 
-This is a **correctness-first** project. The visualization exists to demonstrate a
-working consensus implementation, not the other way around. Never compromise the
-algorithm to make the UI simpler.
+Full design spec: `docs/SPEC.md`. Numbered build steps: `docs/STEPS.md`.
 
 ---
 
-## The one rule that matters
+## What this site is
 
-The Raft core is a **pure function with no I/O**:
+Portfolio-first, four projects, heavily animated, dark. Two modes:
 
-```ts
-step(state: NodeState, event: Event): { state: NodeState; outbox: Message[] }
-```
+- **Document mode** — the site is ONE page. All content lives on `/`. Deep
+  links work via History API `replaceState`, not routes. Crawlable,
+  accessible, fast. It must stand entirely alone.
+- **World mode** — a navigable 3D volume wrapped around the *same* HTML.
+  Additive. Never the only way to reach anything.
 
-Inside `src/raft/` the following are **banned**, without exception:
-
-- `setTimeout`, `setInterval`, `requestAnimationFrame`
-- `Date.now()`, `performance.now()`, `new Date()`
-- `Math.random()` — randomness arrives via a seeded PRNG passed in by the driver
-- `fetch`, `WebSocket`, any network call
-- any import from `src/ui/`, React, or any browser global
-
-Time enters the core as a `TickEvent`. The core never mutates its input state —
-it returns a new object.
-
-Everything else — the browser sim, the test harness — is a **driver** that calls
-`step` and routes the outbox. This is what makes the implementation
-deterministically testable and replayable. It is the most important design
-decision in the project.
-
-A hook enforces this on every write to `src/raft/`. If the hook fires, fix the
-code — do not disable the hook, do not add an eslint-disable, do not argue that
-this one case is fine.
-
-**If I ask you for something that violates this, push back instead of complying.**
+Build order is strict: document mode is finished and shipped before world
+mode begins. Steps 1–14, then 15–21. See `docs/STEPS.md`.
 
 ---
 
-## Layout
+## Hard rules
 
-```
-src/raft/      pure core — zero dependencies, no framework imports, runs in bare Node
-src/sim/       driver: message bus, virtual clock, partitions, kill/revive
-src/test/      fuzz harness, safety assertions, named regression scenarios
-src/ui/        React + Vite visualization
-design/        reference.html — the visual language. Match it.
-```
+These are not preferences. Violating one is a bug.
 
-`src/raft/` must never import from `src/sim/` or `src/ui/`.
-Dependency direction is one-way: `ui → sim → raft`.
-
----
-
-## Build order
-
-Each milestone must be working, tested, and committed before the next begins.
-Do not skip ahead. Do not start the visualization early because it is more fun
-than log truncation.
-
-1. Types and skeleton — `NodeState`, `Event`, `Message`, `LogEntry`, stubbed `step`.
-   Tests for term-handling rules.
-2. Leader election — `RequestVote`, randomized seeded timeouts, vote counting.
-3. Log replication — `AppendEntries`, consistency check, commit advancement.
-4. Simulated network — latency, drops, partitions, kill/revive.
-5. Fuzz harness — randomized schedules, all five safety properties checked every
-   tick, seed replay on failure. **1000+ seeds green before milestone 6.**
-6. Visualization — node field, message animation, log ledger, controls.
-7. Partition UI, the demo scenario, deploy, README.
-
-Out of scope, deliberately: log compaction/snapshots, cluster membership changes,
-client session handling. Say so in the README.
+1. **No arbitrary values.** Every colour and font size comes from a token in
+   `src/styles/tokens.css`. Need a new one? Add a token, don't inline a hex
+   or a `px` value.
+2. **`--leader` means state.** Active, elected, current. If it isn't marking
+   state or a live link, it must not be that colour.
+3. **Motion checks `[data-motion="off"]`**, not just the media query. The
+   toggle overrides the OS in both directions.
+4. **Reduced motion means final state, not fast animation.** No shortened
+   durations. Skip to the end.
+5. **One WebGL context** on the whole site. The laptop is geometry inside
+   the persistent scene, not a second canvas.
+6. **Every fact exists in document mode.** If information only appears in
+   world mode, that is a bug, not a feature.
+7. **No new dependencies without asking.** Especially: no React, no R3F, no
+   Tailwind, no second animation library.
 
 ---
 
-## Working style
+## Stack
 
-- **Explain the Raft rule before writing the code for it.** Name the Figure 2
-  clause, state what it guarantees, then implement. I am checking my
-  understanding against the paper as we go.
-- When a rule is subtle — particularly "commit only entries from the current
-  term" and the up-to-date log comparison in `RequestVote` — call it out
-  explicitly and explain what breaks without it. Give me the concrete failure
-  scenario, not just the rule.
-- Do not add features I did not ask for. No extra config, no abstraction layers
-  for imagined future needs, no dependencies I didn't approve.
-- Prefer many small commits at meaningful boundaries.
-- When a fuzz seed fails, print the seed and full event trace first. Do not guess
-  at a fix before reading the trace.
-- If something is genuinely ambiguous in the paper, say so rather than picking
-  silently.
+| Concern | Choice |
+|---|---|
+| Framework | Astro 7 (upgraded from 5; check v7 docs, not v5) |
+| Styling | Plain CSS + custom properties. Scoped `<style>` in components |
+| Animation | GSAP (ScrollTrigger, SplitText) — free for commercial use since 3.13 |
+| Smooth scroll | Lenis |
+| 3D | Three.js r171+ via `three/webgpu`. TSL shaders. Pin the version |
+| Content | Astro content collections + MDX |
+| Deploy | Cloudflare Pages, `npm run build`, output `dist` |
 
-## Testing
+**Banned:** React, React Three Fiber, Tailwind, Motion, Anime.js, React
+Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 
-- Vitest. `npm test` runs everything; `npm run fuzz` runs the seeded sweep.
-- Every safety property is a predicate over the full cluster state, asserted
-  after every tick — not spot-checked at the end of a run.
-- A regression scenario gets a named test the moment it is found.
+---
 
-## Before step 15
+## Known traps
 
-Install the `webgpu-threejs-tsl` skill. Without it, Three.js code gets
-written against the pre-r171 WebGL API — which runs, looks correct, and
-is the wrong path.
+- `await renderer.init()` before first render. WebGPU init is async.
+- Feature-detect with `renderer.isWebGPURenderer`, never
+  `capabilities.isWebGL2` (undefined under WebGPU).
+- Never mix `three` and `three/webgpu` imports. Use `three/webgpu` everywhere.
+- URL sync on scroll uses `replaceState`, never `pushState`. Pushing on
+  scroll floods the back stack and breaks the back button.
+- Additive particles must not write depth but must still depth-test.
+  Set `renderOrder` explicitly.
+- Dispose geometries, materials, textures, render targets. The scene never
+  unmounts, so leaks accumulate silently.
+- Custom cursor only on `(pointer: fine)`. Never initialise on touch.
 
-Verify any Three code: imports from `three/webgpu`, uses TSL rather than
-GLSL strings, calls `await renderer.init()`. Fails any of those, the
-skill isn't loaded.
+---
+
+## Budgets
+
+Check before claiming a step is done.
+
+- Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px)
+- Homepage JS, desktop: **under 260KB gzipped**
+- LCP under 2.5s on throttled 4G
+- Under 100 draw calls
+- Lighthouse accessibility **100**
+- Usable at 360px wide with motion off
+
+---
+
+## Working agreement
+
+- **One numbered step per session.** Don't drift into the next one.
+- **Stop and ask** rather than substituting an approach. Especially: a
+  different typeface, a different library, a workaround that changes
+  architecture.
+- **Report what you measured**, not that it "should" work. Sizes, counts,
+  timings.
+- Don't add comments explaining what code does. Comment only *why*, where
+  a choice would otherwise look arbitrary.
+- Commit at the end of a step, message in the imperative: `Self-host fonts`.
