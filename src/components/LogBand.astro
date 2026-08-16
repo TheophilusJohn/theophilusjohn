@@ -6,10 +6,18 @@
 interface Props {
   lines: string[];
   direction?: 'left' | 'right';
+  /* Selects which --band-phase-N the head script in index.astro wrote.
+     Custom properties inherit, so .track picks --phase up from here. */
+  index: number;
 }
-const { lines, direction = 'left' } = Astro.props;
+const { lines, direction = 'left', index } = Astro.props;
 ---
-<div class="log-band" data-drift={direction} aria-hidden="true">
+<div
+  class="log-band"
+  data-drift={direction}
+  style={`--phase: var(--band-phase-${index})`}
+  aria-hidden="true"
+>
   {/* Twice, so the -50% translate in log-band.ts loops without a seam. */}
   <div class="track">
     {[0, 1].map(() => (
@@ -31,7 +39,21 @@ const { lines, direction = 'left' } = Astro.props;
     contain: content;
   }
 
-  .track { display: flex; width: max-content; }
+  /* The start offset, painted on the first frame. GSAP overwrites this with
+     an inline transform when it attaches, at the same value, so the handover
+     is invisible. Left runs 0 -> -50%, right runs -50% -> 0, matching the
+     tween directions in log-band.ts.
+
+     With no JS, --phase never resolves, the calc is invalid at computed-value
+     time, and the track sits at 0 — which is the correct static state. */
+  .track {
+    display: flex;
+    width: max-content;
+    transform: translateX(calc(var(--phase) * -50%));
+  }
+  .log-band[data-drift='right'] .track {
+    transform: translateX(calc((var(--phase) - 1) * 50%));
+  }
   .run { display: flex; gap: var(--s-8); padding-right: var(--s-8); }
 
   .line {

@@ -23,7 +23,12 @@ for (const band of document.querySelectorAll<HTMLElement>('.log-band')) {
   const rtl = band.dataset.drift === 'right';
   const tween = gsap.fromTo(
     track,
-    { xPercent: rtl ? -50 : 0 },
+    /* x: 0 is load-bearing. GSAP reads the element's current transform when
+       it attaches, and the CSS start offset (see below) is a matrix it can
+       only express as a pixel x — which it then adds to xPercent, doubling
+       the offset the moment the tween takes over. Pinning x to 0 leaves
+       xPercent as the only thing moving the track. */
+    { xPercent: rtl ? -50 : 0, x: 0 },
     { xPercent: rtl ? 0 : -50, ease: 'none', repeat: -1, duration: 1, paused: true },
   );
 
@@ -42,18 +47,19 @@ for (const band of document.querySelectorAll<HTMLElement>('.log-band')) {
     if (copy <= 0) return;
     const duration = copy / SPEED;
 
-    /* Start mid-drift. Phase comes from the wall clock, so a reload picks
-       the band up wherever it would have been rather than snapping it back
-       to the start — the cluster was running before you opened the page.
-       Nothing is stored; the clock is the only input, and the three bands
-       land on three different phases because their durations differ. Any
-       progress in [0,1) maps inside the -50%..0 window, so no seam.
+    /* The band is already drifting-in-place at --phase, painted from CSS
+       since the first frame (see the head script in index.astro). Read that
+       back rather than re-deriving it: the tween has to attach at exactly
+       the position on screen, and a second clock read would not match.
+       Any phase in [0,1) maps inside the -50%..0 window, so no seam.
 
-       Seeded once. Re-reading the clock on the font swap would re-phase
-       against a new duration and jerk the band sideways mid-load — and a
-       jerk under [data-motion="off"] is motion. Carry progress across the
-       duration change instead; changing duration does not preserve it. */
-    const phase = seeded ? tween.progress() : ((Date.now() / 1000) % duration) / duration;
+       Seeded once. Re-phasing on the font swap would jerk the band sideways
+       mid-load — and a jerk under [data-motion="off"] is motion. Carry
+       progress across the duration change instead; changing duration on a
+       tween does not preserve it. */
+    const phase = seeded
+      ? tween.progress()
+      : parseFloat(getComputedStyle(band).getPropertyValue('--phase')) || 0;
     tween.duration(duration);
     tween.progress(phase);
     seeded = true;

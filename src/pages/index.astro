@@ -12,23 +12,53 @@ const projects = (await getCollection('projects', ({ data }) => !data.draft))
    scrolling down is also moving forward through the trace. Fixed seed —
    the trace is content, and content should not change on rebuild. */
 const trace = raftTrace(0x686d_6e61, 48);
+
+// Declared as data so the head script below can count them. The three are
+// placed by hand rather than mapped, because they sit between sections.
+const bands = [
+  { direction: 'left' as const, lines: trace.slice(0, 16) },
+  { direction: 'right' as const, lines: trace.slice(16, 32) },
+  { direction: 'left' as const, lines: trace.slice(32, 48) },
+];
 ---
 <Base title="Theophilus John — Distributed systems and infrastructure">
-  <LogBand lines={trace.slice(0, 16)} />
+  {/* Start offset for the drift, §2. This has to run in `head`, before any
+      band element exists: the phase reaches the track through CSS, so it is
+      part of the track's first computed style and there is no frame where an
+      unseeded position could paint. An inline script placed next to the band
+      in the body would still be racing the parser's first paint.
+
+      Clock only — nothing stored, so every load starts somewhere new. The
+      period sets how fast the offset varies between loads, not the drift
+      speed, which log-band.ts derives from measured width. The i/count term
+      spreads the bands so they never load in step. */}
+  <script slot="head" is:inline define:vars={{ count: bands.length }}>
+    (function () {
+      var t = Date.now() / 1000 / 120;
+      for (var i = 0; i < count; i++) {
+        document.documentElement.style.setProperty(
+          '--band-phase-' + i,
+          String((t + i / count) % 1),
+        );
+      }
+    })();
+  </script>
+
+  <LogBand index={0} {...bands[0]} />
 
   <section class="wrap hero" id="top" data-path="/">
     <h1>Theophilus<br />John</h1>
     <p class="sub">Builds systems that have to agree with each other.</p>
   </section>
 
-  <LogBand lines={trace.slice(16, 32)} direction="right" />
+  <LogBand index={1} {...bands[1]} />
 
   <section class="work" id="work" aria-labelledby="work-h">
     <h2 id="work-h" class="meta wrap">Work — {String(projects.length).padStart(2, '0')}</h2>
     {projects.map((p) => <ProjectSection project={p} level={3} />)}
   </section>
 
-  <LogBand lines={trace.slice(32, 48)} />
+  <LogBand index={2} {...bands[2]} />
 
   <section class="wrap about" id="about" data-path="/about" aria-labelledby="about-h">
     <h2 id="about-h" class="meta">About</h2>
