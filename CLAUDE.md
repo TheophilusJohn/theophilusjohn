@@ -124,6 +124,16 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   `button { cursor: pointer }` in a component beats `html[data-cursor] *`
   in global.css. A rule that is one decision about the whole page needs
   `!important` to be that, the way the motion block already is.
+- WCAG exempts pure decoration from contrast; axe cannot see the
+  exemption. A drifting strip of `aria-hidden` log lines is still text
+  with a colour, and it fails `color-contrast` like anything else. A
+  token that is deliberately near-invisible cannot be on the page at all
+  if the target is Lighthouse 100.
+- LCP counts text that is `visibility: hidden`, so a pre-paint hold does
+  not show up in it — and neither does a line sitting outside its mask.
+  Measured: hold cleared at 48ms, LCP entry on the hero line at 76ms, ink
+  actually settled at 856ms. Report the settle time next to the LCP or the
+  number flatters the page.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or

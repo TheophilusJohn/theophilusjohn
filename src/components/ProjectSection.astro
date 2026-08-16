@@ -102,6 +102,16 @@ const lines =
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--leader);
   }
 
+  /* The only two links inside a project, and on a phone the only way out
+     of it. 30x16 is under WCAG 2.2's 24px minimum and they are not inline
+     in a sentence, so the exception does not cover them — the box grows,
+     the ink stays put. The row centres rather than sitting on the baseline
+     because the links are now taller than the stack line beside them. */
+  @media (max-width: 640px) {
+    .links { align-items: center; }
+    .links a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
+
   .prose { max-width: var(--measure); padding-block: var(--s-8); }
   .prose :global(p) { color: var(--muted); margin-bottom: var(--s-4); }
 

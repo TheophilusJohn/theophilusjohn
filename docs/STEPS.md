@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–13 are done. The site is live. **Update this line at the end of
+Steps 1–14 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -225,6 +225,69 @@ Lighthouse accessibility 100. Keyboard reach and visible focus on everything.
 Usable at 360px with motion off.
 
 **Report:** measured JS gzipped, LCP, CLS, draw calls.
+
+*Done.* Lighthouse 12.8.2, headless, against `astro preview` of the real
+build. Accessibility **100** on both profiles — mobile 360×640 and the
+desktop preset — and axe-core direct on the page reports **0 violations**
+in all four states (default and high contrast, motion on and off), on the
+JS-off markup of `/`, `/projects/enargeia/` and `/404.html` as well.
+
+| | mobile 360×640, 4G | desktop 1350×940 |
+|---|---|---|
+| Accessibility | 100 | 100 |
+| Performance | 99 | 100 |
+| LCP | 2.0s | 0.4s |
+| CLS | 0 (0 shift entries) | 0 (0 shift entries) |
+| TBT | 0ms | 0ms |
+
+Homepage JS **55,139 bytes gzipped (53.8KB)** — three chunks, unchanged by
+this step, and the same on both profiles since nothing is conditionally
+loaded yet. That is 45% of the mobile budget and 21% of the desktop one.
+CSS 1,946 gzipped (+18 bytes here), document 6,633. **Draw calls: 0** —
+there is no WebGL context on the site until §15.
+
+**The one thing that failed was one token.** `--dim` at `#4A4470` is
+2.07:1 on `--void`, and every one of the 100 axe violations was that
+colour: the whole primary nav, both section headings, the period, the
+stack, the metric labels, the footer, and the log bands. §5 calls `--dim`
+texture that carries nothing said elsewhere, which was true of the bands
+and of nothing else it had been put on. Lifted to `#8780B2` — same hue and
+saturation, lightness only, **5.07:1** — and the high-contrast value with
+it, from 5.65:1 to **7.42:1**, because a toggle that moves contrast by half
+a point looks broken. The bands are legible now rather than a grey blur;
+that is the visible cost of the fix and it is the whole of it.
+
+Keyboard, walked with real `Tab` presses in a foreground headless browser
+rather than scripted `.focus()`: **13 focusables, all reachable in DOM
+order, all with a ring** (`solid 2px --leader`, 3px offset, 7.65:1 on
+`--void`), all scrolled fully into view when focused — including the three
+`Live` links inside **pinned** sections, where the pin and the browser's
+focus scroll could have fought. The 14th Tab leaves the document, so
+nothing traps. Skip link: first Tab reveals it at 16,16; Enter lands focus
+on `main#main` with no ring, and the next Tab is the first link in the
+content. Both toggles operate on Enter and Space and move attribute,
+`aria-pressed`, storage and tokens together.
+
+At **360px with motion off**: zero horizontal overflow, document 6,115px,
+no pins, everything readable. Tap targets were the gap — the toggles were
+44px from §13 and everything else was 13–18px tall, under WCAG 2.2's 24px
+minimum. The nav links, the wordmark and each project's `Live`/`Source`
+now grow their box to 44px under the same 640px breakpoint the toggles
+already use; the ink does not move. `Resume (PDF)` and the footer pair are
+inline in a sentence and keep the exception.
+
+**Two things left open, both Theo's call, neither introduced here:**
+
+1. `/theo-john-resume.pdf` does not exist. The header nav and the about
+   section both link to it and both 404. Nothing to write there for you.
+2. At 360px the hero overflows the gutter by ~34px and cuts *Theophilus*
+   to *Theophilu*. `--t-hero` resolves to 64.8px there (18vw, above the
+   4rem floor) against 320px of content width. The bleed is deliberate
+   everywhere else — at 1512px the word lands exactly on the right edge —
+   but at phone width it eats a letter of the name. Fixing it means
+   changing the curve, not the floor: the floor never binds. `clamp(3.5rem,
+   16vw, 16rem)` fits (57.6px, 315px of ink) at the cost of ~14px off the
+   desktop hero. Left alone, because the type scale is the design.
 
 ---
 

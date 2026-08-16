@@ -6,7 +6,14 @@
   --void:      #14121F;
   --void-lift: #1C1A2B;
   --rule:      #2A2640;
-  --dim:       #4A4470;
+  /* Was #4A4470 — 2.07:1 on --void, and §14 measured 100 axe violations on
+     it. Every one was this token: the nav, both section headings, the
+     period, the stack, the metric labels, the footer, the log bands. The
+     spec calls it texture that carries nothing said elsewhere, which is
+     true of the bands and of nothing else it was on, and a checker cannot
+     see that distinction anyway. Same hue and saturation (248°, 24%),
+     lifted to 5.07:1 — the lightness is the only thing that moved. */
+  --dim:       #8780B2;
   --muted:     #9A93C0;
   --paper:     #EDEAFB;
   --leader:    #A99BF5;
@@ -44,7 +51,10 @@
 [data-contrast="high"] {
   --paper:  #FFFFFF;
   --muted:  #CFC9E8;
-  --dim:    #8F88BC;
+  /* Was #8F88BC, 5.65:1 — above the 4.5:1 §5 asks of it, but the default
+     --dim is 5.07:1 now, so the toggle moved it by half a point and looked
+     broken. Same hue again, 7.42:1, which is the bar §5 sets for --muted. */
+  --dim:    #A5A0C5;
   --rule:   #4A4470;
   --leader: #C4B8FF;
 }
