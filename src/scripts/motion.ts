@@ -17,7 +17,16 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 
 gsap.registerPlugin(ScrollTrigger);
-gsap.ticker.lagSmoothing(0);
+
+/* §8 turned lag smoothing off; §11 turns it back on at GSAP's defaults.
+   With it off, a tab that was in the background applies the whole elapsed
+   wall-clock gap in one tick on return — Lenis gets that gap as a single
+   delta and snaps to its target, and every scrub tween resolves in the
+   same frame. On a looping marquee that is invisible, which is why it
+   stood; under a pinned section it is a jump on the first frame back.
+   The bands lose nothing real: they pause off-screen anyway, so their
+   phase already drifts from the clock it was seeded with. */
+gsap.ticker.lagSmoothing(500, 33);
 
 const root = document.documentElement;
 
@@ -69,6 +78,14 @@ new MutationObserver(() => {
 export function jumpTo(el: Element) {
   if (lenis) lenis.scrollTo(el as HTMLElement, { immediate: true });
   else el.scrollIntoView();
+}
+
+/* For correcting the document under the reader when its height changes
+   beneath them — §11 adds and removes pin distance mid-page. */
+export function jumpBy(delta: number) {
+  if (!delta) return;
+  if (lenis) lenis.scrollTo(scrollY + delta, { immediate: true });
+  else scrollBy(0, delta);
 }
 
 export function jumpToTop() {

@@ -75,9 +75,17 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   unmounts, so leaks accumulate silently.
 - Custom cursor only on `(pointer: fine)`. Never initialise on touch.
 - `gsap.ticker.lagSmoothing(0)` means a backgrounded tab applies the whole
-  elapsed wall-clock gap in one frame on return. Invisible on a looping
-  marquee; scrubbed pins (step 11) will inherit it and jump. Decide there
-  whether to re-enable lag smoothing or clamp.
+  elapsed wall-clock gap in one frame on return — invisible on a looping
+  marquee, a jump under a scrubbed pin. Settled in step 11: lag smoothing
+  is back on at GSAP's defaults. Do not turn it off again for the bands;
+  they pause off-screen, so their phase already drifts from the clock.
+- Pinning a section taller than the viewport hides its own tail behind the
+  fold for the length of the pin. A width breakpoint does not catch it —
+  a short laptop screen at full width reproduces the phone failure. Measure
+  the section against `innerHeight` and pin all of them or none.
+- Anything that changes document height after load invalidates a `#hash`
+  the browser already resolved — pins add their scroll distance above every
+  later section. Re-jump once the page is its final height.
 - A toggle that overrides an OS preference must persist both states, not
   clear its key on un-press. Clearing drops back to `auto`, so the OS
   re-asserts on the next load and silently undoes the choice. Same reason

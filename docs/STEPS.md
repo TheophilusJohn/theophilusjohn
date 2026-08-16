@@ -107,6 +107,32 @@ falls back to a stacked reveal.
 
 **Done when:** no jump at pin start; scroll never traps on mobile.
 
+*Done.* The section became a stage to have something worth pinning: the
+headline across the top, the lead and the writeup in two columns under it,
+one screen tall. A pin holds it while the writeup drifts through the frame
+and a rule between the columns fills in `--leader`. Measured at 1512×804:
+pin start 780.6, section top −0.4 on both sides of it and constant for the
+whole pin, document height 6410 throughout — no jump, no reflow.
+
+The 900px rule is a floor, not the test. A section taller than the viewport
+traps its own last paragraph behind the fold exactly the way a phone does,
+so the stage is measured and it is all four sections or none — pinning
+whichever ones happen to fit reads as a glitch. Measured: all four pin at
+1280×800 and above, including 1366×768; below that (1200×800, 1024×768,
+1280×720) nothing pins and every section falls back to the stacked reveal,
+which is also the whole of the behaviour under 900px. The binding section is
+always Homonoia, the longest writeup.
+
+Pins add scroll distance above every section after them, so §7's deep links
+re-jump once the page is its final height (measured: `/#philoi`,
+`/#basis` and `/projects/enargeia` all land exactly on their pin start).
+
+**Decided here:** `lagSmoothing(0)` from §8 is back on at GSAP's defaults.
+Off, a backgrounded tab hands Lenis and every scrub tween the whole elapsed
+gap in one tick on return, which is invisible on a marquee and a jump under
+a pin. The bands lose nothing they had — they pause off-screen, so their
+phase already drifts from the clock that seeded it.
+
 ### 12. Page-load intro
 Once per session, gated on `sessionStorage`. Under 1400ms. Skipped entirely
 under reduced motion. Start on `document.fonts.ready` with an 800ms timeout

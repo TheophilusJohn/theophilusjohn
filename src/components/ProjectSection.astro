@@ -20,6 +20,11 @@ const lines =
     ? null
     : [words.slice(0, d.headlineBreak + 1).join(' '), words.slice(d.headlineBreak + 1).join(' ')];
 ---
+{/* §4.3 — three blocks, stacked below 900px and arranged as a pinnable
+    stage above it: the headline across the top, then the lead and the
+    writeup side by side. The headline is display type at 7vw and does not
+    survive being put in a column — full width is the only place it fits,
+    which is what sets this layout rather than a plain two-column split. */}
 <section
   id={project.id}
   class="wrap project"
@@ -37,6 +42,9 @@ const lines =
           accessible name via aria-labelledby. It collapses when rendered. */}
       {lines ? <>{lines[0]}{' '}<br />{lines[1]}</> : d.headline}
     </H>
+  </header>
+
+  <div class="lead">
     <p class="summary">{d.summary}</p>
 
     {d.metrics.length > 0 && (
@@ -52,13 +60,18 @@ const lines =
       {d.repoUrl && <a href={d.repoUrl}>Source</a>}
       <span class="stack">{d.stack.join(' · ')}</span>
     </p>
-  </header>
+  </div>
+
+  {/* Column rule and progress readout in one, filled by projects.ts while
+      the section is pinned. Empty is its correct resting state, so with no
+      JS — or no pin — it is just the rule. */}
+  <div class="rail" aria-hidden="true"><span></span></div>
 
   <div class="prose"><Content /></div>
 </section>
 
 <style>
-  .head { padding-block: var(--s-12) var(--s-8); border-bottom: 1px solid var(--rule); }
+  .head { padding-block: var(--s-12) 0; }
   .top { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; }
   .id, .period, .stack {
     font-family: var(--font-mono); font-size: var(--t-meta);
@@ -72,6 +85,8 @@ const lines =
     letter-spacing: -0.045em; font-weight: 500;
     margin-top: var(--s-3); font-variation-settings: 'wdth' 120;
   }
+
+  .lead { padding-bottom: var(--s-8); border-bottom: 1px solid var(--rule); }
   .summary { margin-top: var(--s-4); max-width: 48ch; color: var(--muted); font-size: var(--t-lg); }
 
   .stats { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-8); }
@@ -89,4 +104,41 @@ const lines =
 
   .prose { max-width: var(--measure); padding-block: var(--s-8); }
   .prose :global(p) { color: var(--muted); margin-bottom: var(--s-4); }
+
+  .rail { display: none; }
+
+  /* The stage. Layout only — it is the same whether or not the section ends
+     up pinned, so turning motion off changes nothing about what is on
+     screen. projects.ts decides pinning separately, and per section: a
+     section taller than the viewport is never pinned, because pinning one
+     puts its own last paragraph behind the fold with no way to scroll to
+     it. That is also why the height of the stage is a floor, not a cap. */
+  @media (min-width: 900px) {
+    .project {
+      display: grid;
+      /* The lead is a summary and four numbers; the writeup is 62ch of
+         prose and always the taller of the two. Splitting the difference
+         in its favour is what decides whether the pair fits on one
+         screen, which is what decides whether the section can be pinned
+         at all. */
+      grid-template-columns: minmax(0, 0.85fr) 1px minmax(0, 1.15fr);
+      column-gap: var(--s-12);
+      row-gap: var(--s-8);
+      align-content: center;
+      min-height: 100svh;
+      padding-block: var(--s-8);
+    }
+    .head { grid-column: 1 / -1; padding-block: 0; }
+    .lead { grid-column: 1; padding-bottom: 0; border-bottom: 0; }
+    .prose { grid-column: 3; padding-block: 0; }
+
+    /* --rule is the track, --leader the part of the section already behind
+       you: the accent marking current position, which is the one thing it
+       is allowed to mean. Nothing fills it unless a pin is driving it. */
+    .rail { display: block; grid-column: 2; position: relative; background: var(--rule); }
+    .rail > span {
+      position: absolute; inset: 0; background: var(--leader);
+      transform: scaleY(0); transform-origin: top;
+    }
+  }
 </style>
