@@ -18,7 +18,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
   Additive. Never the only way to reach anything.
 
 Build order is strict: document mode is finished and shipped before world
-mode begins. Steps 1–14, then 15–24. See `docs/STEPS.md`.
+mode begins. Steps 1–14, then 15–25. See `docs/STEPS.md`.
 
 ---
 
@@ -246,6 +246,40 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - `page.screenshot` in a headed browser catches the Astro dev toolbar,
   which is a lit pill at the bottom centre and outranks the whole scene on
   a peak measurement. Peel it with the document.
+- **Lenis owns the scroll position, so a harness may not use
+  `window.scrollTo`.** It lands, and then Lenis eases the page back toward
+  its own stale target over the next second — a stop measured 600ms later
+  is measured somewhere between the two, and drifts of 400 to 3,500px were
+  going unnoticed. Expose the instance and use `lenis.scrollTo(y,
+  { immediate: true })`, the way `jumpTo` already does.
+- Peeling the document off the scene is not `visibility: hidden` on the
+  landmarks. `visibility` is inherited but a descendant may re-assert
+  `visible`, and GSAP's `autoAlpha` writes exactly that onto the beat
+  elements — so at beat 1 the headline and the machine ID climb back out of
+  the peel and get measured as scene. Tell: the same number under every
+  layer, and a backdrop eight times `--void-lift`. Use a `!important`
+  stylesheet.
+- Adding up each layer's own worst 12×12 is not the combined worst case:
+  every layer's maximum is found at its own place in the element and its
+  own frame, and maxima that never coincide understate the headroom badly.
+  Measure the combined frame for where the scene *is*, and use the
+  per-layer figures only as a bound on what scaling one of them can add:
+  `scene_after ≤ scene_all + layer·(s−1)`.
+- One 8-bit code step above `--void` is a scene contribution of 0.00131 in
+  these measurements. A row reading exactly that is at the instrument's
+  floor, not at a value.
+- A lit opaque mesh is **fill** bound where every instanced-sprite layer
+  here is vertex bound: DPR 1.5 doubles the surface's cost and leaves the
+  points where they were. The DPR cap is what keeps it affordable.
+- `material.normalNode` is read in **view** space, so an analytic normal
+  has to be `cameraViewMatrix.transformDirection(n)`. And fog on an opaque
+  surface is a *mix* toward `--void` rather than the multiply the additive
+  layers use — after lighting, via `material.outputNode` and the `output`
+  property node.
+- A point light at cluster altitude is inside the mountain it grows: the
+  peak rises toward the node that earned it, so the light ends up 2.6 units
+  off its own summit and 40 off the rim. At an inverse square that is 64×
+  across one frame and no single exposure serves it.
 
 ---
 
@@ -254,11 +288,12 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 Check before claiming a step is done.
 
 - Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §18: 55.3 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §18: 253.3 KiB,
-  6.7 KiB spare, and it binds — it is why the WebGL 2 tier does not ship
+  Measured at §19: 55.3 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §19: 254.9 KiB,
+  5.1 KiB spare, and it binds — it is why the WebGL 2 tier does not ship and
+  why the terrain is a Phong material rather than a standard one
 - LCP under 2.5s on throttled 4G. Measured at §18: 116ms desktop, 100ms mobile
-- Under 100 draw calls. Measured at §18: 5
+- Under 100 draw calls. Measured at §19: 6
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
 

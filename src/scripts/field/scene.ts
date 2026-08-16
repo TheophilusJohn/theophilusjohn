@@ -339,9 +339,14 @@ export async function mount() {
   /* §16. The floor, and it is this cluster: peaks under the nodes with the
      amplitude of the traffic they are receiving, ridges along the routes
      carrying it. Built here so it reads the same node positions the
-     simulation does — one definition of where the cluster is. */
+     simulation does — one definition of where the cluster is.
+
+     §19: it is a lit surface, so it brings the world's only two lights
+     with it — the leader, and a fill low enough that its far side is
+     readable rather than black. They belong to the terrain because what
+     they are attached to is the elected node. */
   const terrain = buildTerrain(NODES, { lead: uLead, quiet: uQuiet, contrast: uContrast });
-  scene.add(terrain.floor, terrain.horizon);
+  scene.add(terrain.terrain, terrain.mist, terrain.horizon, ...terrain.lights);
 
   /* §18. The sky, and the only thing in the world that means nothing. It
      goes in behind the fog rather than through it. */
@@ -380,6 +385,9 @@ export async function mount() {
     uQuiet.value = token('--rule');
     uPaper.value = token('--paper');
     gsap.set(uContrast, { value: high ? 0.20 : 1 });
+    // The surface is lit rather than additive, so its share of this is two
+    // light colours and an exposure rather than one multiply (terrain.ts).
+    terrain.paint(uLead.value, uQuiet.value, token('--void'), token('--void-lift'), high ? 0.20 : 1);
     // The palette moved, so a frozen frame is now stale rather than still.
     repaint();
   }
@@ -451,7 +459,7 @@ export async function mount() {
   }
 
   const draw = () => {
-    // The floor is a disc carried with the camera and the arc is its edge.
+    // The mist is a disc carried with the camera and the arc is its edge.
     terrain.follow(camera);
     renderer!.render(scene, camera);
   };

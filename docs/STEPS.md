@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–17 are done. The site is live. **Update this line at the end of
+Steps 1–19 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -834,7 +834,128 @@ same script on the §17 build returns the identical scroll positions
 faithful to wherever `keepingPlace` leaves the reader. It belongs to the
 pin restoration, not to the curve.
 
-### 19. The laptop
+### 19. The floor becomes a surface
+The reversal in SPEC §4.7: the ground is a lit mesh and the points become
+the air over it. Everything else in that section stands — the heightfield,
+`shares()`, the routing rule, the election, the camera curve, the fog, the
+stars, the horizon arc.
+
+- A radial grid displaced by the same `h(p)`, camera-relative like the point
+  disc, denser toward the centre. Outer ring skirted below the fog cutoff so
+  the surface never ends in mid-air behind the arc
+- **Analytic normals**, from the closed-form gradient of `h`. The amplitudes
+  tween continuously during an election and baked normals would need
+  rebuilding every frame
+- **The light is the leader**: a point light at the elected node in
+  `--leader`, intensity tied to its own amplitude, plus a very low fill in
+  `--rule` from the opposite side so the far faces are readable. Ambient
+  zero. If it reads as a stage spotlight rather than as illumination, fall
+  back to a fixed low directional light from behind the camera and keep the
+  leader light as a rim — decide by looking
+- Opaque, `depthWrite: true`, drawn before the particles. The traffic is
+  occluded by terrain now, which is most of the point. If the cluster is
+  mostly hidden at the lowest stop, the fix is the camera's `dist`
+- The point layer stays, reduced and lifted off the surface with a wide
+  random spread, so it reads as low mist rather than as ground
+
+**Brightness re-solves from scratch.** A lit opaque surface does not
+accumulate and has a maximum; §18's ink figures belong to a layer that no
+longer exists in that form and do not scale. The binding case is likely a
+lit slope behind a `--dim` label at beat 2.
+
+**Done when:** the ground reads as a landform at every camera stop and a
+ridge occludes traffic behind it; an election visibly re-lights the terrain
+rather than only re-shaping it; every text element clears its bound,
+re-solved rather than scaled; 60fps on integrated graphics; motion off is
+still a single frozen frame, with the surface in it.
+
+**Report:** ms/frame, draw calls, vertex count, the re-solved ink figures,
+and one screenshot at the highest and lowest camera stops.
+
+*Done.* The ground is a surface. **66,048 vertices and 131,584 triangles in
+one draw call** — 256 rings by 256 segments plus a skirt ring, radii
+quadratic in the ring index so the spacing is 0.04 units underfoot and 0.29
+at the rim. Below 1024px it halves to 16,640 and 33,024. The normal is the
+closed-form gradient of `h` carried out of the same unrolled loop, so an
+election tweens fifteen amplitudes and the normals follow for nothing.
+
+**6 draw calls** — surface, mist, arc, field, stars, blit — and **2.00ms per
+frame** at 1512×804, against §18's 2.71ms. The surface is cheaper than the
+150,000 points it replaced. It is also the first layer here that is *fill*
+bound rather than vertex bound: at DPR 1.5 the whole frame goes to 2.38ms
+and the surface alone from 0.470 to 0.945, while the field moves 0.810 →
+0.930 and the mist 0.715 → 0.745.
+
+**The light is the leader and it survived contact**, but three things about
+it were decided by measurement and not by §4.7's paragraph.
+
+- **Decay 1, not the physical 2.** A peak grows *toward* the node that
+  earned it, so under Homonoia the light stood 2.6 units off the top of its
+  own mountain and 40 off the rim — 64× across one frame. That is the stage
+  set the spec warned about: the massif went to pure white, and the busiest
+  frame had **0.02×** of the headroom it needed while Enargeia, whose
+  landscape is flat, had **42×**.
+- **Six units above the node, not at it**, which is what actually fixed the
+  spread: **2000× down to about 30×** across the fourteen camera stops, and
+  one exposure covers that.
+- **The fill stands over the reader's shoulder.** The camera is outside the
+  ring and the key is inside it, so every slope facing the reader faces away
+  from the key; a fill opposite the leader lands on the same far side and
+  the landscape is a silhouette at every stop. What survives of the spec's
+  sentence is its reason, not its geometry.
+
+**The material is Phong, and the reason is the budget.** Both were built and
+measured: `MeshStandardNodeMaterial` costs **4.42 KiB** gzipped against
+Phong's **0.86**, and there were 6.7 KiB of desktop budget. Standard would
+have shipped with 1.5 KiB spare and no room for the laptop. On screen the
+difference is a GGX sheen worth **4% of the mean frame and 10% of its peak**
+— invisible at the exposure the brightness bound allows. §4.4 moves with it.
+
+**Brightness, re-solved from scratch.** Surface exposure **0.185**, mist ink
+**5,570** over 150,000 points where §18's ground was 31,150 over 300,000.
+Measured over **196 text elements at fourteen stops**, four layers each:
+**0 failing**, worst measured **4.66:1**, and the scene sits at **0.779 of
+the 4.55:1 ceiling**. High contrast puts it at **0.038** — the toggle moves
+the busiest frame down by 20× — with **0 failing** and 7.27:1 at worst.
+
+The binding case is the one §4.7 predicted, and it is *moving*: a lit slope
+behind a `--dim` 10px metric label at Homonoia beat 2. Homonoia's term ends
+every 3.4s, so the massif walks under that column and out of it again, and a
+measurement sampling less than a term never sees it. Sixteen frames over
+4.8s for that reason.
+
+**Occlusion, which §4.7 said to check before tuning anything else.** Total
+field light in the frame with the surface in front of it against the same
+field without it, on a stopped loop so the particles do not move between the
+two: **0.7% hidden at the hero, 13.5% at Homonoia beat 1** — the tallest
+massif and a camera still high enough to look across it — **and 0.1% at the
+lowest stop**, where the cluster stands at altitude 9 and the camera is
+nearly level under it. Noise is about ±3%. The camera's `dist` needs no
+change.
+
+**The election re-lights the terrain, measured rather than asserted.** Over
+two terms at Homonoia the key travels (0, 14.6, −3.5) → (2.9, 14, 3.2) →
+(4.7, 15.8, −1) and the brightest 24×24 patch of ground travels with it,
+from x 776 to 856 to 960 in the frame.
+
+**Everything else, checked.** Bundle **55.3 KiB eager / 254.9 KiB desktop**
+against 120 and 260 — **+1.6 KiB** on §18, **5.1 KiB spare**. axe-core **0
+violations** across eight states. Tiers hold: no canvas below 768px, halved
+counts below 1024, no horizontal overflow at any width tried. Motion off is
+still one frozen frame with the surface in it, and a deep link still lands
+at its own pose.
+
+**The loose end, and it grew.** §17's local headroom is back and it is
+large: per stop the surface could take **1.72×** at Homonoia beat 2 and
+**596×** at Enargeia beat 3, because one exposure has to serve the tightest
+text on the page and most of the page has no text over the world at all. An
+opaque surface makes that gap visible in a way additive points did not — the
+hero and the lowest stop are dark landforms that could be three to a hundred
+times brighter without touching a contrast ratio. The mechanism §17 named
+(an exposure that varies with scroll) is still unbuilt and is now worth more
+than it has ever been.
+
+### 20. The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
 from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,
 updated at ~8fps. Log lines duplicated into a visually-hidden `<pre>` for
@@ -847,7 +968,7 @@ behind the terrain rather than in front of it.
 sits on `h(x, z)` rather than floating; a focusable DOM element over it
 routes to Homonoia by keyboard.
 
-### 20. Landmarks 2–4
+### 21. Landmarks 2–4
 Three more structures, one per remaining project, standing on the ground in
 `order`. Three states: distant (silhouette), approaching (label + machine
 ID resolve), arrived (writeup opens in the panel). LOD: silhouette at
@@ -856,7 +977,7 @@ distance, detail only on approach.
 **Design work not yet done:** what the three structures actually *are*.
 Ask before modelling.
 
-### 21. Mode switch and scroll ↔ camera sync
+### 22. Mode switch and scroll ↔ camera sync
 Visible persistent control, choice in `localStorage`. Arriving at a landmark
 replaces its route; loading that route flies the camera there. The writeup
 panel and its backing — the only place text lives in world mode, and the
@@ -866,13 +987,13 @@ reason the brightness bound can lift outside it (SPEC §4.7).
 mode switch reachable by keyboard from anywhere, and switching modes at
 Philoi lands at Philoi rather than at the start of the curve.
 
-### 22. Free flight, bounds, altitude clamp
+### 23. Free flight, bounds, altitude clamp
 Unlocks at the fourth landmark or via a control. Bounded volume, camera
 clamped above `h(x, z)` — a floor it may not go under, not collision.
 Always-visible return-to-path control.
 
-### 23. Accumulation texture
-Only if the budget allows, and only once 16–22 are measured with everything
+### 24. Accumulation texture
+Only if the budget allows, and only once 16–23 are measured with everything
 in place. 512×512 `r32uint`, `atomicAdd` one per particle per frame in the
 existing compute pass, decayed 2% per frame, sampled into `h` at low
 amplitude. It lags the simulation, so a leader change leaves the old
@@ -881,6 +1002,6 @@ mountain subsiding for a few seconds after the traffic has left it.
 **If it does not fit, the world is complete without it.** Cut it before
 cutting the election.
 
-### 24. Performance pass
+### 25. Performance pass
 Instancing, LOD, frustum culling, 60fps on integrated graphics.
 **Report:** ms/frame, draw calls, particle counts per buffer.

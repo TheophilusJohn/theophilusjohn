@@ -183,7 +183,7 @@ A laptop in three-quarter view, lid open, screen rendering a live terminal. Part
 
 Built from primitives. No downloaded model, no GLTF loader, no Draco. A laptop is a rounded box for the base, a rounded box for the lid, a plane for the display, and a slightly inset plane for the bezel. Around 30KB on top of Three itself.
 
-Materials: `MeshStandardMaterial`, dark cool grey to sit inside the palette rather than photoreal aluminium. Two lights — one key, one rim in `--leader` catching the lid edge. No environment map, no post-processing, no shadows.
+Materials: dark cool grey to sit inside the palette rather than photoreal aluminium. **`MeshPhongNodeMaterial`, not standard (§19):** the terrain settled that question on the bundle, and naming the standard material here would pull its 4.42 KiB back in for one object. Two lights — one key, one rim in `--leader` catching the lid edge — and the world already has both (§4.7). No environment map, no post-processing, no shadows.
 
 #### Depth and blending
 
@@ -209,7 +209,7 @@ Accessibility: canvas text is invisible to screen readers. The same log lines mu
 
 **Revised: scroll no longer moves the laptop at all.** The camera altitude curve in §4.7 is what changes the view of it, driven by the same Lenis instance as everything else — there is no ScrollTrigger on this object and nothing to tie to the hero reveal.
 
-What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 19 with the thing on screen; do not build both by inference from this paragraph.
+What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 20 with the thing on screen; do not build both by inference from this paragraph.
 
 #### Constraints
 
@@ -314,21 +314,88 @@ Build the analytic term first and ship it. Add accumulation only once the frame 
 
 **An election is the set piece.** Under Homonoia the term ends every 3.4s. `A_i` retargets, the ridges swing, and **the landscape itself redistributes** — one summit subsiding while another rises, over roughly two seconds of eased transition. Tween the amplitudes, never snap them. A heightfield that jumps is a glitch; one that flows is a mountain range rearranging itself.
 
-#### The floor is particles, not a mesh
+#### The floor is a surface, and the particles are the air over it
 
-Decided. A second instanced sprite buffer, positions sampled on the heightfield rather than a lit surface.
+**Reversed (§19).** The decision this replaces stood from §16 to §18 and is recorded rather than deleted, because its arguments were sound and it matters which one failed.
+
+*The floor is particles, not a mesh.* A second instanced sprite buffer, positions sampled on the heightfield rather than a lit surface, on three arguments:
 
 - One material for the whole world. No second lighting model, no normals, no shadow story, no mesh LOD. The ground is made of the same stuff as the traffic above it, which is true and also cheap.
 - Nothing occludes. A solid floor would hide half the field the moment the camera descends; particles keep the volume readable from inside it.
 - It is the version that could only come from this project. A lit mesh is a landscape; a resolved density is a measurement.
 
-Points on a **camera-relative grid**, not a world-fixed one. Each particle holds a fixed `(u, v)` in a disc around the camera's ground position; its world position is that offset plus the camera, wrapped, with `y = h(x, z)`. The grid moves with the viewer, so ground detail is always where the eye is and the far field never needs more points than it can resolve.
+All three were true and the conclusion was still wrong. What refuted it was measurement, not taste: **the ground never resolved into a surface at any altitude the camera reaches.** §16 found that the disc radius mattered more than the count and fixed it — 92 to 42 — and it still read as noise near a line. §18 brought the camera from 18.5 units back and 12.5 up down to 4, which is the best case the design allows, and the points still did not fuse: haze at close range, dust at distance.
 
-Radial density falls as `1/r`, which cancels the perspective gathering and gives even screen-space coverage rather than a dense smear at the horizon. Per-point `y` jitter proportional to local slope, so cliffs read as scree and flats read as flats.
+That is not a tuning failure. Points fuse into a surface when they are dense enough in *screen* space, and the density needed at 4 units is not the density that is affordable at 26 — a camera-relative disc cannot be tuned for both. More fundamentally, what makes ground read as ground is that it **occludes and shades**, and the second argument traded exactly those away by choice.
 
-Count: **300,000** at the compute tier, halved below 1024px. 200,000 was the number here and §16 measured it: count was the wrong knob. A camera-relative disc only ever shows about a quarter of itself, so what decides whether the ground reads as a surface is the radius it is spread over — 92 units made the massif an island in an empty plain, 42 made it a landscape. 300,000 closed the rest and costs 1.6ms of a 2.5ms frame.
+What the particles turned out to be good at is atmosphere. The frame at Philoi — stars overhead, a horizon, a density gradient falling away — is a real place. It is a place with no floor in it.
 
-**The horizon.** Particle ground has no edge, and an edge is what makes a floor a floor. Draw one: a thin great-circle arc at the far clip in `--rule`, one pixel, never brighter. Built as a `Line` closed by repeating its first point — the new renderer does not support `LineLoop` at all. That is the only non-particle geometry in the world and it is what turns a field of dots into a place with a limit. At grazing angles the ground densifies toward that line on its own, so the arc is confirming a boundary the eye already believes rather than inventing one.
+So the floor becomes a surface and the particles stay above it. Neither replaces the other, and the third argument survives the reversal: the surface is displaced by the same `h(p)`, so the ground is still the measurement. It now has a normal.
+
+**Nothing else in this section moves.** The heightfield, `shares()`, the routing rule, the election, the camera curve, the fog, the stars and the horizon arc are all unchanged.
+
+#### The mesh
+
+A grid displaced by `h(p)` — the same analytic function the points already sample.
+
+**Geometry.** Camera-relative, exactly as the point disc is: a fixed grid in `(u, v)` around the camera's ground position, with `y = h(x, z)` evaluated in the vertex shader. The grid moves with the viewer, so resolution is always where the eye is.
+
+Radial rather than square — concentric rings with angular subdivision, denser toward the centre. A square grid spends its vertices in the corners, which are the furthest and foggiest part of the frame, and starves the ground directly underfoot.
+
+Skirt the outer ring downward below the fog cutoff, so the mesh has no visible edge on a frame that catches it. The horizon arc still draws the limit; the skirt stops the surface ending in mid-air behind it. The arc also depth-tests since §19 and sits a fraction outside the rim rather than on it: a limit drawn *through* the ridge in front of it is the flatness this revision exists to end, and drawn at the same radius as the rim it z-fights the whole way round.
+
+**Built (§19): 256 rings × 256 segments plus the skirt — 66,048 vertices, 131,584 triangles, one draw call**, halving to 16,640 and 33,024 below 1024px. Radii go as a quadratic in the ring index, which puts the spacing at 0.04 units underfoot and 0.29 at the rim.
+
+**Normals are analytic, not computed from the mesh.** `h` is a sum of Gaussians and its gradient is closed-form, so the normal at any point is exact and costs a couple of extra evaluations — the same ones the scree jitter already takes. No `computeVertexNormals`, no normal buffer, nothing to keep in sync when the amplitudes tween. That matters more than it sounds: the amplitudes move continuously during an election, and baked normals would need rebuilding every frame.
+
+#### Light
+
+There is no sun in this world and there should not be one.
+
+**The light is the leader.** A point light at the elected node, so the summit that rises under the leader is also what illuminates the terrain around it. When the term ends the light moves with the mountain — the landscape re-lights itself as it rearranges.
+
+Colour `--leader`, which is the accent's one meaning (§2) and this is the most literal use of it in the project. Intensity tied to the leader's own amplitude, so a section with no strong leader is a dimmer world.
+
+**A second, fill light** at low intensity, in `--rule`, so unlit faces are readable rather than black. Without it half the terrain is a silhouette and the landform is only legible on one side. Ambient stays at zero: every surface in this world is lit by the cluster or not lit at all.
+
+*The risk, stated.* This is either the best idea in the project or too cute to survive contact. It is worth building because it is cheap to try and because a moving light during an election is the most striking thing this world could do. If it reads as a spotlight rather than as illumination — if the terrain looks like a stage set — fall back to a fixed low directional light from behind the camera and keep the leader light as a subtle rim. Decide by looking, not by argument.
+
+**Built (§19). It survived, and three things about it were decided by measurement rather than by the paragraphs above.**
+
+*Decay 1, not the physical 2.* A peak grows toward the node that earned it, so under Homonoia the light stands 2.6 units off the top of its own mountain and 40 off the rim — 64× across one frame. That is the stage set: the massif blew out to white with a black plain around it, and the busiest frame had 0.02× of the headroom it needed while Enargeia, whose landscape is flat, had 42×. No single exposure serves a spread like that. At 1/d it is 8× across the frame.
+
+*Six units above the node, not at it.* Same problem, same measurement, and this is what actually fixed it: the spread over the fourteen camera stops went from 2000× to about 30×, which one exposure does cover.
+
+*The fill stands over the reader's shoulder, not on the far side of the ring.* The camera is outside the cluster and the key is inside it, so every slope facing the reader faces away from the key — a fill placed opposite the leader lands on the same far side and the landscape is a silhouette at every stop. Offset up and to the left of the camera rather than on its axis: a light on the view axis is a flash photograph and flattens the form. The sentence that survives is the reason ("so unlit faces are readable"), not the geometry.
+
+#### Material
+
+`MeshStandardNodeMaterial`, or `MeshPhongNodeMaterial` if the standard model's roughness response fights the palette.
+
+**It is Phong (§19), and the reason is the budget rather than the palette.** Both were built and measured: the standard material costs 4.42 KiB gzipped against Phong's 0.86, and the desktop bundle had 6.7 KiB of room in it. Standard would have shipped with 1.5 KiB spare and no room for the laptop. At roughness 0.95 and metalness 0 the difference on screen is a GGX sheen worth 4% of the mean frame and 10% of its peak — measured, and invisible at the exposure §4.7's brightness bound allows.
+
+- Base colour `--void-lift`, so unlit ground is barely above the page and the lighting does all the work
+- Ground belonging to the elected node tinted toward `--leader` by the same `share` term the points already use, at low weight — the surface says who owns it the way the points did
+- Roughness high, metalness zero. Nothing in this world is shiny
+- **Opaque**, `depthWrite: true`, rendered before the particles
+
+The traffic is now occluded by terrain, which is new and is most of the point: a message passing behind a ridge and disappearing is the strongest depth cue the world has. But at low altitude a substantial fraction of the cluster may end up behind the massif. Check at the lowest camera stop before tuning anything else — if the traffic is mostly hidden there, the fix is the camera's `dist`, not the mesh.
+
+**Measured (§19), and it does not happen.** Total field light in the frame with the surface in front of it against the same field without it: **0.7% hidden at the hero, 13.5% at Homonoia beat 1** — the tallest massif under a camera still high enough to look across it — **and 0.1% at the lowest stop**, where the cluster stands at altitude 9 and the camera is nearly level under it. `dist` stands.
+
+The particles keep `depthTest: true, depthWrite: false` (§4.4), which is now actually doing something.
+
+#### The point layer, demoted
+
+Reduced, not removed. They are atmosphere now — a demotion in role and an improvement in what they are asked to do.
+
+Points on a **camera-relative grid**, not a world-fixed one. Each particle holds a fixed `(u, v)` in a disc around the camera's ground position; its world position is that offset plus the camera, wrapped, with `y = h(x, z)`. Radial density falls as `1/r`, which cancels the perspective gathering and gives even screen-space coverage rather than a dense smear at the horizon.
+
+- Count drops substantially — the points are no longer trying to be a surface, so they need only be enough to read as haze. §16's finding stands for what it was: at 300,000 the radius, not the count, was the knob, and 42 units was the answer. Start by halving the count and measure
+- Lifted off the surface: sample `h(p)` and add a height offset with a wide random spread, so they sit *above* the ground as low mist rather than on it. The slope-proportional `y` jitter that made cliffs read as scree belongs to the surface now
+- Fog unchanged. Density still falls as `1/r`
+
+**The horizon.** An edge is what makes a floor a floor. Draw one: a thin great-circle arc at the far clip in `--rule`, one pixel, never brighter. Built as a `Line` closed by repeating its first point — the new renderer does not support `LineLoop` at all. At grazing angles the ground densifies toward that line on its own, so the arc is confirming a boundary the eye already believes rather than inventing one.
 
 #### The starfield
 
@@ -425,11 +492,19 @@ The measurement harness from §16 stands, but it must now sample **per region** 
 
 This is the honest resolution of "make it brilliant" against "text must be readable". The constraint was never about the scene; it was about the words. Where there are no words, spend the light.
 
+**§19: the arithmetic does not carry over.** A lit opaque surface is a completely different luminance profile from additive points — it does not accumulate, it has a maximum, and the maximum is wherever the leader light hits a slope face-on. **Re-solve from scratch**; do not scale §18's numbers, because they belong to a layer that no longer exists in that form. The binding case is likely to be a bright lit slope directly behind a `--dim` label at beat 2; measure that specifically. High contrast still moves the busiest frame down and only down.
+
+**Solved (§19), and the predicted binding case is the real one — but it moves.** Surface exposure 0.185, mist ink 5,570 over 150,000 points against §18's 31,150 over 300,000. Over **196 elements at fourteen stops, four layers each: 0 failing, worst measured 4.66:1, the scene at 0.779 of the 4.55:1 ceiling.** High contrast puts it at 0.038 of the same ceiling — down by 20× — with nothing failing. What binds is a lit slope behind a `--dim` 10px metric label at Homonoia beat 2, and Homonoia's term ends every 3.4s, so the massif *walks* under that column and out again: a measurement that samples less than a term never sees the worst frame.
+
+**And §17's local headroom is back, larger than it has ever been.** Per stop the surface could take 1.72× at Homonoia beat 2 and 596× at Enargeia beat 3. §18 spent that gap by descending; an opaque surface re-opens it, because one exposure has to serve the tightest text on the page while most of the page has no text over the world at all. The hero and the lowest stop are dark landforms that could be three to a hundred times brighter without touching a contrast ratio. The mechanism — an exposure that varies with scroll — is still the one §17 named and is still unbuilt.
+
 #### Performance
 
-Everything here is instanced points, plus the one line. Measured at §16 with ground, field and arc: **4 draw calls** — ground, arc, field, and the renderer's own blit. Stars make it 5, and did at §18.
+Instanced points, one line, and since §19 one mesh. Measured at §16 with ground, field and arc: **4 draw calls** — ground, arc, field, and the renderer's own blit. Stars made it 5 at §18; the terrain mesh makes it **6**.
 
-- Ground 300k, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
+The mesh is one draw call, and it is less geometry than the instanced quads it partly replaces. Lighting is two lights, no shadows, no environment map, no post-processing. **No shadow maps** — a shadow from the leader light would be beautiful and it is a second render pass over the whole terrain. If the frame budget breaks, cut mesh resolution before cutting the point layer: the surface is doing the important job now and it degrades more gracefully than atmosphere does.
+
+- Ground points, field 120k, stars 8k. All halved below 1024px; world mode is desktop-only anyway.
 - The heightfield is evaluated in the vertex shader, not on the CPU. Nothing reads back.
 - Frustum culling is off on all three — the bounding sphere an instanced sprite computes is the unit quad at the origin (§15). The camera-relative ground grid is the culling: points behind the viewer wrap to in front of it.
 - **Target: 60fps on integrated graphics.** If it does not hold, ground count is the first thing to cut and the accumulation texture is the second. The election transition is the last, because it is the point.
@@ -437,6 +512,8 @@ Everything here is instanced points, plus the one line. Measured at §16 with gr
 Measure `renderer.info` with `autoReset = false` (§15 trap), and report milliseconds per frame rather than fps — fps is vsync-capped and hides regressions until it falls off a cliff. The rAF interval is vsync too, and `--disable-gpu-vsync` does not lift it; §16's number is a batch of renders between two `queue.onSubmittedWorkDone()`, because the timestamp queries under it returned negative durations. Measured there: **2.50ms** at 1512×804, and 2.32ms at DPR 1.5 — this layer is vertex-bound on 420k instanced quads, not fill-bound.
 
 §18: **2.71ms** at 1512×804, and the same 2.71ms at DPR 1.5, which is the vertex bound saying so again. 428k quads now; the stars are 0.07ms of the total and the fog is the rest.
+
+§19: **2.00ms** at 1512×804 and **6 draw calls**. The surface is cheaper than the 150,000 points it replaced. It is also the first layer here that is *fill* bound rather than vertex bound: at DPR 1.5 the frame goes to 2.38ms and the surface alone from 0.470 to 0.945, while the field moves 0.810 → 0.930 and the mist 0.715 → 0.745. The DPR cap in the constraints below is doing more work than it was.
 
 #### Constraints
 
@@ -449,11 +526,11 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 
 Stated so nobody builds them by inference:
 
-- No mesh terrain, no normals, no lit surface, no shadows.
+- No shadows and no shadow maps. There is a lit surface since §19 and there is still nothing casting.
 - No trees, rocks, water, clouds, or any other landscape furniture.
 - No texture maps of any kind. Everything is procedural or accumulated.
 - No collision. The ground is a height function, and free flight (§4.8) clamps the camera above it rather than colliding with it.
-- No time of day, no sun, no directional lighting. There is no light source in this world; every point emits.
+- No time of day and no sun. The only lights in this world are the cluster's own (§19): the leader, and a fill low enough to keep its far side readable. Everything that is not the terrain still emits.
 
 #### The one thing to get right
 
@@ -553,6 +630,8 @@ Hard limits. Check before launch, not after.
 
 **It blew at §15, and what gave was the renderer's WebGL 2 fallback** — not the laptop, and never the accessibility work. Three tiers did not fit in 260KB and two do, so a browser without WebGPU gets the document, which is the whole site. Measured: mobile 54.6 KiB, desktop 249.5 KiB.
 
+**It bound again at §19, and what gave was the mesh material.** A lit surface needs a lighting model in the bundle, and `MeshStandardNodeMaterial` is 4.42 KiB of one against `MeshPhongNodeMaterial`'s 0.86. Nothing in this world is shiny, so the difference on screen is a GGX sheen worth 4% of the mean frame; the difference in the bundle is between 1.5 KiB spare and 5.1 KiB. Measured after: mobile 55.3 KiB, desktop 254.9 KiB.
+
 ---
 
 ## 7. Build order
@@ -565,7 +644,7 @@ with it.
 ## 8. Open decisions
 
 - **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
-- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 19, with the thing on screen.
+- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 20, with the thing on screen.
 
 ---
 
