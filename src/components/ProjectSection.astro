@@ -20,59 +20,80 @@ const lines =
     ? null
     : [words.slice(0, d.headlineBreak + 1).join(' '), words.slice(d.headlineBreak + 1).join(' ')];
 ---
-{/* §4.3 — three blocks, stacked below 900px and arranged as a pinnable
-    stage above it: the headline across the top, then the lead and the
-    writeup side by side. The headline is display type at 7vw and does not
-    survive being put in a column — full width is the only place it fits,
-    which is what sets this layout rather than a plain two-column split. */}
+{/* §4.3 — three beats. Stacked below 900px and with motion off, where this
+    is the plain document order it has always been: headline, lead, writeup.
+    Above it, projects.ts sets data-beats and the three layer into one
+    pinnable stage that a scrubbed timeline moves through.
+
+    Beat 1 is the headline alone. Beat 2 is the same words as a mono label
+    over the summary, the numbers and the links. Beat 3 is the writeup in a
+    45ch column behind a scrim. Two of the three leave most of the viewport
+    to the world, which is the whole reason the stage stopped being one
+    composition. */}
 <section
   id={project.id}
   class="wrap project"
   data-path={`/projects/${project.id}`}
   aria-labelledby={`${project.id}-h`}
 >
-  <header class="head">
-    <div class="top">
-      <span class="id">{d.machineId}</span>
-      <span class="period">{d.period} · {d.role}</span>
-    </div>
+  {/* First, so every positioned sibling after it paints on top. It is the
+      only thing on the page allowed to darken the scene, and it does it
+      for one beat. */}
+  <div class="scrim" aria-hidden="true"></div>
+
+  <div class="top">
+    <span class="id">{d.machineId}</span>
+    <span class="period">{d.period} · {d.role}</span>
+  </div>
+
+  <div class="stage">
     <H id={`${project.id}-h`} class="headline">
       {/* The space before the <br> is load-bearing: without it textContent
           reads "Inferencein the browser", and that string is the section's
           accessible name via aria-labelledby. It collapses when rendered. */}
       {lines ? <>{lines[0]}{' '}<br />{lines[1]}</> : d.headline}
     </H>
-  </header>
 
-  <div class="lead">
-    <p class="summary">{d.summary}</p>
+    {/* The headline demoted, and the only duplicated text on the page. One
+        element cannot cross a face and a size change under a scrub without
+        a hard cut somewhere in the middle, which §4.3 forbids — so there
+        are two, cross-fading in place, and this one is hidden from
+        assistive tech. The h3 above never leaves the DOM or the accessible
+        name, it is only transparent from beat 2 on. Never rendered at all
+        unless the beats are running. */}
+    <p class="label" aria-hidden="true">{d.headline}</p>
 
-    {d.metrics.length > 0 && (
-      <dl class="stats">
-        {d.metrics.map((m) => (
-          <div><dt>{m.value}</dt><dd>{m.label}</dd></div>
-        ))}
-      </dl>
-    )}
+    <div class="beat b2">
+      <p class="summary">{d.summary}</p>
 
-    <p class="links">
-      {d.liveUrl && <a href={d.liveUrl}>Live</a>}
-      {d.repoUrl && <a href={d.repoUrl}>Source</a>}
-      <span class="stack">{d.stack.join(' · ')}</span>
-    </p>
+      {d.metrics.length > 0 && (
+        <dl class="stats">
+          {d.metrics.map((m) => (
+            <div><dt>{m.value}</dt><dd>{m.label}</dd></div>
+          ))}
+        </dl>
+      )}
+
+      <p class="links">
+        {d.liveUrl && <a href={d.liveUrl}>Live</a>}
+        {d.repoUrl && <a href={d.repoUrl}>Source</a>}
+        <span class="stack">{d.stack.join(' · ')}</span>
+      </p>
+    </div>
+
+    <div class="beat b3">
+      <div class="prose"><Content /></div>
+    </div>
   </div>
 
-  {/* Column rule and progress readout in one, filled by projects.ts while
-      the section is pinned. Empty is its correct resting state, so with no
-      JS — or no pin — it is just the rule. */}
+  {/* Progress readout, filled by projects.ts while the section is pinned.
+      Empty is its correct resting state, so with no JS — or no pin — it is
+      just the rule. */}
   <div class="rail" aria-hidden="true"><span></span></div>
-
-  <div class="prose"><Content /></div>
 </section>
 
 <style>
-  .head { padding-block: var(--s-12) 0; }
-  .top { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; }
+  .top { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; padding-top: var(--s-12); }
   .id, .period, .stack {
     font-family: var(--font-mono); font-size: var(--t-meta);
     letter-spacing: 0.14em; text-transform: uppercase;
@@ -86,7 +107,9 @@ const lines =
     margin-top: var(--s-3); font-variation-settings: 'wdth' 120;
   }
 
-  .lead { padding-bottom: var(--s-8); border-bottom: 1px solid var(--rule); }
+  .label, .scrim, .rail { display: none; }
+
+  .b2 { padding-bottom: var(--s-8); border-bottom: 1px solid var(--rule); }
   .summary { margin-top: var(--s-4); max-width: 48ch; color: var(--muted); font-size: var(--t-lg); }
 
   .stats { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-8); }
@@ -115,38 +138,82 @@ const lines =
   .prose { max-width: var(--measure); padding-block: var(--s-8); }
   .prose :global(p) { color: var(--muted); margin-bottom: var(--s-4); }
 
-  .rail { display: none; }
-
-  /* The stage. Layout only — it is the same whether or not the section ends
-     up pinned, so turning motion off changes nothing about what is on
-     screen. projects.ts decides pinning separately, and per section: a
-     section taller than the viewport is never pinned, because pinning one
-     puts its own last paragraph behind the fold with no way to scroll to
-     it. That is also why the height of the stage is a floor, not a cap. */
+  /* ── The stage ────────────────────────────────────────────────────────
+     Only under data-beats, which projects.ts sets on the sections it is
+     about to pin — so this layout and the pin arrive together and a page
+     with no JS, motion off, or a viewport too short for a beat never sees
+     it. The three beats occupy one screen between them because they are
+     layered, not stacked: that is where the room for the world comes
+     from. Opacity is the resting state the timeline writes over. */
   @media (min-width: 900px) {
-    .project {
+    .project[data-beats] {
+      position: relative;
       display: grid;
-      /* The lead is a summary and four numbers; the writeup is 62ch of
-         prose and always the taller of the two. Splitting the difference
-         in its favour is what decides whether the pair fits on one
-         screen, which is what decides whether the section can be pinned
-         at all. */
-      grid-template-columns: minmax(0, 0.85fr) 1px minmax(0, 1.15fr);
-      column-gap: var(--s-12);
-      row-gap: var(--s-8);
+      grid-template-rows: auto auto;
       align-content: center;
+      row-gap: var(--s-12);
       min-height: 100svh;
       padding-block: var(--s-8);
     }
-    .head { grid-column: 1 / -1; padding-block: 0; }
-    .lead { grid-column: 1; padding-bottom: 0; border-bottom: 0; }
-    .prose { grid-column: 3; padding-block: 0; }
+    .project[data-beats] > .top { position: relative; padding-top: 0; }
+    /* The beats travel vertically into and out of the handover, and this
+       is §4.2's mask doing the same job for them: clip the travel axis
+       only, so nothing slides up over the machine ID or down past the
+       section, and the horizontal bleed the display headline needs is
+       untouched. `visible` degrades to `auto` beside `hidden` or `scroll`
+       but not beside `clip`, which is the whole reason this pair works. */
+    .project[data-beats] .stage {
+      position: relative; display: grid; row-gap: var(--s-8);
+      overflow: visible clip;
+    }
+
+    /* Out of the row flow, so the stage's height is the tallest beat and
+       nothing else — which is the number the fit rule measures. */
+    .project[data-beats] .headline {
+      position: absolute; inset: 0; margin: 0;
+      display: flex; align-items: center;
+    }
+    .project[data-beats] .label { grid-row: 1; }
+    .project[data-beats] .b2,
+    .project[data-beats] .b3 { grid-row: 2; grid-column: 1; }
+
+    .project[data-beats] .label,
+    .project[data-beats] .b2,
+    .project[data-beats] .b3,
+    .project[data-beats] .scrim { opacity: 0; }
+
+    .project[data-beats] .label {
+      display: block;
+      font-family: var(--font-mono); font-size: var(--t-sm);
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper);
+    }
+
+    .project[data-beats] .b2 { padding-bottom: 0; border-bottom: 0; }
+    .project[data-beats] .b3 { max-width: 45ch; }
+    .project[data-beats] .prose { max-width: none; padding-block: 0; }
+
+    /* §4.3: a gradient, not a panel. The moment it has an edge it reads as
+       content pasted onto a background rather than content inside a
+       world, so it fades out inside its own 60% and never reaches the
+       right of the frame. */
+    .project[data-beats] .scrim {
+      display: block; position: absolute; inset: 0; width: 60%;
+      /* Solid to 60% of its own width, which is 539px against the 524px
+         the 45ch column ends at — the bound applies where the text is, so
+         the whole column has to sit on the flat part and not in the fade.
+         The fade then still finishes at 898px of a 1497px frame. */
+      background: linear-gradient(to right, var(--scrim) 0 60%, transparent 100%);
+    }
 
     /* --rule is the track, --leader the part of the section already behind
        you: the accent marking current position, which is the one thing it
        is allowed to mean. Nothing fills it unless a pin is driving it. */
-    .rail { display: block; grid-column: 2; position: relative; background: var(--rule); }
-    .rail > span {
+    .project[data-beats] .rail {
+      display: block; position: absolute;
+      left: 0; top: var(--s-8); bottom: var(--s-8); width: 1px;
+      background: var(--rule);
+    }
+    .project[data-beats] .rail > span {
       position: absolute; inset: 0; background: var(--leader);
       transform: scaleY(0); transform-origin: top;
     }

@@ -92,9 +92,14 @@ type Preset = {
 };
 
 const PRESETS: Record<string, Preset> = {
-  // The hero. The cluster is up and talking and nothing is settled — a
-  // third of the traffic is addressed to any one node, and it drifts.
-  '/': { speed: 0.70, pull: 1.10, swirl: 0.50, jitter: 0.22, leaderMix: 0.35, nodes: 5, spread: 0.40, glow: 0.41, leader: 0, elect: 0 },
+  // The hero, and the only frame everybody sees. A cluster at rest still
+  // has a leader — it is what "at rest" means — so the shares are
+  // 0.47/0.20/0.11/0.11/0.11: one summit with the range spread under it,
+  // which is both the more legible landscape and the more truthful one.
+  // The term is slow rather than absent (§17): at 11s a reader who stays
+  // sees the world rearrange once, and it is far enough from Homonoia's
+  // 3.4s that it never competes with the section that owns the election.
+  '/': { speed: 0.70, pull: 1.10, swirl: 0.50, jitter: 0.22, leaderMix: 0.45, nodes: 5, spread: 0.40, glow: 0.41, leader: 0, elect: 11 },
 
   // Enargeia — token activations. Almost nothing routes to a leader: the
   // traffic passes around the ring and the noise term carries it, which is
@@ -162,9 +167,29 @@ const uSize = uniform(1.6);
    Re-measured at §16 and it fell a long way, from 696. Nothing about the
    simulation changed: the cluster was 9 units from the camera and filled
    the frame, and it is 18.5 units away over a landscape now, so the same
-   ink lands in about a third of the area. Measured against the same bound,
-   with the ground under it, the loudest section is 0.99x of --void-lift. */
-const INK = 88;
+   ink lands in about a third of the area.
+
+   Re-solved at §17 against the local bound (§4.7), from 88 — **2.5x**. The
+   bound is not one number for the whole frame any more: it is the contrast
+   the text actually standing in front of the scene needs, measured inside
+   that element's own box.
+
+   Two things about the solve, both of which the obvious arithmetic gets
+   wrong. Ink scales the scene's *contribution*, and --void is under every
+   pixel and does not move — so the factor comes from `backdrop - --void`,
+   not from the backdrop. Dividing the totals understates it by about half
+   and is what a first pass here did. And the ceiling is not `2x
+   --void-lift`: 2x puts --dim at 4.1:1, under AA, so the figure the
+   revision expected was never available. What binds is --dim at 10px, and
+   the reason the ink is still one uniform rather than a function of the
+   beat is that --dim is on screen at every scroll position on the page —
+   the header nav, the period row, the metric labels, the log bands.
+
+   Where the local bound does pay is beats 1 and 3, whose only text is
+   --paper display type: measured at 23x to 223x of headroom against 1.1x
+   at beat 2. A global uniform cannot spend that, and spending it is a
+   scroll-varying alpha, which is a mechanism and not a number. */
+const INK = 221;
 const uAlpha = uniform(0); // set at mount, from INK over the allocated count
 
 const nodes = uniformArray<'vec3'>(NODES, 'vec3');

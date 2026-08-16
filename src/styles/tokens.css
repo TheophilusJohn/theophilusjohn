@@ -19,6 +19,12 @@
   --leader:    #A99BF5;
   --mint:      #C6E9D2;   /* reserved second accent. Do not use without a reason. */
 
+  /* §4.3's scrim, and the only translucent colour in the palette. 92% of
+     the page over the scene multiplies whatever is behind it by 0.08,
+     which is what buys beat 3 its --void-lift bound back while the rest
+     of the frame runs bright. */
+  --scrim: color-mix(in srgb, var(--void) 92%, transparent);
+
   /* ── Type scale ───────────────────────────────────────
      Use these. No arbitrary font sizes anywhere else. */
   --t-hero:  clamp(4rem, 18vw, 16rem);

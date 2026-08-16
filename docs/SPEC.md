@@ -131,14 +131,45 @@ GSAP SplitText, masked line reveal — lines translate up out of an overflow-hid
 
 SplitText's rewrite includes screen-reader handling, so it restores the original text to assistive tech. Verify with VoiceOver anyway; a hero split into per-character spans that reads as gibberish is a real failure mode.
 
-### 4.3 Pinned project sections
+### 4.3 The project stage — three beats
 
-Each of the four pins on scroll while its content advances, then releases.
+Each of the four pins on scroll while a scrubbed timeline moves it through three states, then releases.
 
-- `pin: true`, `scrub: 1` on the ScrollTrigger
-- `anticipatePin: 1` to stop the jump at pin start
-- Disable pinning below 900px — pinned sections on mobile trap the scroll and feel broken. Fall back to a plain stacked reveal.
-- The machine ID sits in the section's own top row in `--leader`. **Revised (§11):** it does not increment in a pinned corner — what tracks position through the pin is the rule between the two columns, filling in `--leader` as the section advances. One accent, one meaning: the part of the section already behind you
+**Revised (§17): the stage is three beats, not one composition.** It was a headline across the top with the lead and the writeup in two columns under it — one screen, and every pixel of it words. §16 shipped a terrain that is correct, measured and invisible, and only half of that was brightness: there was nowhere for a world to be. A landscape glimpsed between paragraphs is not a landscape, and no alpha fixes a layout with no room in it.
+
+So: fewer words per screen, not fewer words. The writeups do not change.
+
+| beat | on screen | world |
+|---|---|---|
+| 1 | machine ID, headline | clear |
+| 2 | headline demoted to a mono label, metric strip | clear |
+| 3 | writeup, ~45ch column, left | scrim behind the column only |
+
+Beats 1 and 2 carry a line and four numbers between them, and together they are most of the section's duration. That is the room the world needed.
+
+- `pin: true`, `scrub: 1`, `anticipatePin: 1` on the ScrollTrigger
+- `end: '+=220%'` of viewport height per section. Beats occupy roughly 0–35%, 35–65% and 65–100% of that, with the transitions overlapping the boundaries
+- Each beat cross-fades and translates a short distance vertically — the outgoing element leaving upward, the incoming arriving from below, masked the way §4.2 masks the hero lines. **Never a hard cut:** the pin is scrubbed, so a visitor scrolling slowly sees the states blend, and a hard cut under a scrub reads as a broken sprite
+- The headline is the one element that persists across all three, moving from display size at beat 1 to a mono label at beat 2 and staying there. It is the only continuity between the beats, and it is what stops them reading as three unrelated screens
+- The machine ID sits in the section's own top row in `--leader`. **Revised (§11):** it does not increment in a pinned corner — what tracks position through the pin is the rule beside the content, filling in `--leader` as the section advances. One accent, one meaning: the part of the section already behind you
+- Disable pinning below 900px — pinned sections on mobile trap the scroll and feel broken. Fall back to a plain stacked reveal, which is also what the beats resolve to with motion off
+
+**This roughly triples the page.** That is the price of a world and it is not avoidable: a landscape needs screens with nothing on them. Two consequences, to be handled rather than discovered:
+
+- §4.6's URL sync fires on section boundaries, which are now much further apart. The `replaceState` threshold moves to beat 1's arrival rather than the section's midpoint, or the address bar lags a screen behind the reader.
+- Deep links land at beat 1 of their section, not at the section's top.
+
+**The fit rule changes shape.** §11's rule — measure every section against `innerHeight`, pin all or none — was written for a stage that had to fit on one screen. A beat has to fit, not a section. Re-measure against the tallest single beat, which is beat 3. At ~45ch that is shorter than the old two-column stage, so more viewports qualify than before; verify at 1280×720, which failed the old rule.
+
+#### The scrim
+
+Beat 3 is the only text that needs one.
+
+A horizontal linear gradient from `--void` at 92% opacity to transparent, reaching about 60% of the viewport width and fading out well before the right edge. Not a card, not a panel, no border, no corner radius — the moment it has an edge it reads as content pasted onto a background rather than content inside a world.
+
+Beat 2's strip sits at the same left offset, so the two beats share an axis and the scrim's arrival is the only change.
+
+Under the scrim the old brightness bound holds; outside it the scene has no ceiling from legibility. See §4.7.
 
 ### 4.4 The laptop
 
@@ -178,7 +209,7 @@ Accessibility: canvas text is invisible to screen readers. The same log lines mu
 
 **Revised: scroll no longer moves the laptop at all.** The camera altitude curve in §4.7 is what changes the view of it, driven by the same Lenis instance as everything else — there is no ScrollTrigger on this object and nothing to tie to the hero reveal.
 
-What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 18 with the thing on screen; do not build both by inference from this paragraph.
+What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 19 with the thing on screen; do not build both by inference from this paragraph.
 
 #### Constraints
 
@@ -273,6 +304,10 @@ h(p) = Σ_nodes  A_i · exp(-|p - n_i|² / σ²)
 
 `A_i` is the node's share of addressed traffic — under Homonoia the leader's term dominates and the landscape is one mountain; under Enargeia the five are even and it is a ring of hills. `B_ij` is nonzero only for routes carrying traffic, so raising `leaderMix` visibly grows ridges toward one summit.
 
+**The hero's peak, and a correction (§17).** §16 reported the hero as "five hills between 0.13 and 0.28", the flattest landscape `h(p)` can draw, and that was the wrong preset: those are Enargeia's numbers. `shares(5, 0.35, 0)` is **0.41 / 0.20 / 0.13 / 0.13 / 0.13** — the hero has had a dominant peak since §15 and the first screen was never the flat one. Enargeia is, deliberately: almost nothing routes to a leader there because a spreading activation is not a vote.
+
+What stands from the observation is smaller. The hero's peak moves to **0.47** (`leaderMix` 0.45) so that dominance is not a thing you have to measure to see, and the hero gets a **slow term** where it had none — `elect` 0 meant the cluster at rest never elected anything, and a Raft cluster at rest has a leader precisely because it elected one. Slow enough that it drifts rather than switches, and far enough from Homonoia's 3.4s that it never competes with the set piece.
+
 **Texture — accumulated, optional, and the second thing to build.** A 512×512 `r32uint` storage texture, into which the particle compute pass `atomicAdd`s one per particle per frame, decayed 2% per frame. Sampled and added to `h` at a low amplitude. This is what makes the ground feel *alive* rather than *computed* — it lags the simulation, so a leader change leaves the old mountain visibly subsiding for a few seconds after the traffic has left it.
 
 Build the analytic term first and ship it. Add accumulation only once the frame budget is measured with everything else in place. If it does not fit, the world is complete without it.
@@ -319,9 +354,11 @@ Stars are the only thing in the world that does not mean anything. That is delib
 
 This is the whole answer to "both — above it and down in it". The descent is the read, and it means document mode is not a lesser version of world mode: scrolling the page *is* the flight, and world mode adds control rather than adding the world.
 
+**Revised (§17): altitude is a function of beat position, not section position.** A project is three beats now (§4.3), and they are three stages of one continuous descent — the camera is visibly lower at beat 3 than at beat 1 of the same project, so the landscape resolves as the writeup arrives. The rows above name where each section *starts*.
+
 Position along the curve is `scrollY / maxScroll`, driven by the same Lenis instance as everything else — one scroll authority (§4.6), and the camera is a pure function of scroll position exactly as this section requires of the scene state.
 
-Damped: the camera lags the scroll by a short time constant, so a fast scroll arrives with momentum instead of teleporting. A slight pointer parallax on top — a couple of degrees of yaw and pitch, eased. This costs nothing and does more for the sense of depth than any other single thing in this section. Disabled under reduced motion.
+Damped: the camera lags the scroll by a short time constant, so a fast scroll arrives with momentum instead of teleporting. A slight pointer parallax on top — a couple of degrees of yaw and pitch, eased. This costs nothing and does more for the sense of depth than any other single thing in this section, and it matters more since §4.3: two beats in three are mostly world, and parallax is the cheapest depth cue available. Disabled under reduced motion.
 
 #### Fog
 
@@ -339,10 +376,21 @@ Text contrast is measured *against the busiest frame the scene can produce*, not
 
 **Corrected (§16): the toggle reads the palette, not a remembered one.** High contrast has to move the busiest frame *down*, and it was not: the scene read `--leader` and `--rule` once at mount, so a page loaded in high contrast got the brighter palette — `--rule` goes from `#2A2640` to `#4A4470`, 2.6× the luminance — scaled by the same 0.45 as a page toggled into it, and the two paths differed. Both tokens are uniforms now, re-read on every change; the factor is 0.20, measured. Normal 0.99× of the bound, high contrast 0.68×.
 
-**Revised: that bound applies where text is.** It is a document-mode constraint, not a property of the scene.
+**Revised (§17): the bound is local, because the requirement is local.** The rule says the scene must stay under `--void-lift` *because text sits on it*, and that was applied to the whole scene at all times. The actual requirement is that text is readable, which is only the same thing where there is text.
 
-- **Document mode** — the bound holds unchanged. The terrain is far below the camera through the whole scroll, fogged, and dim. It is a floor glimpsed under the content, not a landscape competing with it.
-- **World mode** — text is confined to the writeup panel, which has its own backing. Outside that panel the scene may go to **4× the document bound**, measured the same way. Where the panel is open, the region behind it returns to the document bound.
+| region | bound |
+|---|---|
+| Behind beat-3 text, inside the scrim (§4.3) | `--void-lift`, unchanged |
+| Behind beats 1 and 2, and behind the header | 2× `--void-lift` |
+| Everywhere else | no ceiling from legibility; taste is the limit |
+
+The header and the footer sit over the world at every scroll position, so they keep a real bound. They are small; the scene can afford them.
+
+In **world mode** text is confined to the writeup panel, which has its own backing: the region behind the panel returns to the document bound and the rest of the frame is the third row of that table.
+
+The measurement harness from §16 stands, but it must now sample **per region** rather than per frame — a whole-viewport worst case is exactly the over-constraint this revision exists to remove.
+
+§16's ink figures were solved against the global bound and do not scale. The ground was landing at 0.65–0.82× of `--void-lift` outside Homonoia, which is why the hero showed an arc and one dot. Re-solve; do not multiply the old numbers.
 
 This is the honest resolution of "make it brilliant" against "text must be readable". The constraint was never about the scene; it was about the words. Where there are no words, spend the light.
 
@@ -484,7 +532,7 @@ with it.
 ## 8. Open decisions
 
 - **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
-- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 18, with the thing on screen.
+- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 19, with the thing on screen.
 
 ---
 

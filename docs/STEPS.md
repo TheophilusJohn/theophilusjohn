@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–16 are done. The site is live. **Update this line at the end of
+Steps 1–17 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -122,6 +122,10 @@ whichever ones happen to fit reads as a glitch. Measured: all four pin at
 1280×720) nothing pins and every section falls back to the stacked reveal,
 which is also the whole of the behaviour under 900px. The binding section is
 always Homonoia, the longest writeup.
+
+**Superseded in part by §17:** the stage is three beats now, so what gets
+measured against `innerHeight` is the tallest beat rather than the whole
+section. All-or-none stands; the numbers above were the two-column stage's.
 
 Pins add scroll distance above every section after them, so §7's deep links
 re-jump once the page is its final height (measured: `/#philoi`,
@@ -445,8 +449,10 @@ the rest to its neighbour, and nobody addresses themselves. Peaks are what a
 node receives, ridges are what a route carries, and they sum to 1 — so a
 section cannot raise the whole world by accident, and `PEAK`/`RIDGE` are the
 only scale. Under Homonoia that is 0.80 on the leader and 0.20 on the node
-it writes to: one mountain. Under the hero it is five hills between 0.13 and
-0.28: a range. Ground belonging to the elected node is `--leader`, weighted
+it writes to: one mountain. Under Enargeia it is five hills between 0.13 and
+0.28: a range. [Corrected at §17 — this line said "under the hero", and the
+hero has never been the flat one: `shares(5, 0.35, 0)` is 0.41/0.20/0.13/
+0.13/0.13.] Ground belonging to the elected node is `--leader`, weighted
 by height so the plains stay `--rule` rather than taking an accent from a
 share of nearly nothing — the same rule §2 fixes and the traffic above it
 already follows.
@@ -523,27 +529,193 @@ Bundle **54.6 KiB eager / 251.6 KiB desktop** against 120 and 260 — the
 terrain, the arc and `LineBasicNodeMaterial` cost **2.1 KiB gzipped**, and
 8.4 KiB of the desktop budget is left.
 
-**Left for §17, deliberately:** the camera is one fixed pose (25° down, 18.5
-units back) and not the altitude curve — §17 owns that, and the ground's
+**Left for §18, deliberately:** the camera is one fixed pose (25° down, 18.5
+units back) and not the altitude curve — §18 owns that, and the ground's
 distance falloff here is a stand-in for the fog it owns too. The ground disc
 is camera-relative per §4.7, so it *slides* over the terrain when the camera
 moves; nothing moves yet, and whether that reads as texture swimming is a
 question for the first session where the camera does.
 
-### 17. Starfield, fog, camera altitude curve
+### 17. The three-beat stage, the scrim, re-scoped brightness
+**The step that makes room for the world.** §16 shipped a terrain that is
+correct, measured and invisible, and only half of that was brightness — the
+other half is that every viewport is full of words. See SPEC §4.3.
+
+One pinned section becomes a scrubbed timeline through three beats: machine
+ID and headline; headline demoted to a mono label plus the metric strip;
+then the writeup in a ~45ch column on the left, behind a scrim. `end:
+'+=220%'`, beats at roughly 0–35 / 35–65 / 65–100%. Cross-fade and a short
+vertical translate between them, masked like §4.2 — never a hard cut under
+a scrub. The headline is the only thing that persists across all three.
+
+The scrim is a horizontal gradient, `--void` at 92% to transparent by ~60%
+of the viewport width. No edge, no border, no radius.
+
+Brightness stops being one number for the whole frame: `--void-lift` inside
+the scrim, 2× behind beats 1–2 and the header, no ceiling elsewhere. Sample
+**per region**. Re-solve the ink — §16's figures were fitted to the global
+bound and do not scale. Give the hero a dominant peak (~0.45 on one node)
+while you are in there; the even five-hill preset is the flattest thing
+`h(p)` can draw and it is the first screen anyone sees.
+
+Two consequences of a page that is ~3× longer: the URL sync threshold moves
+to beat 1's arrival, and deep links land at beat 1. The fit rule from §11
+now measures the tallest **beat**, not the section — verify 1280×720, which
+failed the old rule.
+
+**Done when:** beats 1 and 2 leave most of the viewport to the world; the
+scrubbed transitions blend rather than cut; deep links and the address bar
+still agree; nothing pins that cannot hold its own tail on screen.
+**Report:** per-region 12×12 worst case against each bound, pin lengths and
+document height before/after, the viewports that pin.
+
+*Done.* The stage is three beats, layered rather than stacked, and the page
+went from **4,909px to 11,559px** at 1512×804 — the tripling §4.3 says is
+the price of a world. Pin `+=220%` (1,769px each), `scrub: 1`,
+`anticipatePin: 1`, section top constant at 0.1 for the whole pin and
+document height constant throughout: no jump, no reflow.
+
+**The headline is two elements, and that is the one place the spec could
+not be taken literally.** It has to cross a size *and* a typeface between
+beat 1 and beat 2, and one element cannot do that under a scrub without a
+hard cut somewhere in the middle, which §4.3 forbids. So the `<h3>` stays
+the heading and a mono `<p aria-hidden>` carries the label, cross-fading in
+place. Assistive tech sees exactly one heading at every beat; the label is
+`display: none` entirely outside the beats, so no stacked layout has the
+text twice. Measured: **0 visible labels** at 360×640, at 1280×720 and with
+motion off.
+
+**Linear on the cross-fades, and that is a requirement rather than the
+scrub convention.** `power2.in` leaving against `power2.out` arriving holds
+*both* beats at 0.88 through the middle of the handover — a double exposure
+of the headline over its own label — and swapping the pair dips the sum to
+0.25, which is a blink. With `ease: 'none'` the opacity sum is **1.000 at
+every sample** across both handovers.
+
+**The fit rule was being answered with the wrong fonts.** `document.fonts.
+status` is `"loading"` when this module runs, so every height it measured
+belonged to the fallback face, and nothing ever re-asked. At 1366×768 that
+was the difference between pinning and not — Archivo needs 784px of the
+768 available for the fallback's answer. The decision now runs again on
+`document.fonts.ready` (no timeout guard, unlike §12: this gates an
+enhancement, not content). Measured, tallest beat vs viewport:
+
+| | 1512×804 | 1366×768 | 1280×800 | 1200×800 | 1024×768 | 1280×720 | 1152×720 |
+|---|---|---|---|---|---|---|---|
+| homonoia needs | 784 | 784 | 784 | 784 | 784 | 760 | 760 |
+| pins | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+
+§11 pinned at 1280×800 and above; the beats add **1200×800 and 1024×768**.
+**1280×720 still does not fit** — 760 against 720 — so it keeps the stacked
+fallback. §4.3 asked for it to be verified, not for it to pass, and closing
+40px means widening the 45ch column, which spends the room this step exists
+to make. Homonoia binds at every width, as it did at §11. While pinned, the
+last line of the writeup clears the fold by **32px** at 768 and **58px** at
+804; nothing lands below it.
+
+**Two bugs, both from the same fact: a pinned element reports `top: 0` for
+the entire length of its pin.** At `+=60%` that was under a screen of
+error, at `+=220%` it is nine tenths of a section.
+- `jumpTo` on a pinned section resolves to the scroll position it was
+  given, so the deep-link re-jump was a no-op. Measured:
+  `/projects/homonoia` arriving at **beat 2**. It asks the trigger for its
+  start now. All four deep links land at beat 1: `/#philoi`, `/#basis`,
+  `/projects/enargeia`, `/projects/homonoia` — each at its pin start with
+  the headline at opacity 1.
+- `keepingPlace` read the same frozen 0, so the motion toggle and the
+  resize path lost the reader's position inside the pin. Both go through
+  one `offsetOf()` that uses the trigger's start while pinned. Round trips
+  now **hold the beat**: motion off at beat 2 → on again lands at beat 2,
+  and 1512×804 → 1200×720 → back does too. Previously both returned to
+  beat 1, and a resize was measured 1003px short.
+
+**The URL threshold needed no change.** §4.3 predicted the address bar
+would lag; measured, it leads — the `-45%` band hands over ~500px *before*
+the pin starts, which is beat 1 arriving rather than the section's
+midpoint. Left alone.
+
+**Brightness: the bound is local now, and the arithmetic behind it was
+wrong in the revision.** The harness measures every text element on the
+page against the brightest 12×12 the scene draws *inside that element's own
+box* — **197 elements** over 14 stops, document peeled, scrim kept where
+beat 3 needs it. Two corrections fell out of it:
+
+- **`2× --void-lift` was never available.** It puts `--dim` at **4.1:1**,
+  under AA. `--dim` tolerates **1.21×** and no more, and it is on screen at
+  every scroll position on this page — header nav, the period row, metric
+  labels, log bands. Per-stop headroom ran 1.50× to 2.06× and *every* stop
+  was bound by the same 10px `--dim`, which is also why the ink is still
+  one uniform and not a function of the beat.
+- **Ink scales the scene's contribution, not the backdrop.** `--void` is
+  under every pixel and does not move. Solving on totals understated the
+  headroom by about half; a first pass shipped 1.45× on that arithmetic and
+  the re-measure caught it.
+
+Solved: field ink **88 → 221**, ground **5,800 → 14,500**, both **2.5×** and
+keeping §16's balance. The binding element is Philoi's `stack` line at beat
+2 — backdrop 0.01329 = `--void` 0.00680 + scene 0.00649, against 0.00650
+allowed at 4.55:1. Re-run after the change: **scale by 1.002×**, i.e. at
+the ceiling. **0 of 197 elements fail** in either contrast mode.
+
+Where the local bound does pay is exactly where §4.3 said it would, and the
+page cannot spend it: beats 1 and 3 have only `--paper` display type in
+front of the scene and measure **23× to 223×** of headroom, against 1.1× at
+beat 2. Spending that is a scroll-varying alpha, which is a mechanism and
+not a number — noted for §18, which changes what is in frame anyway.
+
+High contrast still moves the busiest frame down and only down: scene
+contribution **0.00196 against 0.00649**, 0.30×, and 18× of headroom.
+
+The scrim is solid to 60% of its own width — 539px against the 524px the
+45ch column ends at, because the bound applies where the text is and the
+first version left the column's right third sitting in the fade.
+
+**Everything else, checked.** axe-core **0 violations** in all four states
+at 1512×804 and at 360×640 — eight runs. **13 focusables**, unchanged from
+§14, all reachable, all ringed, and the 14th Tab leaves the document. A
+`Live` link inside a transparent beat takes its own beat's scroll position
+on focus and is fully opaque **1,020ms** later, which is `scrub: 1` catching
+up; it is on screen the whole time. LCP **76ms** desktop / **60ms** mobile,
+CLS **0** with **zero shift entries** on both, despite `decide()` now running
+twice per load. 360px: no beats, no horizontal overflow. Bundle **55.1 KiB
+eager / 252.0 KiB desktop** against 120 and 260, 8.0 KiB spare; CSS 3,001
+(+1,012 for the stage and the scrim), document 6,169. Draw calls and
+ms/frame are §16's — no scene object was added or removed, and the scrim is
+CSS.
+
+**The hero preset, and a correction to §16's report.** §16 recorded the hero
+as "five hills between 0.13 and 0.28"; those are Enargeia's numbers.
+`shares(5, 0.35, 0)` is **0.41 / 0.20 / 0.13 / 0.13 / 0.13** — the hero has
+had a dominant peak since §15 and the first screen was never the flat one.
+So §4.3's premise for this change was wrong and only the smaller half of it
+survived: the peak goes to **0.47** (`leaderMix` 0.45) so dominance is not
+something you have to measure to see, and the hero gets a **slow term**
+where it had none — `elect: 11`, against Homonoia's 3.4, so a reader who
+stays sees the world rearrange once and it never competes with the section
+that owns the election.
+
+**Left for §18:** the camera is still §16's fixed pose, so the terrain sits
+low in every frame and the hero is mostly covered by its own display type.
+The altitude curve is what puts a reader inside the landscape the beats
+have now made room for, and it changes what is in frame enough that the ink
+above is a solve against *this* camera.
+
+### 18. Starfield, fog, camera altitude curve
 8k stars in view space so they never parallax, power-law brightness, slow
 per-star opacity phases spread 4–14s. Exponential-squared fog to `--void`,
 tuned so the far ground fades where the horizon arc sits; stars exempt.
 
 Scroll is altitude, per the table in SPEC §4.7 — high and looking down at
 the hero, lowest and near-level at project four, rising again at about.
-Same Lenis instance, damped, plus a couple of degrees of eased pointer
-parallax. Parallax off under reduced motion.
+Altitude reads **beat** position, not section position (§4.3): visibly
+lower at beat 3 than at beat 1 of the same project, so the landscape
+resolves as the writeup arrives. Same Lenis instance, damped, plus a couple
+of degrees of eased pointer parallax. Parallax off under reduced motion.
 
 **Done when:** scrolling the page top to bottom reads as a descent and a
 climb; the camera is still a pure function of scroll position.
 
-### 18. The laptop
+### 19. The laptop
 Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
 from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,
 updated at ~8fps. Log lines duplicated into a visually-hidden `<pre>` for
@@ -556,7 +728,7 @@ behind the terrain rather than in front of it.
 sits on `h(x, z)` rather than floating; a focusable DOM element over it
 routes to Homonoia by keyboard.
 
-### 19. Landmarks 2–4
+### 20. Landmarks 2–4
 Three more structures, one per remaining project, standing on the ground in
 `order`. Three states: distant (silhouette), approaching (label + machine
 ID resolve), arrived (writeup opens in the panel). LOD: silhouette at
@@ -565,7 +737,7 @@ distance, detail only on approach.
 **Design work not yet done:** what the three structures actually *are*.
 Ask before modelling.
 
-### 20. Mode switch and scroll ↔ camera sync
+### 21. Mode switch and scroll ↔ camera sync
 Visible persistent control, choice in `localStorage`. Arriving at a landmark
 replaces its route; loading that route flies the camera there. The writeup
 panel and its backing — the only place text lives in world mode, and the
@@ -575,13 +747,13 @@ reason the brightness bound can lift outside it (SPEC §4.7).
 mode switch reachable by keyboard from anywhere, and switching modes at
 Philoi lands at Philoi rather than at the start of the curve.
 
-### 21. Free flight, bounds, altitude clamp
+### 22. Free flight, bounds, altitude clamp
 Unlocks at the fourth landmark or via a control. Bounded volume, camera
 clamped above `h(x, z)` — a floor it may not go under, not collision.
 Always-visible return-to-path control.
 
-### 22. Accumulation texture
-Only if the budget allows, and only once 16–21 are measured with everything
+### 23. Accumulation texture
+Only if the budget allows, and only once 16–22 are measured with everything
 in place. 512×512 `r32uint`, `atomicAdd` one per particle per frame in the
 existing compute pass, decayed 2% per frame, sampled into `h` at low
 amplitude. It lags the simulation, so a leader change leaves the old
@@ -590,6 +762,6 @@ mountain subsiding for a few seconds after the traffic has left it.
 **If it does not fit, the world is complete without it.** Cut it before
 cutting the election.
 
-### 23. Performance pass
+### 24. Performance pass
 Instancing, LOD, frustum culling, 60fps on integrated graphics.
 **Report:** ms/frame, draw calls, particle counts per buffer.

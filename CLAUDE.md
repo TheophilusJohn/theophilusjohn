@@ -18,7 +18,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
   Additive. Never the only way to reach anything.
 
 Build order is strict: document mode is finished and shipped before world
-mode begins. Steps 1–14, then 15–23. See `docs/STEPS.md`.
+mode begins. Steps 1–14, then 15–24. See `docs/STEPS.md`.
 
 ---
 
@@ -79,10 +79,11 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   marquee, a jump under a scrubbed pin. Settled in step 11: lag smoothing
   is back on at GSAP's defaults. Do not turn it off again for the bands;
   they pause off-screen, so their phase already drifts from the clock.
-- Pinning a section taller than the viewport hides its own tail behind the
+- Pinning content taller than the viewport hides its own tail behind the
   fold for the length of the pin. A width breakpoint does not catch it —
   a short laptop screen at full width reproduces the phone failure. Measure
-  the section against `innerHeight` and pin all of them or none.
+  against `innerHeight` and pin all of them or none. Since §17 the thing
+  measured is the tallest *beat*, not the whole section.
 - Anything that changes document height after load invalidates a `#hash`
   the browser already resolved — pins add their scroll distance above every
   later section. Re-jump once the page is its final height.
@@ -190,6 +191,27 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   scales the scene then behaves differently depending on whether it was
   *set before load* or *toggled after* it, and only the second path is
   usually the one tested. Scene colours are uniforms, re-read on change.
+- A **pinned** element reports `top: 0` for the entire length of its pin,
+  so its rect says nothing about how far into the pin the reader is.
+  `scrollIntoView` and `lenis.scrollTo` both resolve it to the scroll
+  position they were handed — the jump is a silent no-op. Ask the
+  ScrollTrigger for its `start`. Anything that measures "where is this
+  section" for later restoration has the same bug in the other direction.
+- Anything measured at module import is measured in the **fallback font**:
+  `document.fonts.status` is still `"loading"` when a deferred module
+  runs. A layout decision made there is made against metrics the page will
+  never render with. Re-ask on `document.fonts.ready` — with a timeout
+  guard only if it gates content (§12), not if it gates an enhancement.
+- Eased opacity does not cross-fade. `power2.in` out against `power2.out`
+  in leaves both elements at 0.88 in the middle; swapping the pair dips to
+  0.25. Linear on both is the only pair that sums to 1 the whole way.
+- Brightness solves scale the scene's **contribution**, not the backdrop:
+  `--void` is under every pixel and does not move with ink. Dividing
+  totals understates the headroom by about half.
+- A classic scrollbar's **thumb** is the brightest thing on the page by a
+  factor of ten, and it moves down the frame as you scroll. Crop pixel
+  measurements to `documentElement.clientWidth` or every reading is the
+  scrollbar.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or
@@ -203,10 +225,10 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 Check before claiming a step is done.
 
 - Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §16: 54.6 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §16: 251.6 KiB,
+  Measured at §17: 55.1 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §17: 252.0 KiB,
   and it binds — it is why the WebGL 2 tier does not ship
-- LCP under 2.5s on throttled 4G
+- LCP under 2.5s on throttled 4G. Measured at §17: 76ms desktop, 60ms mobile
 - Under 100 draw calls. Measured at §16: 4
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off

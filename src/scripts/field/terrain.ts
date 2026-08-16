@@ -137,8 +137,17 @@ const uAlpha = uniform(0);
 /* Total ink again (§15): the alpha a ground point is drawn at is this over
    however many were allocated, so halving the count on a small viewport is
    a quality setting and not a change to how bright the page is. The number
-   itself is measured against the bound, not chosen. */
-const INK = 5800;
+   itself is measured against the bound, not chosen.
+
+   §17 re-solved it against the local bound and it went up by the same
+   2.5x as the field, from 5800 — the two keep §16's balance, because
+   nothing measured here said the split between traffic and ground was
+   wrong, only that the ceiling over both of them was global when the
+   requirement was not. See the note on INK in scene.ts for why 2.5 and
+   not the 2x the revision expected, which is a stranger sentence than it
+   looks: the ceiling is higher than the revision asked for and the reason
+   it asked for 2x does not hold. */
+const INK = 14500;
 
 /* ── The heightfield ─────────────────────────────────────────────────────
 
