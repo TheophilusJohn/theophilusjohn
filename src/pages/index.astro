@@ -44,11 +44,39 @@ const bands = [
     })();
   </script>
 
+  {/* Held invisible until §10's reveal has the lines split and offset, so
+      the final state never paints ahead of the entrance. Set from the root
+      attribute the layout's head script already resolved, and only ever by
+      script — with JS off the attribute never appears and the hero is just
+      visible, which is the correct static state.
+
+      The timeout is the safety net: the reveal is an enhancement, the words
+      are the page. If the module throws or never arrives, uncover anyway
+      rather than leave the hero permanently blank. */}
+  <script slot="head" is:inline>
+    (function () {
+      var r = document.documentElement;
+      if (r.dataset.motion === 'off') return;
+      r.dataset.hero = 'pending';
+      setTimeout(function () {
+        if (r.dataset.hero === 'pending') delete r.dataset.hero;
+      }, 3000);
+    })();
+  </script>
+
   <LogBand index={0} {...bands[0]} />
 
   <section class="wrap hero" id="top" data-path="/">
-    <h1>Theophilus<br />John</h1>
-    <p class="sub">Builds systems that have to agree with each other.</p>
+    {/* The space before the break is load-bearing. SplitText names the
+        heading from its textContent, and <br> contributes nothing to that —
+        without the space the accessible name is "TheophilusJohn". */}
+    <h1>Theophilus <br />John</h1>
+    {/* The inner span is the thing that moves, and .sub is its clip. The
+        sub is not display type — it rises as one block rather than line by
+        line, which also keeps SplitText off a <p>: ARIA prohibits naming a
+        paragraph, so the aria-label SplitText writes to stand in for the
+        split spans is the one place it would be dropped on the floor. */}
+    <p class="sub"><span>Builds systems that have to agree with each other.</span></p>
   </section>
 
   <LogBand index={1} {...bands[1]} />
@@ -72,6 +100,7 @@ const bands = [
 <script>
   import '../scripts/motion';
   import '../scripts/url-sync';
+  import '../scripts/hero';
 </script>
 
 <style>
@@ -81,7 +110,7 @@ const bands = [
      clip, not hidden: `hidden` would make .hero a scroll container,
      and `overflow-x: hidden` forces overflow-y to auto — which makes
      it the nearest scrollport for any descendant position: sticky.
-     `clip` creates no scroll container, so §10's pinning still
+     `clip` creates no scroll container, so §11's pinning still
      resolves against the page. Do not "simplify" this to hidden. */
   .hero {
     padding-block: var(--s-12) var(--s-8);
@@ -91,11 +120,52 @@ const bands = [
     font-size: var(--t-hero); line-height: 0.84;
     letter-spacing: -0.06em; font-weight: 500;
     font-variation-settings: 'wdth' 125;
+
+    /* How far the ink falls past a 0.84 line box, measured off Archivo's
+       own metrics rather than guessed: baseline at 0.754em, descender
+       0.173em under it, box 0.84em — so 0.087em hangs out the bottom.
+       The p in "Theophilus" is the only glyph in the hero that needs it,
+       and a clip at the line box would cut it clean off. Rounded up, so
+       a fallback face with a deeper descender is not clipped mid-swap.
+       (Nothing overflows the top: the caps start 0.031em inside it.) */
+    --descender: 0.12em;
+
+    /* Stops the last mask's negative margin from collapsing out through
+       the heading and dragging .sub up by 0.12em of hero — which at the
+       clamp ceiling is 1.9rem, straight into the second line. */
+    display: flow-root;
   }
+
+  /* SplitText builds the lines and their masks at runtime, so neither ever
+     carries this component's scope attribute. Reach them from an ancestor
+     that does.
+
+     The padding gives the clip enough room for the descender; the matching
+     negative margin on the mask takes it back out of the layout, so the
+     split heading occupies exactly the height the unsplit one did and the
+     reveal costs no shift. The two masks overlap by that much — which is
+     already true of the ink at line-height 0.84, and each mask clips only
+     its own line. */
+  h1 :global(.reveal-line) { padding-bottom: var(--descender); }
+  h1 :global(.reveal-line-mask) { margin-bottom: calc(-1 * var(--descender)); }
+
+  /* The pre-paint hold, cleared by hero.ts once the lines are split and
+     offset. visibility rather than display or opacity: the boxes stay, so
+     nothing shifts when the reveal takes over. */
+  :global(html[data-hero='pending']) h1,
+  :global(html[data-hero='pending']) .sub { visibility: hidden; }
+
   .sub {
     margin-top: var(--s-6); max-width: 46ch;
     color: var(--leader); font-size: var(--t-lg); line-height: 1.5;
+
+    /* Clips its span on the axis the reveal travels, and only that axis,
+       for the reason on the masks below. No descender allowance needed:
+       at line-height 1.5 the half-leading is 0.205em and the deepest ink
+       0.173em, so the last line box already contains it. */
+    overflow: visible clip;
   }
+  .sub > span { display: block; }
 
   .work > .meta { display: block; padding-block: var(--s-12) 0; }
 

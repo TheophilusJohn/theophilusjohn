@@ -87,6 +87,18 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - Pre-paint state paints off the root attribute the inline head script
   sets, never off `aria-pressed`. The module that syncs `aria-pressed`
   lands after first paint, so a control styled from it flashes.
+- GSAP defers the first write of a `from` tween to the start of the next
+  tick. Anything that uncovers an element *because* the start state is on
+  it — a pre-paint hold, a visibility gate — must pass `lazy: false`, or
+  the element is one dropped frame from painting its final position first.
+  Tell: `transform` still reads `none` right after the tween is created.
+- ARIA prohibits an accessible name on `paragraph`, `generic` and friends,
+  so the `aria-label` SplitText writes to stand in for its split spans is
+  dropped on a `<p>`, leaving the text unreadable behind `aria-hidden`
+  children. Split headings; move a paragraph with a wrapper instead.
+- `overflow: visible clip` is legal and honoured — `visible` degrades to
+  `auto` next to `hidden` or `scroll`, but not next to `clip`. That is how
+  a line mask clips its travel axis without cutting the hero's bleed.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or

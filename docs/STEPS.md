@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–9 are done. The site is live. **Update this line at the end of
+Steps 1–10 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -91,6 +91,15 @@ GSAP SplitText, masked line reveal out of an `overflow: hidden` clip.
 
 **Done when:** VoiceOver reads the hero as a sentence, not character
 fragments. Test it, don't assume SplitText handles it.
+
+*Done.* Lines, not characters. The `h1` splits and each line rises out of
+its mask; the sub is not display type, so it rises as one block from a
+wrapper — which also keeps SplitText's `aria-label` off a `<p>`, where ARIA
+prohibits it. Masks clip on the travel axis only (`visible clip`) so the
+hero still bleeds right. Held pre-paint by `data-hero` off the head script,
+uncovered by the module. **Left for step 12:** the hold moves LCP behind
+the JS bundle, and the reveal is not yet gated on `sessionStorage` or
+`document.fonts.ready`.
 
 ### 11. Pinned project sections
 `pin: true`, `scrub: 1`, `anticipatePin: 1`. Disable pinning below 900px —
