@@ -6,15 +6,29 @@ headline: "Raft, made visible"
 role: "Sole engineer"
 period: "2026"
 stack: ["TypeScript", "Canvas", "Vite"]
-metrics: []
+metrics:
+  - { value: "15M", label: "ticks fuzzed" }
+  - { value: "0", label: "invariant violations" }
+  - { value: "128", label: "tests" }
+  - { value: "5", label: "node cluster" }
 liveUrl: "https://homonoia.dev"
 order: 2
 ---
 
-## Constraint
+Homonoia is an implementation of the Raft consensus algorithm, written from the paper and
+made visible in the browser. Five simulated nodes on a controllable network — you set
+latency, drop rate, duplication, partitions, and kill or revive nodes, then watch leader
+elections and log replication behave correctly under whatever you do to them.
 
-## Decisions
+The consensus core is pure: state in, state out, no I/O and no timers. The same code runs
+the visualization and the fuzz harness, so what you see on screen is the thing that was
+verified rather than a diagram of it. A 5,000-seed sweep covers 15M ticks, 41,879 leader
+changes, 447,766 entries committed and 9,974,273 messages sent, with no invariant
+violations.
 
-## Result
+Deleting a safety rule to check the tests catch it produced the more interesting result.
+With Raft's commitment restriction removed, 5,000 seeds of random fuzzing found nothing —
+but a hand-written scenario fails at tick 1529. That class of bug isn't reachable by
+fuzzing at all; you have to already know it exists and construct it.
 
-## What I'd change
+TypeScript, React, 2D canvas. 128 tests.

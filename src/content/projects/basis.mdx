@@ -10,10 +10,16 @@ metrics: []
 order: 4
 ---
 
-## Constraint
+Basis is a full-stack SaaS starter — the parts every product needs and nobody wants to
+build again. Clone it and you have working auth, billing and email rather than an empty
+repository.
 
-## Decisions
+Auth is email and password with JWT access tokens and rotating refresh tokens stored
+httpOnly and hashed at rest, including reuse detection and family revocation. Billing is
+Stripe, covering subscriptions and one-time purchases, the Customer Portal, and pricing
+read live from Stripe rather than hardcoded. Transactional email runs through Resend, with
+optional S3 uploads and an admin panel for users and roles.
 
-## Result
-
-## What I'd change
+Node, Express and TypeScript on Postgres via Prisma; React, Vite and Tailwind on the
+front. Helmet, CORS, rate limiting and Zod validation throughout. Dockerized, single
+origin, migrations applied on deploy. Live demo on Railway.

@@ -7,25 +7,22 @@ role: "Sole engineer"
 period: "2026"
 stack: ["WGSL", "WebGPU", "TypeScript", "Qwen2.5-0.5B"]
 metrics:
-  - { value: "0", label: "server inference cost" }
-  - { value: "494M", label: "params, client-side" }
-  - { value: "100%", label: "WGSL kernels" }
+  - { value: "45.5", label: "tok/s decode" }
+  - { value: "334.9 MiB", label: "weights resident" }
+  - { value: "5.63x", label: "compression" }
+  - { value: "0", label: "server cost" }
 liveUrl: "https://enargeia.dev"
 order: 1
 ---
 
-## Constraint
+Enargeia runs Qwen2.5-0.5B-Instruct entirely in the browser. The visitor's GPU does the
+inference, so serving it costs nothing beyond static files — no server, no API key, no
+per-token cost. Every kernel is WGSL running on WebGPU.
 
-{/* What was actually hard. Not "I wanted to learn WebGPU." */}
+The model is quantized to int4, except the tied embedding and LM head which ship at
+int8 — 334.9 MiB resident against 1884.6 at fp32, for 13.5% worse perplexity. Decode
+runs at 45.5 tokens/second at 512 context and 43.1 at 2048, flat across context length.
+Time to first token is 219 ms on a short prompt. Cold load over the CDN is 14.6
+seconds; warm is 1.4.
 
-## Decisions
-
-{/* Two or three that mattered. Each with the alternative rejected, and why. */}
-
-## Result
-
-{/* Quantified. No adjectives doing a number's job. */}
-
-## What I'd change
-
-{/* Specific and honest. This is the section that separates a portfolio from a resume. */}
+Measured on an Apple M2 with a 10-core GPU.

@@ -6,15 +6,26 @@ headline: "Editing without locks"
 role: "Sole engineer"
 period: "2026"
 stack: ["Next.js 15", "Yjs", "Hocuspocus", "Postgres", "Cloudflare R2"]
-metrics: []
+metrics:
+  - { value: "10-12ms", label: "keydown to glyph" }
+  - { value: "10", label: "clients converging" }
+  - { value: "343ms", label: "cold document open" }
 liveUrl: "https://philoi.net"
 order: 3
 ---
 
-## Constraint
+Philoi is a collaborative document editor. Several people edit the same document at once,
+see each other's cursors, and leave comments anchored to the text — plus sharing with
+roles, version history, search, folders and export.
 
-## Decisions
+Concurrent edits converge without locking and without a server deciding who wins. Edits
+are CRDTs, so two people typing in the same paragraph both end up with the same document
+and nobody's keystrokes are discarded. Convergence is tested at 10 simultaneous clients.
 
-## Result
+Measured on a production build: 10–12ms from keydown to glyph, ~343ms to open a document
+cold and ~327ms warm, 164–175ms from search to results. Documents soft-warn at ~1MB and
+are refused at ~10MB.
 
-## What I'd change
+Next.js 15 and TipTap on the front, Yjs and Hocuspocus for sync, Postgres via Prisma,
+NextAuth with Argon2id, and Cloudflare R2 for storage. Running on a DigitalOcean droplet
+behind Caddy at philoi.net.
