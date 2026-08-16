@@ -78,6 +78,11 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   elapsed wall-clock gap in one frame on return. Invisible on a looping
   marquee; scrubbed pins (step 11) will inherit it and jump. Decide there
   whether to re-enable lag smoothing or clamp.
+- GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
+  then stacks its own xPercent/yPercent on top — doubling the offset. If an
+  element has a CSS transform before GSAP animates it, pin `x: 0` (or
+  `y: 0`) in the from-vars so only the percent drives position. Tell: the
+  element lands at ~2x its intended offset.
 
 ---
 
