@@ -11,6 +11,14 @@ const { project, level = 3 } = Astro.props;
 const { Content } = await render(project);
 const d = project.data;
 const H = `h${level}` as 'h1' | 'h3';
+
+// Split rather than string-replace, so the break is content's decision and
+// not a match on whatever words happen to be in the headline.
+const words = d.headline.trim().split(/\s+/);
+const lines =
+  d.headlineBreak === undefined
+    ? null
+    : [words.slice(0, d.headlineBreak + 1).join(' '), words.slice(d.headlineBreak + 1).join(' ')];
 ---
 <section
   id={project.id}
@@ -23,7 +31,12 @@ const H = `h${level}` as 'h1' | 'h3';
       <span class="id">{d.machineId}</span>
       <span class="period">{d.period} · {d.role}</span>
     </div>
-    <H id={`${project.id}-h`} class="headline">{d.headline}</H>
+    <H id={`${project.id}-h`} class="headline">
+      {/* The space before the <br> is load-bearing: without it textContent
+          reads "Inferencein the browser", and that string is the section's
+          accessible name via aria-labelledby. It collapses when rendered. */}
+      {lines ? <>{lines[0]}{' '}<br />{lines[1]}</> : d.headline}
+    </H>
     <p class="summary">{d.summary}</p>
 
     {d.metrics.length > 0 && (
