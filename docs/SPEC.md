@@ -301,7 +301,17 @@ Deep links are not negotiable — sending someone straight to one project is the
 - Loading `/projects/enargeia` directly scrolls (document mode) or flies (world mode) to that section, without animating from the top.
 - `popstate` moves to the matching section.
 
-Astro still needs to emit those paths so they resolve on Cloudflare rather than 404ing. Keep `getStaticPaths` and render a real page per project containing that project's content — crawlable, and the fallback if JS never runs. On load with JS, redirect to `/#enargeia` equivalent or hydrate in place; decide which and write it down.
+Astro still needs to emit those paths so they resolve on Cloudflare rather than 404ing. Keep `getStaticPaths` and render a real page per project containing that project's content — crawlable, and the fallback if JS never runs.
+
+**Decided (§7): redirect, not hydrate in place.** `/projects/<slug>` renders the full section standalone, and an inline head script does `location.replace('/#' + slug)`. Hydrating in place would mean two live variants of the same content — one with the other three projects reachable and one without — and world mode would need a second entry path for the second variant. The redirect keeps one runtime.
+
+Consequences, all verified:
+- `replace()`, not `assign()`, so the stub never enters the back stack.
+- The stub fires before paint, so there is no flash of the standalone page.
+- The browser's own hash jump does the scroll, so nothing animates from the top.
+- The scroll observer's first `replaceState` then rewrites `/#enargeia` back to `/projects/enargeia`, so the deep link survives the round trip.
+
+`/projects` and `/about` were real routes while the site was live. They stay resolvable as Astro `redirects` to `/#work` and `/#about` — a meta-refresh page, so it works with JS off too.
 
 #### What this deletes
 

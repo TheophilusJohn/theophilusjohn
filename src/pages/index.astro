@@ -1,30 +1,34 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import ProjectRow from '../components/ProjectRow.astro';
+import ProjectSection from '../components/ProjectSection.astro';
 
 const projects = (await getCollection('projects', ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order);
 ---
 <Base title="Theophilus John — Distributed systems and infrastructure">
-  <section class="wrap hero">
+  <section class="wrap hero" id="top" data-path="/">
     <h1>Theophilus<br />John</h1>
     <p class="sub">Builds systems that have to agree with each other.</p>
   </section>
 
-  <section class="wrap work" aria-labelledby="work-h">
-    <h2 id="work-h" class="meta">Work — {String(projects.length).padStart(2, '0')}</h2>
-    {projects.map((p) => (
-      <ProjectRow
-        slug={p.id}
-        machineId={p.data.machineId}
-        headline={p.data.headline}
-        stack={p.data.stack}
-        metrics={p.data.metrics}
-      />
-    ))}
+  <section class="work" id="work" aria-labelledby="work-h">
+    <h2 id="work-h" class="meta wrap">Work — {String(projects.length).padStart(2, '0')}</h2>
+    {projects.map((p) => <ProjectSection project={p} level={3} />)}
+  </section>
+
+  <section class="wrap about" id="about" data-path="/about" aria-labelledby="about-h">
+    <h2 id="about-h" class="meta">About</h2>
+    <div class="prose">
+      <p>Placeholder. Write this last — it is the easiest page to overthink and the least load-bearing.</p>
+      <p><a href="/theo-john-resume.pdf">Resume (PDF)</a></p>
+    </div>
   </section>
 </Base>
+
+<script>
+  import '../scripts/url-sync.ts';
+</script>
 
 <style>
   /* The hero word is meant to bleed off the right edge at wdth 125.
@@ -48,6 +52,11 @@ const projects = (await getCollection('projects', ({ data }) => !data.draft))
     margin-top: var(--s-6); max-width: 46ch;
     color: var(--leader); font-size: var(--t-lg); line-height: 1.5;
   }
-  .work { padding-block: var(--s-12); }
-  .work > .meta { display: block; margin-bottom: var(--s-4); }
+
+  .work > .meta { display: block; padding-block: var(--s-12) 0; }
+
+  .about { padding-block: var(--s-24) var(--s-12); }
+  .about > .meta { display: block; margin-bottom: var(--s-4); }
+  .about .prose { max-width: var(--measure); color: var(--muted); }
+  .about .prose p { margin-bottom: var(--s-4); }
 </style>

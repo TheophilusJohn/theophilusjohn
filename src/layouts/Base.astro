@@ -8,9 +8,11 @@ interface Props { title: string; description?: string; }
 // Third person, and search terms rather than the hero's voice — this
 // is what shows up in results and link previews, not on the page.
 const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.' } = Astro.props;
+// One page (§4.6), so these are ranges on `/`, not routes. Absolute with
+// a hash so they also work from the standalone project pages.
 const nav = [
-  { href: '/projects', label: 'Work' },
-  { href: '/about', label: 'About' },
+  { href: '/#work', label: 'Work' },
+  { href: '/#about', label: 'About' },
   { href: '/theo-john-resume.pdf', label: 'Resume' },
 ];
 ---
@@ -44,6 +46,8 @@ const nav = [
       } catch (e) {}
     })();
   </script>
+
+  <slot name="head" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>

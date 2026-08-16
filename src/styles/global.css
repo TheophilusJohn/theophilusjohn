@@ -25,6 +25,11 @@ a:hover { color: var(--leader); }
 
 img, svg, canvas { display: block; max-width: 100%; }
 
+/* url-sync moves focus to a section after an in-page jump so the reading
+   position follows the URL. That focus is programmatic and never a
+   keyboard landing, so it must not draw a ring. */
+[tabindex="-1"]:focus { outline: none; }
+
 .wrap { padding-inline: var(--gutter); }
 
 .meta {
