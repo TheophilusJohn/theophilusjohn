@@ -66,8 +66,15 @@ img, svg, canvas { display: block; max-width: 100%; }
   scroll-behavior: auto !important;
 }
 
+/* The toggle overrides the OS in both directions, so an explicit
+   data-motion="on" has to escape this block — otherwise a user who turns
+   motion back on still gets everything stripped by the media query and
+   the toggle looks broken. With JS off the attribute is never set and
+   the query stands on its own, unchanged. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  html:not([data-motion="on"]) *,
+  html:not([data-motion="on"]) *::before,
+  html:not([data-motion="on"]) *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;

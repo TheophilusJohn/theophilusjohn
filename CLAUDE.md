@@ -78,6 +78,15 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   elapsed wall-clock gap in one frame on return. Invisible on a looping
   marquee; scrubbed pins (step 11) will inherit it and jump. Decide there
   whether to re-enable lag smoothing or clamp.
+- A toggle that overrides an OS preference must persist both states, not
+  clear its key on un-press. Clearing drops back to `auto`, so the OS
+  re-asserts on the next load and silently undoes the choice. Same reason
+  a bare `@media (prefers-reduced-motion: reduce)` block has to be scoped
+  `html:not([data-motion="on"])` — otherwise the query overrides the toggle
+  and only one direction works.
+- Pre-paint state paints off the root attribute the inline head script
+  sets, never off `aria-pressed`. The module that syncs `aria-pressed`
+  lands after first paint, so a control styled from it flashes.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or

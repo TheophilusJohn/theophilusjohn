@@ -40,9 +40,12 @@ const nav = [
       var r = document.documentElement;
       try {
         if (localStorage.getItem('tj:contrast') === 'high') r.dataset.contrast = 'high';
+        // Three states (§5). A stored value wins in both directions; the OS
+        // is consulted only for the third, `auto`, which is the absence of
+        // a key. Anything else stored is treated as absent.
         var m = localStorage.getItem('tj:motion');
-        if (m === 'off') r.dataset.motion = 'off';
-        else if (m === null && matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.motion = 'off';
+        if (m === 'off' || m === 'on') r.dataset.motion = m;
+        else if (matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.motion = 'off';
       } catch (e) {}
     })();
   </script>

@@ -27,7 +27,16 @@
     cursor: pointer;
   }
   button:hover { color: var(--leader); border-color: var(--leader); }
-  button[aria-pressed="true"] { color: var(--leader); border-color: var(--leader); }
+
+  /* Painted off the root attribute, which the inline head script sets
+     before first paint — not off aria-pressed, which the module below
+     can only correct after it. Keying the colour to aria-pressed makes
+     a stored toggle flash from inactive to active on every load. */
+  :global(html[data-contrast="high"]) #t-contrast,
+  :global(html[data-motion="off"]) #t-motion {
+    color: var(--leader);
+    border-color: var(--leader);
+  }
 
   /* Once the nav has wrapped to its own line these are being tapped,
      not clicked. 26x24 is too small for that — go to a full 44x44
@@ -47,19 +56,49 @@
 <script>
   const root = document.documentElement;
 
-  function wire(id: string, attr: string, onValue: string, key: string) {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    const sync = () => btn.setAttribute('aria-pressed', String(root.dataset[attr] === onValue));
-    sync();
-    btn.addEventListener('click', () => {
-      const next = root.dataset[attr] === onValue ? null : onValue;
-      if (next) { root.dataset[attr] = next; localStorage.setItem(key, next); }
-      else { delete root.dataset[attr]; localStorage.removeItem(key); }
-      sync();
+  /* Safari in private browsing throws on setItem. A toggle that stops
+     responding mid-session is a worse failure than one that forgets the
+     choice on reload, so every access is guarded. */
+  const store = {
+    get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k: string, v: string) { try { localStorage.setItem(k, v); } catch {} },
+    del(k: string) { try { localStorage.removeItem(k); } catch {} },
+  };
+
+  /* Contrast: two states. Nothing else feeds this attribute, so dropping
+     the key and dropping the attribute mean the same thing. */
+  const contrast = document.getElementById('t-contrast');
+  if (contrast) {
+    contrast.setAttribute('aria-pressed', String(root.dataset.contrast === 'high'));
+    contrast.addEventListener('click', () => {
+      const on = root.dataset.contrast !== 'high';
+      if (on) { root.dataset.contrast = 'high'; store.set('tj:contrast', 'high'); }
+      else { delete root.dataset.contrast; store.del('tj:contrast'); }
+      contrast.setAttribute('aria-pressed', String(on));
     });
   }
 
-  wire('t-contrast', 'contrast', 'high', 'tj:contrast');
-  wire('t-motion', 'motion', 'off', 'tj:motion');
+  /* Motion: three states (§5), and only two of them are reachable from
+     the button. Un-pressing has to write "on" rather than clear the key —
+     clearing it drops back to `auto`, and for the user whose OS asks for
+     reduced motion that means the next load silently undoes the choice.
+     `auto` is the initial state only, and the OS alone moves it. */
+  const motion = document.getElementById('t-motion');
+  if (motion) {
+    motion.setAttribute('aria-pressed', String(root.dataset.motion === 'off'));
+    motion.addEventListener('click', () => {
+      const off = root.dataset.motion !== 'off';
+      root.dataset.motion = off ? 'off' : 'on';
+      store.set('tj:motion', off ? 'off' : 'on');
+      motion.setAttribute('aria-pressed', String(off));
+    });
+
+    // Still in `auto`: follow the OS if it changes under us.
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+      if (store.get('tj:motion')) return;
+      if (e.matches) root.dataset.motion = 'off';
+      else delete root.dataset.motion;
+      motion.setAttribute('aria-pressed', String(e.matches));
+    });
+  }
 </script>
