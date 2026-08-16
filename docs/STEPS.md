@@ -140,6 +140,34 @@ fallback — never block content on font load.
 
 **Done when:** CLS under 0.1; second visit in the same session shows no intro.
 
+*Done.* The three beats of §4.1 in one place: bands up already drifting
+(0→0.5s), the hero masking up line by line (0.15→1.15s), the header last
+(0.8→1.25s). Measured end to end at 1512×804, first load of a session:
+**1156ms**, CLS **0**, zero `layout-shift` entries. Second load in the same
+session: `data-intro` never appears, the hero is never split, LCP **96ms**
+on the plain `h1` — which is also §10's leftover closed. The hold is not a
+default any more; it is armed only on a load that is going to use it, so
+every other load paints out of the HTML and never waits on the bundle.
+
+`document.fonts.ready` gates the start, with the 800ms fallback measured
+from navigation start rather than from the module — a bundle that lands at
+900ms has already spent the whole allowance getting there and starts with
+no wait. Measured with `fonts.ready` stubbed to never resolve: start at
+**805ms**, LCP 840ms.
+
+The head script arms a 2s release in case the bundle never arrives at all;
+intro.ts disarms it synchronously at import, so nothing but a real failure
+reaches it. Measured with the module scripts pointed at a 404: hold off at
+**2039ms**, everything visible, and the session flag left unset so the next
+navigation still gets its intro. That flag is written by intro.ts when the
+sequence really starts, not by the head script that reads it, for exactly
+that reason.
+
+Motion off mid-flight lands everything on its final state and reverts the
+split — measured at 539ms into the sequence, and at 337ms during the hold
+(fonts stalled), where the hold comes off early and the queued start finds
+the door shut rather than replaying.
+
 ### 13. Custom cursor
 Only on `(pointer: fine)`. `quickTo()`, not per-frame `set()`. Not
 initialised at all under reduced motion.

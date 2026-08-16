@@ -107,6 +107,18 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - `overflow: visible clip` is legal and honoured — `visible` degrades to
   `auto` next to `hidden` or `scroll`, but not next to `clip`. That is how
   a line mask clips its travel axis without cutting the hero's bleed.
+- A pre-paint hold puts LCP behind the JS bundle for every load it is
+  armed on. Arm it only on the loads that will actually use it — decided
+  in the head script, before paint — and give it a timeout release so a
+  bundle that never arrives cannot leave the page blank. The module has to
+  claim the hold synchronously at import, or the release fires underneath
+  a sequence that is still waiting on something.
+- Measuring an rAF-driven sequence needs the tab genuinely foreground.
+  Chrome's window occlusion reports `visibilityState: "hidden"` when the
+  window is fully covered *or* the tab is not the active one in its
+  window, and rAF stops — the numbers come back frozen at the start
+  state rather than wrong in an obvious way. Check `document.hidden` in
+  the probe before trusting a timing.
 - GSAP absorbs an element's existing CSS transform as pixel `x` on attach,
   then stacks its own xPercent/yPercent on top — doubling the offset. If an
   element has a CSS transform before GSAP animates it, pin `x: 0` (or

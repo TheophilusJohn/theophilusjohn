@@ -44,23 +44,35 @@ const bands = [
     })();
   </script>
 
-  {/* Held invisible until §10's reveal has the lines split and offset, so
-      the final state never paints ahead of the entrance. Set from the root
-      attribute the layout's head script already resolved, and only ever by
-      script — with JS off the attribute never appears and the hero is just
-      visible, which is the correct static state.
+  {/* §4.1's decision, and it has to be made here — before first paint and
+      before the bundle — because the answer is usually no. Only a load that
+      is actually going to run the intro holds anything back; every other
+      one paints the page out of the HTML, which is the whole of the fix for
+      §10's note that the hold moved LCP behind the JS.
 
-      The timeout is the safety net: the reveal is an enhancement, the words
-      are the page. If the module throws or never arrives, uncover anyway
-      rather than leave the hero permanently blank. */}
+      Two ways to answer no: motion is off (the layout's head script has
+      already resolved that attribute above), or the intro has run once in
+      this session already. The flag is only read here — intro.ts writes it,
+      when the sequence really starts.
+
+      Set only by script, so with JS off the attribute never appears and the
+      page is simply visible, which is the correct static state. The timeout
+      is the safety net for the other direction: the sequence is an
+      enhancement, the words are the page, so if the module throws or never
+      arrives the hold comes off anyway. 2s rather than something longer
+      because this is a ceiling on LCP, not on patience — intro.ts disarms
+      it the moment it loads, so nothing but a failed bundle reaches it. */}
   <script slot="head" is:inline>
     (function () {
       var r = document.documentElement;
       if (r.dataset.motion === 'off') return;
-      r.dataset.hero = 'pending';
+      try {
+        if (sessionStorage.getItem('tj:intro')) return;
+      } catch (e) {}
+      r.dataset.intro = 'pending';
       setTimeout(function () {
-        if (r.dataset.hero === 'pending') delete r.dataset.hero;
-      }, 3000);
+        if (r.dataset.intro === 'pending') delete r.dataset.intro;
+      }, 2000);
     })();
   </script>
 
@@ -100,6 +112,7 @@ const bands = [
 <script>
   import '../scripts/motion';
   import '../scripts/url-sync';
+  import '../scripts/intro';
   import '../scripts/hero';
   import '../scripts/projects';
 </script>
@@ -149,12 +162,6 @@ const bands = [
      its own line. */
   h1 :global(.reveal-line) { padding-bottom: var(--descender); }
   h1 :global(.reveal-line-mask) { margin-bottom: calc(-1 * var(--descender)); }
-
-  /* The pre-paint hold, cleared by hero.ts once the lines are split and
-     offset. visibility rather than display or opacity: the boxes stay, so
-     nothing shifts when the reveal takes over. */
-  :global(html[data-hero='pending']) h1,
-  :global(html[data-hero='pending']) .sub { visibility: hidden; }
 
   .sub {
     margin-top: var(--s-6); max-width: 46ch;

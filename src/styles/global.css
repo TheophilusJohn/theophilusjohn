@@ -53,6 +53,29 @@ img, svg, canvas { display: block; max-width: 100%; }
   white-space: nowrap; border: 0;
 }
 
+/* ── The intro's hold ────────────────────────────────────
+   §4.1. data-intro is set before first paint by the head
+   script in index.astro, and only on a load that is going
+   to run the intro; intro.ts clears it once every entrance
+   has its start values on the elements. Everything the
+   sequence moves is held, so none of it can paint in its
+   final position ahead of the sequence.
+
+   The rules live here rather than in the three components
+   they reach into because the attribute is one decision
+   about the whole page, and a scoped rule in any one of
+   them would only be a third of it.
+
+   visibility, not opacity or display: the boxes stay, so
+   there is nothing to shift when the intro takes over, and
+   held controls drop out of the tab order rather than
+   sitting focusable and invisible for the length of the
+   hold. */
+html[data-intro] .log-band,
+html[data-intro] .site-head > *,
+html[data-intro] .hero h1,
+html[data-intro] .hero .sub { visibility: hidden; }
+
 /* ── Motion ──────────────────────────────────────────────
    data-motion="off" is set by the toggle OR by the OS via
    the inline head script. Motion code must check this
