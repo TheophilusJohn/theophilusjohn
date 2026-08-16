@@ -84,13 +84,13 @@ html[data-intro] .hero .sub { visibility: hidden; }
 
    Both selectors are keyed on data-field, which scene.ts
    sets only once there is a frame in the canvas. Below
-   768px, with no WebGL 2, with JS off, or on a renderer
+   768px, without WebGPU, with JS off, or on a renderer
    that failed to start, neither the attribute nor the node
    exists and this whole block matches nothing.
 
    pointer-events: none, because the canvas covers every
    link on the page and carries nothing clickable of its
-   own. §16's laptop gets a real focusable DOM element over
+   own. §18's laptop gets a real focusable DOM element over
    it rather than a hit test against a mesh. */
 .field {
   position: fixed;
@@ -114,7 +114,7 @@ html[data-field] :is(.site-head, main, .site-foot) {
 }
 
 /* ── The cursor ──────────────────────────────────────────
-   §4.10. cursor.ts builds the element and puts data-cursor
+   §4.5. cursor.ts builds the element and puts data-cursor
    on the root, and it does neither on a touch device, under
    motion off, or with JS off — so on any of those the rules
    below match nothing and the native cursor is untouched.

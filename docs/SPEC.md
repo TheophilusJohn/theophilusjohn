@@ -12,11 +12,10 @@ Supersedes v1. The OpenLDAP writeup is out.
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | Astro 5 | Same as the reference site. Zero JS baseline, opt into islands |
+| Framework | Astro 7 | Zero JS baseline, opt into islands. Upgraded from 5 — check v7 docs, not v5 |
 | Animation | GSAP 3.13+ with ScrollTrigger and SplitText | Free for commercial use since April 2025, all plugins included |
 | Smooth scroll | Lenis | Does not break `position: sticky`, which pinned sections depend on |
 | 3D | Three.js pinned at 0.185.1 via `three/webgpu` | WebGPU only (§15) — a `Renderer` on a `WebGPUBackend`, TSL shaders, no WebGL 2 fallback. A browser without WebGPU gets the document, which is the whole site. Laptop geometry from primitives — no GLTF, no loader, no Draco |
-| Page transitions | Astro `<ClientRouter />` (View Transitions) | See §4.6 for the teardown problem |
 | Styling | Plain CSS, custom properties | No Tailwind |
 | Fonts | Self-hosted woff2, variable, subset | Display face needs a width axis |
 | Deploy | Cloudflare Pages | Domain already on Cloudflare |
@@ -39,7 +38,7 @@ Violet-black. Cool, near-neutral, with enough hue that the accent belongs to it 
 --void:      #14121F;  /* page */
 --void-lift: #1C1A2B;  /* raised panels */
 --rule:      #2A2640;  /* hairlines */
---dim:       #4A4470;  /* metadata, IDs, log text */
+--dim:       #8780B2;  /* metadata, IDs, log text */
 --muted:     #9A93C0;  /* body copy */
 --paper:     #EDEAFB;  /* headings, primary text */
 --leader:    #A99BF5;  /* the accent */
@@ -52,6 +51,8 @@ The practical reason for lavender over the earlier amber: in the render layer th
 
 `--mint` is held in reserve as a second accent — useful if a state ever needs to be distinguished from *elected* (committed vs. pending, say). Don't introduce it without a reason.
 
+**Revised (§14): `--dim` is `#8780B2`, not the `#4A4470` this section shipped with.** The old value was 2.07:1 on `--void` and accounted for every one of the 100 axe violations §14 measured — the whole primary nav, both section headings, the period, the stack, the metric labels, the footer, the log bands. Same hue and saturation, lightness only, 5.07:1; the high-contrast value moved with it, to 7.42:1, because a toggle that shifts contrast by half a point looks broken. **Do not restore the darker value.** What it encoded survives as a rule about *what the token is used for* — `--dim` is texture and must never carry information said nowhere else — and a contrast checker cannot see that distinction anyway.
+
 ### Type
 
 Display face needs a **variable width axis**. Hero is set at the expanded end (~120) at very large sizes with tight negative tracking; body sits nearer normal width. Candidates to audition: Archivo Expanded, Anybody, Roboto Flex. Pick by setting the actual word "Homonoia" at 180px and seeing which one holds up.
@@ -62,11 +63,11 @@ Set the scale in `tokens.css` and use it. No arbitrary font sizes anywhere.
 
 ### Hero copy
 
-Single word: **Developer**. Set at maximum scale, expanded width axis, tight negative tracking, filling the hero width edge to edge.
+**Revised: the hero is the name.** Two lines — `Theophilus` / `John` — at maximum scale, `wdth` 125, tight negative tracking, bleeding off the right edge at full width. The earlier single word **Developer** is out: on a portfolio the name is the thing worth setting at 16rem, and one word could not carry the two-line stack the scale wants.
 
-Because it's one word it can't carry a two-line stack, so the amber moves to the subline: the headline makes the broad claim, the subline immediately narrows it. `Distributed systems, consensus, replication.` in `--leader`, remainder in `--muted`.
+The subline narrows the claim the way the old headline was going to: `Builds systems that have to agree with each other.` — the whole line in `--leader`, which is the accent §2 fixes as *state*, doing the job the amber subline was drafted for.
 
-The laptop moves below or behind the word rather than beside it — a single word at full width leaves no room for a side-by-side arrangement.
+The laptop is not beside the hero. At hero scroll the camera is high above the world looking down (§4.7), so the laptop is far below it as landmark one — the arrangement is a camera position, not a layout.
 
 ### Ambient texture
 
@@ -82,12 +83,12 @@ Generate the lines from Homonoia's actual simulation output where possible. Loop
 
 Four projects. Each gets a full page — no thumbnail grid, the reference site's grid works because it has 34 entries.
 
-1. **Homonoia** — `#hmna-0001/04`
-2. **Philoi** — `#phli-0002/04`
-3. **Basis** — `#bass-0003/04`
-4. **Enargeia** — `#enrg-0004/04`
+1. **Enargeia** — `#enrg-0001/04`
+2. **Homonoia** — `#hmna-0002/04`
+3. **Philoi** — `#phli-0003/04`
+4. **Basis** — `#bass-0004/04`
 
-Order is not settled — see §8. With pinned sections the first project takes disproportionate attention, so sequence deliberately rather than by date.
+**Settled: Enargeia leads.** With pinned sections the first project takes disproportionate attention, and the browser-native inference engine is the one that most needs the reader still fresh. The machine IDs number the running order, so they moved with it. `src/content/projects/` is the authority for both and this list follows it, not the other way round.
 
 Plus: about page, resume PDF download, contact links. No blog.
 
@@ -96,7 +97,7 @@ Plus: about page, resume PDF download, contact links. No blog.
 ```ts
 {
   title: string
-  machineId: string          // "#hmna-0001/04"
+  machineId: string          // "#enrg-0001/04" — numbers the running order
   summary: string            // max 140 chars, result-first
   role: string
   period: string
@@ -114,7 +115,7 @@ Four beats, same every time: **constraint** (what was actually hard), **decision
 
 ---
 
-## 4. The six set pieces
+## 4. The eight set pieces
 
 ### 4.1 Page-load intro
 
@@ -137,13 +138,15 @@ Each of the four pins on scroll while its content advances, then releases.
 - `pin: true`, `scrub: 1` on the ScrollTrigger
 - `anticipatePin: 1` to stop the jump at pin start
 - Disable pinning below 900px — pinned sections on mobile trap the scroll and feel broken. Fall back to a plain stacked reveal.
-- Amber machine ID sits in the pinned corner and increments as sections pass
+- The machine ID sits in the section's own top row in `--leader`. **Revised (§11):** it does not increment in a pinned corner — what tracks position through the pin is the rule between the two columns, filling in `--leader` as the section advances. One accent, one meaning: the part of the section already behind you
 
 ### 4.4 The laptop
 
-**Not a separate canvas.** The laptop is geometry inside the persistent scene described in §4.7 — same `WebGLRenderer`, same scene graph, same render loop, same camera. There is exactly one WebGL context on this site.
+**Not a separate canvas.** The laptop is geometry inside the persistent scene described in §4.7 — same `Renderer` on the same `WebGPUBackend`, same scene graph, same render loop, same camera. There is exactly one GPU context on this site, and since §15 there is no WebGL context at all.
 
-A laptop in three-quarter view, lid open, screen rendering a live terminal. Particles from the field flow around and behind it. As the hero releases on scroll the laptop recedes and dims into the field, and the simulation continues alone down the rest of the page. It is never unmounted — on a project route it sits far back and out of focus.
+A laptop in three-quarter view, lid open, screen rendering a live terminal. Particles from the field flow around and behind it.
+
+**Revised: it does not recede — you descend past it.** This was written when the field was flat and the laptop drifted in front of it. It is landmark one now, standing on the terrain at a fixed place in the world (§4.8), and scroll is camera altitude (§4.7): at hero scroll the camera is high above and the laptop is small and far below, and by the first project it is behind and above you. Nothing about the object moves. It is never unmounted, and there is no route for it to be unmounted by — the site is one document (§4.6).
 
 #### Geometry
 
@@ -173,15 +176,61 @@ Accessibility: canvas text is invisible to screen readers. The same log lines mu
 
 #### Motion
 
-Slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. On scroll, the laptop rotates and recedes as the hero releases — tie to the same ScrollTrigger that drives the hero type reveal so they move as one gesture.
+**Revised: scroll no longer moves the laptop at all.** The camera altitude curve in §4.7 is what changes the view of it, driven by the same Lenis instance as everything else — there is no ScrollTrigger on this object and nothing to tie to the hero reveal.
+
+What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 18 with the thing on screen; do not build both by inference from this paragraph.
 
 #### Constraints
 
 Everything about loading, DPR, mobile, fallbacks and pausing is inherited from §4.7 — the laptop has no independent lifecycle. Only these are specific to it:
 
 - The laptop is added to the scene *after* first paint of the field, so the background establishes before the object arrives
-- Tree-shake hard: import only `WebGLRenderer`, `Scene`, `PerspectiveCamera`, and the geometries and materials actually used. No `OrbitControls`
+- Tree-shake hard: named imports from `three/webgpu` only, and only the geometries and materials actually used. No `OrbitControls`. The renderer, camera and scene already exist — the laptop adds geometry to them and nothing else
 - Clicking the laptop routes to the Homonoia writeup. It needs a real focusable DOM element over it — a mesh is not keyboard reachable
+
+### 4.5 Custom cursor
+
+- **Only on `(pointer: fine)`.** Never initialise on touch. This is the single most common way custom cursors break a site.
+- Never hide the native cursor over text inputs or links without a visible substitute state
+- GSAP `quickTo()` for the follow, not per-frame `set()`
+- States: default dot, expanded ring over project rows, amber over links
+- Reduced motion → don't initialise at all, native cursor only
+
+**Decided (§13): `--leader`, not amber.** The palette moved off amber to lavender in §2 and this line was not updated with it — it means the accent, and §5 already allows the accent on a live link. The "project rows" are now the full-height stages of §4.3, so the ring is what the cursor becomes over a project: an outline rather than more ink, since that is where the pointer sits over text being read.
+
+### 4.6 One page, no transitions
+
+**The site is a single document.** Everything — hero, all four projects, about — lives on `/`. There are no route changes and no `<ClientRouter />`.
+
+This is the decision that simplifies everything else. Nothing to tear down, nothing to re-init, no dead node references. The canvas persists because it never unmounts; the camera and the scroll position are the same variable.
+
+Total prose across the whole site is roughly 600 words. Four separate routes was heavy machinery for that, and a continuous 3D space that hard-navigates between documents fights itself.
+
+#### URLs still work
+
+Deep links are not negotiable — sending someone straight to one project is the most common thing this site will be used for. The History API carries them without routes:
+
+- Scrolling a project section past a threshold does `history.replaceState` to `/projects/enargeia`. **`replaceState`, not `push`** — pushing on scroll floods the back stack and makes the back button useless.
+- Loading `/projects/enargeia` directly scrolls (document mode) or flies (world mode) to that section, without animating from the top.
+- `popstate` moves to the matching section.
+
+Astro still needs to emit those paths so they resolve on Cloudflare rather than 404ing. Keep `getStaticPaths` and render a real page per project containing that project's content — crawlable, and the fallback if JS never runs.
+
+**Decided (§7): redirect, not hydrate in place.** `/projects/<slug>` renders the full section standalone, and an inline head script does `location.replace('/#' + slug)`. Hydrating in place would mean two live variants of the same content — one with the other three projects reachable and one without — and world mode would need a second entry path for the second variant. The redirect keeps one runtime.
+
+Consequences, all verified:
+- `replace()`, not `assign()`, so the stub never enters the back stack.
+- The stub fires before paint, so there is no flash of the standalone page.
+- The browser's own hash jump does the scroll, so nothing animates from the top.
+- The scroll observer's first `replaceState` then rewrites `/#enargeia` back to `/projects/enargeia`, so the deep link survives the round trip.
+
+`/projects` and `/about` were real routes while the site was live. They stay resolvable as Astro `redirects` to `/#work` and `/#about` — a meta-refresh page, so it works with JS off too.
+
+#### What this deletes
+
+- The View Transitions teardown, formerly the most likely thing in this build to break
+- Canvas persistence machinery in §4.7
+- Two scroll authorities. Document scroll and camera altitude become one mechanism (§4.7)
 
 ### 4.7 The render layer, and the world it contains
 
@@ -320,7 +369,7 @@ Stated so nobody builds them by inference:
 - No mesh terrain, no normals, no lit surface, no shadows.
 - No trees, rocks, water, clouds, or any other landscape furniture.
 - No texture maps of any kind. Everything is procedural or accumulated.
-- No collision. The ground is a height function, and free flight (§4.9) clamps the camera above it rather than colliding with it.
+- No collision. The ground is a height function, and free flight (§4.8) clamps the camera above it rather than colliding with it.
 - No time of day, no sun, no directional lighting. There is no light source in this world; every point emits.
 
 #### The one thing to get right
@@ -331,7 +380,7 @@ Everything else here is scaffolding for a single moment: a term ends, and the la
 
 If the frame budget forces a choice, that survives and everything else goes.
 
-### 4.9 World mode
+### 4.8 World mode
 
 The same scene given control of the camera. Not a separate build — same renderer, same simulation, same world as §4.7. Document mode already flies it; world mode hands over the stick.
 
@@ -373,50 +422,6 @@ World mode is not required to be keyboard-navigable as a 3D space. It **is** req
 
 Every piece of information in world mode must exist in document mode. That is the accessibility story — not making a flight simulator screen-reader friendly, but guaranteeing nothing is lost by never entering it.
 
-### 4.10 Custom cursor
-
-- **Only on `(pointer: fine)`.** Never initialise on touch. This is the single most common way custom cursors break a site.
-- Never hide the native cursor over text inputs or links without a visible substitute state
-- GSAP `quickTo()` for the follow, not per-frame `set()`
-- States: default dot, expanded ring over project rows, amber over links
-- Reduced motion → don't initialise at all, native cursor only
-
-**Decided (§13): `--leader`, not amber.** The palette moved off amber to lavender in §2 and this line was not updated with it — it means the accent, and §5 already allows the accent on a live link. The "project rows" are now the full-height stages of §4.3, so the ring is what the cursor becomes over a project: an outline rather than more ink, since that is where the pointer sits over text being read.
-
-### 4.6 One page, no transitions
-
-**The site is a single document.** Everything — hero, all four projects, about — lives on `/`. There are no route changes and no `<ClientRouter />`.
-
-This is the decision that simplifies everything else. Nothing to tear down, nothing to re-init, no dead node references. The canvas persists because it never unmounts; the camera and the scroll position are the same variable.
-
-Total prose across the whole site is roughly 600 words. Four separate routes was heavy machinery for that, and a continuous 3D space that hard-navigates between documents fights itself.
-
-#### URLs still work
-
-Deep links are not negotiable — sending someone straight to one project is the most common thing this site will be used for. The History API carries them without routes:
-
-- Scrolling a project section past a threshold does `history.replaceState` to `/projects/enargeia`. **`replaceState`, not `push`** — pushing on scroll floods the back stack and makes the back button useless.
-- Loading `/projects/enargeia` directly scrolls (document mode) or flies (world mode) to that section, without animating from the top.
-- `popstate` moves to the matching section.
-
-Astro still needs to emit those paths so they resolve on Cloudflare rather than 404ing. Keep `getStaticPaths` and render a real page per project containing that project's content — crawlable, and the fallback if JS never runs.
-
-**Decided (§7): redirect, not hydrate in place.** `/projects/<slug>` renders the full section standalone, and an inline head script does `location.replace('/#' + slug)`. Hydrating in place would mean two live variants of the same content — one with the other three projects reachable and one without — and world mode would need a second entry path for the second variant. The redirect keeps one runtime.
-
-Consequences, all verified:
-- `replace()`, not `assign()`, so the stub never enters the back stack.
-- The stub fires before paint, so there is no flash of the standalone page.
-- The browser's own hash jump does the scroll, so nothing animates from the top.
-- The scroll observer's first `replaceState` then rewrites `/#enargeia` back to `/projects/enargeia`, so the deep link survives the round trip.
-
-`/projects` and `/about` were real routes while the site was live. They stay resolvable as Astro `redirects` to `/#work` and `/#about` — a meta-refresh page, so it works with JS off too.
-
-#### What this deletes
-
-- The View Transitions teardown, formerly the most likely thing in this build to break
-- Canvas persistence machinery in §4.7
-- Two scroll authorities. Document scroll and camera-along-spline become one mechanism
-
 ### Lenis ↔ ScrollTrigger wiring
 
 Required for pinning to track smooth scroll:
@@ -424,8 +429,9 @@ Required for pinning to track smooth scroll:
 ```js
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
-gsap.ticker.lagSmoothing(0);
 ```
+
+**Revised (§11): no `lagSmoothing(0)`.** The third line was here and is out — lag smoothing stays at GSAP's defaults. Off, a tab returning from the background hands Lenis and every scrub tween the whole elapsed wall-clock gap in one tick: invisible on a looping marquee, a visible jump under a pinned section. The log bands lose nothing, because they pause off-screen and their phase has already drifted from the clock that seeded it.
 
 ---
 
@@ -445,7 +451,7 @@ This isn't a courtesy feature. It's what keeps the site usable for a hiring mana
 
 Toggles a `[data-contrast="high"]` token set: `--paper` to pure `#FFFFFF`, `--muted` lifted to at least 7:1 against `--void`, `--dim` lifted to 4.5:1, hairlines to `--rule` at double opacity. The accent shifts lighter to hold contrast on dark.
 
-Audit the default palette too — `--dim` at `#4A4470` on `#14121F` is intentionally low-contrast texture, which is fine for decorative log bands but must never carry information that isn't repeated elsewhere.
+`--dim` must never carry information that isn't repeated elsewhere — it is texture. That is a rule about usage, not about the value: §14 lifted the token itself to `#8780B2` (5.07:1) because a checker cannot see the distinction and scored every use of it as a failure. See §2.
 
 ---
 
@@ -455,14 +461,14 @@ Hard limits. Check before launch, not after.
 
 - **Homepage JS, mobile: under 120KB gzipped.** Three.js is not loaded below 768px, so this stays achievable
 - **Homepage JS, desktop: under 260KB gzipped**, GSAP + Lenis + Three included
-- **LCP under 2.5s** on a throttled 4G mobile profile. The hero PNG is the LCP element on mobile — compress it properly
-- Laptop scene holds 60fps on integrated graphics. If it can't, cut geometry detail before cutting the screen content
+- **LCP under 2.5s** on a throttled 4G mobile profile. There is no hero image — the LCP element is the `h1`, and the only thing that has ever delayed it is JS the intro was waiting on (§12). Measured at §15: 2.0s mobile, 0.6s desktop
+- The world holds 60fps on integrated graphics. If it can't, cut ground particle count first and the accumulation texture second — the election transition is last, because it is the point (§4.7)
 - No layout shift from the intro sequence — CLS under 0.1
 - Lighthouse accessibility 100
 - Every interactive element reachable and visibly focused by keyboard
 - Site fully usable at 360px wide with motion disabled
 
-If the desktop budget blows, the laptop is what gets deferred or simplified — never the accessibility work.
+**It blew at §15, and what gave was the renderer's WebGL 2 fallback** — not the laptop, and never the accessibility work. Three tiers did not fit in 260KB and two do, so a browser without WebGPU gets the document, which is the whole site. Measured: mobile 54.6 KiB, desktop 249.5 KiB.
 
 ---
 
@@ -475,8 +481,8 @@ with it.
 
 ## 8. Open decisions
 
-- Project order — Enargeia leading vs. Homonoia leading
-- Display typeface — audition three against "Homonoia" at 180px
+- **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
+- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 18, with the thing on screen.
 
 ---
 
@@ -484,17 +490,17 @@ with it.
 
 Already in hand: TypeScript, Astro, GSAP, WGSL compute (Enargeia), distributed systems.
 
-**Vanilla Three, not React Three Fiber.** R3F exists to reconcile a component tree; this scene is one canvas that mounts once and never unmounts. Keeping a React root alive across View Transitions is more fragile than keeping a plain renderer alive, and drei's helpers are all things this scene doesn't use. TSL and compute are renderer-agnostic, so R3F-based tutorials still apply — only their `<Canvas>` setup differs.
+**Vanilla Three, not React Three Fiber.** R3F exists to reconcile a component tree; this scene is one canvas that mounts once and never unmounts, and drei's helpers are all things it doesn't use. (The original argument was about keeping a React root alive across View Transitions — those are gone, §4.6, and the point stands without them.) TSL and compute are renderer-agnostic, so R3F-based tutorials still apply; only their `<Canvas>` setup differs.
 
 To learn, in build order:
 
 1. **Three.js core** — scene graph, cameras, materials, lights, render loop, disposal. The largest gap; a wide API rather than a hard one
 2. **TSL** — node-based shader authoring. New syntax, but the WGSL model transfers directly
 3. **GPGPU in Three** — compute nodes, storage buffers, instanced particles. Closest to work already done
-4. **Camera splines** — `CatmullRomCurve3`, frames along a curve, damped follow. Small topic, and it is the entire rails system
+4. **Camera curves** — frames along a curve, damped follow. Small topic, and it is the entire movement system. Note the shape changed with the terrain fold: scroll drives *altitude and pitch* over a landscape (§4.7), not distance along a spline through empty volume
 5. **ScrollTrigger driving a camera** rather than DOM properties, plus the Lenis wiring in §4.6
 6. **Performance tooling** — `stats-gl`, `renderer.info`, Spector.js. Under 100 draw calls. Dispose geometries, materials, textures, render targets — leaks are what kill a scene that never unmounts, which is this architecture exactly
-7. **Astro islands and View Transitions persistence** — smallest item, biggest silent failure
+7. **Astro islands** — smallest item. View Transitions persistence was on this list and is not a topic any more: §4.6 removed `<ClientRouter />` entirely, and the canvas persists because the site is one document and nothing ever unmounts
 
 ### Resources, one per job
 
@@ -513,6 +519,6 @@ Splines, instancing and LOD need no course — a docs page each.
 ### Known traps
 
 - `await renderer.init()` before first render. WebGPU init is async; WebGL was not
-- Feature-detect with `renderer.isWebGPURenderer`, not `capabilities.isWebGL2`, which is undefined under WebGPU
+- **Superseded (§15): there is nothing to feature-detect on the renderer.** `isWebGPURenderer` belonged to the `WebGPURenderer` class, and naming that class is what drags the WebGL 2 backend into the bundle — so the site builds a `Renderer` on a `WebGPUBackend` directly and does not have the flag. The question is asked before Three loads at all: `navigator.gpu.requestAdapter()` in `field.ts`, whose answer decides whether the scene chunk is fetched. (`capabilities.isWebGL2` is undefined under WebGPU and was never the right question either.)
 - Never mix `three` and `three/webgpu` imports in one codebase. Use `three/webgpu` everywhere
-- WebGPU support in Three is not universally called production-ready — Threlte's docs still advise against it in production while recommending r171+ if used. The automatic WebGL 2 fallback contains the risk, but expect breaking changes across versions and pin the Three version
+- WebGPU support in Three is not universally called production-ready — Threlte's docs still advise against it in production while recommending r171+ if used. **There is no fallback backend to contain that risk (§15); the document is the fallback**, and it is the whole site. Expect breaking changes across versions: Three is pinned at 0.185.1 and an upgrade is a step of its own, not a dependency bump

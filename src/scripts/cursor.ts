@@ -1,4 +1,4 @@
-/* §4.10 — the custom cursor.
+/* §4.5 — the custom cursor.
 
    A dot that stands in for the pointer, a ring that opens over a project,
    and the accent over a link. Three states and nothing else.
