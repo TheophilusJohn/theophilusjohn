@@ -5,21 +5,23 @@
    where four pins put twelve beats, with a fourth channel carrying the
    exposure. That whole construction belongs to a world sitting *behind* a
    document, and §0 puts the world in front of it. The path between the four
-   projects comes back at §28 as one thing the camera can be driven by, not
+   projects comes back at §33 as one thing the camera can be driven by, not
    as the only place it can be.
 
    What survives from `curve.ts` is its discipline rather than its numbers:
    the pose is a function of state that is written down here and nowhere
    else, and no other module may move the camera.
 
-   **Deliberately minimal.** §24 owns the altitude clamp, the soft bounds
-   and the return-to-path control. There is no ground to clamp against and
-   nowhere to be turned back from until §22, so building either now would be
-   building against a world that does not exist. What is here is enough to
-   look around and fly, damped, so §22 has something to inspect terrain
-   with. */
+   **§24 closes the three things §21 left open**, and all three are the same
+   shape: a term that reshapes the *wanted* velocity before it is damped,
+   plus a hard guarantee behind it. The floor is `height()` on the main
+   thread — the same function the workers sample and `terrain.ts` already
+   calls once a frame for its LOD. The bounds are a radius and a ceiling.
+   The way back is a recall to the opening pose, because the guided path
+   §0.3 would rather hand this to does not exist until §33. */
 
 import { PerspectiveCamera, Vector3 } from 'three/webgpu';
+import { height } from './height';
 
 const DEG = Math.PI / 180;
 
@@ -75,12 +77,92 @@ const DRIFT = 0.22;
 
    The heading is 30°, which is within five of the bearing to the cluster
    massif (`height.ts`, CLUSTER_SITE) a kilometre out. That is a
-   coincidence of the search rather than a composition, and §26 is what will
+   coincidence of the search rather than a composition, and §31 is what will
    make it deliberate — it sites the four structures, and this pose moves
    with them. */
 const START = new Vector3(-60, 190, 60);
 const START_YAW = 30;
 const START_PITCH = -9;
+
+/* ── The floor ──────────────────────────────────────────────────────────
+   §0.3: an altitude clamp, not collision. The ground is a height function
+   and the camera may not go under it; a cliff face is still something you
+   pass through, and that is the decision rather than an omission — a world
+   this size cannot afford a collider and does not want one.
+
+   CLEARANCE is what the *drawn* surface needs rather than what the field
+   does. A level-0 chunk samples at 2 units and drops part of the finest
+   range octave, so the mesh under the camera sits up to about 0.6 units off
+   `height(x, z, 0)`; the near plane is 0.5 in front of that, and the rest is
+   so that ground arriving from below reads as ground rather than as a wipe.
+
+   AHEAD is a *time*, so the distance scales with speed: at cruise the
+   camera reads 16 units in front of itself and at boost 63. Sampled at
+   four points along that leg and not only at the end — one sample skips
+   whatever stands between here and there, which at boost is a whole ridge.
+   What it buys is terrain following: the camera rises over a crest before
+   it is inside it rather than being pushed out of it after. */
+const CLEARANCE = 6;
+const AHEAD = 0.35;
+const AHEAD_STEPS = 4;
+
+/* Within this of the floor, descent input is cancelled in proportion. The
+   hard clamp below is the guarantee; this is what stops a reader driving
+   into the ground and being bounced back out of it. It does not push up:
+   flying low along a valley is a thing to be able to do. */
+const CUSHION = 24;
+
+/* ── The bounds ─────────────────────────────────────────────────────────
+   §0.3 asks to be turned back rather than to hit a wall, and the field is
+   infinite, so this is a decision about where the site is rather than where
+   the terrain runs out.
+
+   The radius is set by what has to be inside it. Homonoia's massif stands
+   at 1,040 from the origin and reaches 600 past that (`height.ts`), and §31
+   sites four structures that have to be far enough apart to be a journey
+   and close enough that the next is visible from the last. Inside 3,200 the
+   field runs -24.6 to 126.2 with a mean of 11.2, 40% of it under zero and
+   2.7% over sixty, and 16.8 range wavelengths across the diameter —
+   measured out of `height.ts` in Node over 80,381 samples, so it is the
+   shipped field's own answer. Mountains standing in open country. At cruise the soft edge is
+   58 seconds out and the far side is 116; at boost, 14 and 29.
+
+   **The ceiling is the cloud deck**, and that is a measurement rather than
+   a taste. `sky.ts` draws the deck only on rays that reach it from below,
+   so at 620 the sky loses its clouds in every direction at once — and the
+   ground goes with it, because the fog weights `dy` at 0.35 and a camera
+   that high is 220 units of haze from the ground under it. Measured over
+   the lower half of the frame at eleven altitudes: mean luminance falls
+   from 71 at the opening pose to 45 at 480 and 25.6 at 880, and the spread
+   that says the ground is still *shape* holds near 20 to 590 and then goes
+   with it. So the hard limit is 560, sixty under the deck.
+
+   BAND is the width over which the push out is taken away and the drift
+   home is added, so at the far edge of it the reader is moving inward at
+   RETURN even at full boost. There is no frame in which anything stops —
+   and it is also why the limits are not where the reader stops: a climb
+   settles where the input and the return cancel, which is 460 at cruise
+   and 520 at boost. */
+const BOUND = 2600;
+const BOUND_BAND = 600;
+const CEILING = 360;
+const CEILING_BAND = 200;
+const RETURN = SPEED;
+
+/* ── The recall ─────────────────────────────────────────────────────────
+   The one thing here that is not a force. §4.8 asks for a *return to path*
+   control that is always visible in free flight; there is no path until
+   §33 and no chrome until §30, so what exists now is the pose the world
+   opens at and a key that flies back to it.
+
+   Eased over a duration that grows with the distance and caps, so a recall
+   from the far edge is a fast pass over the landscape rather than a cut and
+   rather than a minute of watching. Any input cancels it — a control that
+   cannot be interrupted is a cutscene. */
+const RECALL_RATE = 900;   // units per second, before the caps
+const RECALL_MIN = 0.8;
+const RECALL_MAX = 2.5;
+const RECALL = ['KeyR', 'Home'];
 
 /* event.code, not event.key: it names the physical key, so WASD is the same
    three fingers on AZERTY and Dvorak. */
@@ -101,10 +183,29 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
 
   const held = new Set<string>();
   let boosting = false;
+  let recall: { t: number; dur: number; from: Vector3; yaw: number; pitch: number } | null = null;
 
   const forward = new Vector3();
   const right = new Vector3();
   const wanted = new Vector3();
+
+  /* The highest ground under the camera and under where it is heading.
+     `height` with no spacing is every octave — the field itself, not the
+     LOD's version of it — which is the only sample that is the same answer
+     at every altitude. */
+  function floorAt(): number {
+    const reach = Math.hypot(velocity.x, velocity.z) * AHEAD;
+    let top = height(position.x, position.z);
+    if (reach > 1) {
+      const nx = velocity.x / Math.hypot(velocity.x, velocity.z);
+      const nz = velocity.z / Math.hypot(velocity.x, velocity.z);
+      for (let i = 1; i <= AHEAD_STEPS; i++) {
+        const d = (reach * i) / AHEAD_STEPS;
+        top = Math.max(top, height(position.x + nx * d, position.z + nz * d));
+      }
+    }
+    return top + CLEARANCE;
+  }
 
   function apply() {
     camera.position.copy(position);
@@ -116,6 +217,13 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   }
 
   function update(dt: number) {
+    if (recall) {
+      flyHome(dt);
+      floor();
+      apply();
+      return;
+    }
+
     const down = (codes: string[]) => codes.some((c) => held.has(c));
 
     /* The input basis is the camera's, except for up. Flying "up" along the
@@ -134,18 +242,111 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     // Normalised, or two keys at once is 1.41x the speed of one.
     if (wanted.lengthSq() > 0) wanted.normalize().multiplyScalar(SPEED * (boosting ? BOOST : 1));
 
+    bound();
+    cushion();
+
     const k = 1 - Math.exp(-dt / DRIFT);
     velocity.addScaledVector(wanted.sub(velocity), k);
     position.addScaledVector(velocity, dt);
 
+    floor();
     apply();
+  }
+
+  /* ── The bounds, as a term on `wanted` ───────────────────────────────
+     Not a wall and not a spring. Over the band the outward part of the
+     input is taken away in proportion and a drift home is added in the
+     same proportion, so past the far edge every input has an inward
+     resultant and the camera comes back on its own. A reader pressing W at
+     the edge feels the world lean rather than a stop.
+
+     The hard clamps after the integration are a guarantee rather than a
+     behaviour: the loop caps dt at 1/30, so nothing that happens at these
+     speeds reaches them. They are what makes "cannot" true. */
+  function bound() {
+    const r = Math.hypot(position.x, position.z);
+    if (r > BOUND && r > 0) {
+      const t = Math.min((r - BOUND) / BOUND_BAND, 1);
+      const nx = position.x / r;
+      const nz = position.z / r;
+      const out = wanted.x * nx + wanted.z * nz;
+      if (out > 0) {
+        wanted.x -= nx * out * t;
+        wanted.z -= nz * out * t;
+      }
+      wanted.x -= nx * RETURN * t;
+      wanted.z -= nz * RETURN * t;
+    }
+
+    if (position.y > CEILING) {
+      const t = Math.min((position.y - CEILING) / CEILING_BAND, 1);
+      if (wanted.y > 0) wanted.y -= wanted.y * t;
+      wanted.y -= RETURN * t;
+    }
+  }
+
+  /* Descent input only, and only near the ground. The floor below is what
+     stops the camera going under; this is what stops it being *put* back
+     out, which is the difference between a limit and a bounce. */
+  function cushion() {
+    if (wanted.y >= 0) return;
+    const gap = position.y - floorAt();
+    if (gap >= CUSHION) return;
+    wanted.y *= Math.max(gap, 0) / CUSHION;
+  }
+
+  function floor() {
+    const y = floorAt();
+    if (position.y < y) {
+      position.y = y;
+      // Or the descent that was arrested accumulates while the ground rises
+      // and fires the camera upward the moment the ridge is behind it.
+      if (velocity.y < 0) velocity.y = 0;
+    }
+    const r = Math.hypot(position.x, position.z);
+    const max = BOUND + BOUND_BAND;
+    if (r > max) {
+      position.x *= max / r;
+      position.z *= max / r;
+    }
+    position.y = Math.min(position.y, Math.max(CEILING + CEILING_BAND, y));
+  }
+
+  /* ── The recall ──────────────────────────────────────────────────────
+     Eased on a smoothstep so it leaves and arrives at rest, and the yaw
+     takes the short way round — a recall that unwinds 350° is a spin. The
+     floor still applies while it runs, so the way home is a pass over the
+     landscape rather than a line through it. */
+  function home() {
+    const dist = position.distanceTo(START);
+    recall = {
+      t: 0,
+      dur: Math.min(Math.max(dist / RECALL_RATE, RECALL_MIN), RECALL_MAX),
+      from: position.clone(),
+      yaw,
+      pitch,
+    };
+  }
+
+  function flyHome(dt: number) {
+    const r = recall!;
+    r.t = Math.min(r.t + dt / r.dur, 1);
+    const s = r.t * r.t * (3 - 2 * r.t);
+    position.lerpVectors(r.from, START, s);
+    const turn = ((START_YAW * DEG - r.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    yaw = r.yaw + turn * s;
+    pitch = r.pitch + (START_PITCH * DEG - r.pitch) * s;
+    velocity.set(0, 0, 0);
+    if (r.t >= 1) recall = null;
   }
 
   /* ── Look ────────────────────────────────────────────────────────────
      Drag rather than pointer lock. Lock is the better control and it is a
      permission prompt, a browser-drawn escape overlay and a mode the reader
      cannot see the edges of — none of which belong on the first thirty
-     seconds of a portfolio. §24 may offer it as an opt-in.
+     seconds of a portfolio. §24 left it that way: a mode with an escape
+     overlay of its own is one more thing between the reader and the way
+     out, and §0.6 is explicit that the world is escapable first.
 
      Undamped, deliberately, where the movement is damped: a look that lags
      the hand reads as latency rather than as weight, and this is the one
@@ -155,6 +356,7 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
 
   canvas.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
+    recall = null;
     dragging = event.pointerId;
     lastX = event.clientX;
     lastY = event.clientY;
@@ -192,7 +394,17 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     boosting = event.shiftKey;
+    if (RECALL.includes(event.code)) {
+      // Not on the OS repeat: each one would restart the ease from wherever
+      // the last had reached, and a held key would never arrive.
+      if (!event.repeat) home();
+      event.preventDefault();
+      return;
+    }
     if (!isMove(event.code)) return;
+    // A recall is a suggestion. Any input at all is the reader taking the
+    // stick back, and it must not have to be fought for.
+    recall = null;
     held.add(event.code);
     // Space scrolls a document and the arrows scroll it too. There is no
     // document to scroll in world mode, and preventing it is what stops the
@@ -212,15 +424,23 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     boosting = false;
   });
 
+  // The opening pose is composed against the field (§22) and stands 196
+  // units over it, but nothing guarantees that of a pose in general and the
+  // floor is the thing that has to be true on the first frame as well.
+  floor();
   apply();
 
   return {
     camera,
     update,
+    home,
+    /** Nothing in the site reads this — it is what a harness measures a
+        flight with, and `ground` is what makes the clamp checkable. */
     pose: () => ({
       x: position.x, y: position.y, z: position.z,
       yaw: yaw / DEG, pitch: pitch / DEG,
       speed: velocity.length(),
+      ground: height(position.x, position.z),
     }),
   };
 }

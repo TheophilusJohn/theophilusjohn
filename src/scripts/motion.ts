@@ -77,7 +77,7 @@ new MutationObserver(() => {
    moves the window programmatically, so the document keeps scrolling under
    an opaque canvas — measured at 2,978px on one flick before this existed.
    `stop()` is Lenis's own pause and it leaves the instance, the ticker
-   wiring and every ScrollTrigger exactly where they are, so §25 can hand
+   wiring and every ScrollTrigger exactly where they are, so §30 can hand
    the document back without rebuilding any of it. */
 export function holdScroll() {
   lenis?.stop();

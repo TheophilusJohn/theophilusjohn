@@ -20,7 +20,7 @@
    that can be checked without a GPU: Node imports the .ts directly, so the
    numbers in the §22 report are this function's own output rather than a
    re-derivation of it. `chunk.ts` runs it in a worker and §24's altitude
-   clamp will run it on the main thread; both have to be the same function,
+   clamp runs it on the main thread; both have to be the same function,
    and the only way to guarantee that is for there to be one.
 
    Everything is a pure function of (x, z) and the sample spacing. Nothing
@@ -30,8 +30,8 @@
 /* ── Noise ──────────────────────────────────────────────────────────────
    Gradient noise, quintic interpolation, 16 gradients from an integer
    hash. Not simplex: the patent argument is spent but the corner-and-fade
-   form is the one whose derivative behaves, and §24 will want to difference
-   this. A gradient *table* rather than an angle per corner — trig at four
+   form is the one whose derivative behaves, and §23's shading normal
+   differences it. A gradient *table* rather than an angle per corner — trig at four
    corners of every octave of every vertex is most of the cost of the
    generator, and sixteen directions is enough that the repeat never shows
    under nine octaves. */
@@ -200,10 +200,10 @@ const RANGE_MASK_HIGH = 0.42;
    mask there — so what the traffic builds is a massif with crests of the
    same terrain everywhere else has, not a dome sitting on a plain.
 
-   **Sited and driven elsewhere.** §26 decides where Homonoia stands and
-   §29 brings back the election that moves the shares; equal shares is what
+   **Sited and driven elsewhere.** §31 decides where Homonoia stands and
+   §34 brings back the election that moves the shares; equal shares is what
    an idle cluster looks like and is the honest placeholder until there is a
-   simulation to read. Note for §29: this runs inside the worker, so a share
+   simulation to read. Note for §34: this runs inside the worker, so a share
    change is a message and a regeneration of the chunks within
    CLUSTER_REACH, not a uniform. */
 export const CLUSTER_SITE = { x: -520, z: -900 };
@@ -228,7 +228,9 @@ export function uplift(x: number, z: number): number {
 }
 
 /* `spacing` is the distance between samples at the LOD asking. 0 means
-   "every octave", which is what §24's clamp and any measurement want. */
+   "every octave", which is what §24's clamp and any measurement want. It is
+   also why the clamp keeps six units of clearance rather than one: the mesh
+   under the camera is a level-0 chunk sampling at 2, so it is not this. */
 export function height(x: number, z: number, spacing = 0): number {
   const land = fbm(x, z, 1 / CONTINENT_WAVELENGTH, CONTINENT_OCTAVES, spacing);
   const relief = ridged(x, z, 1 / RANGE_WAVELENGTH, RANGE_OCTAVES, spacing);

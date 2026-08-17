@@ -142,6 +142,191 @@ everywhere.
   noticeably flat, and hard-edged shadows suit a banded look better than
   soft ones do.
 
+#### The landscape is alive
+
+**Decided at §24, and it reverses §4.7's exclusion list.** That list — "no
+trees, rocks, water, clouds, or any other landscape furniture" — is struck
+through there rather than deleted, because the argument for it was sound in
+the frame it was written in: furniture on a layer glimpsed between
+paragraphs is cost with no reader. It is the wrong rule for a world you fly
+through. Bare terrain reads as terrain at distance and as *nothing* up
+close, because scale comes from having things of known size standing on the
+ground.
+
+**The world is alive.** Not lush — night, violet, high country — but
+somewhere that supports things. Growth on the lower slopes, water in the low
+ground, air with something moving in it.
+
+**Decided with it: the vegetation is conifers.** Pines and low scrub, high
+country. Not luminous, not alien. §8 held this open as the last big creative
+call before the structures, on the grounds that something stranger was a
+different world; it is closed, and this one is a violet night in real
+mountains.
+
+##### First, the pop
+
+Before anything is scattered on the terrain, the terrain has to stop
+jumping.
+
+Crossing a split distance swaps a coarse chunk for a finer one
+instantaneously — new geometry, new normals, new baked shadow, all in one
+frame. What that reads as in flight is ground that darkens and then resolves
+as you approach, which is the shadow term changing: a coarse chunk marches a
+coarse field and has less occlusion in it than the fine chunk replacing it.
+
+**This was never measured.** §22 instrumented *holes* — leaves with no
+generated ancestor — and found none. A hole is a bug and a pop is a quality
+problem, and the harness only looked for the first.
+
+**Geomorphing.** Each vertex carries the position it would have at its
+parent's resolution and blends toward its own over the last stretch before
+the split distance. The two levels are alive at once during the blend, which
+they already are — the parent is retained on a four-second clock. Three
+attributes morph, not one: position, the shading normal, and the baked
+shadow. Shadow is the one that shows most, so it is the one to check.
+
+##### Placement is a pure function
+
+Everything scattered on this terrain is placed by a function of `(x, z)` and
+nothing else. No storage, no seeds carried between chunks, no lists.
+
+That is not tidiness. Chunks generate independently, in three workers, in
+whatever order they are asked for, and a chunk is cached by coordinate and
+never regenerated (§22). Anything stateful would make two chunks disagree
+about what stands on their shared edge.
+
+The inputs are already computed: `height()`, its gradient, and the range
+mask that decides where there are mountains at all. Density is a function of
+
+- **altitude** — a treeline, and nothing above it
+- **slope** — nothing on anything steeper than it could hold
+- **the range mask** — sparse on high ground, dense in sheltered country
+- **water proximity** — denser near it
+
+Each species samples a low-frequency noise for clumping, then a hash on the
+cell for jitter within it. Clumped, not uniform: uniform scatter is the tell
+that something was placed by a computer.
+
+##### Water
+
+**Lakes, not rivers.** A global water level, and a plane drawn where the
+terrain is below it. That is nearly free on a heightfield and it fills the
+basins the field already produces.
+
+Rivers need flow accumulation over the whole field or carved channels in the
+generator, which is a project of its own. **Not now, and say so** rather
+than approximating them with noise, which reads as a stain rather than a
+river.
+
+The surface is banded like everything else: a flat mirror of the sky
+gradient, `--leader` where the key light glances off it, `--void` in shadow.
+One quantised specular band rather than a smooth highlight.
+
+Still, mostly. A slow normal perturbation, no waves — this is high country
+at night and the water is what says the valleys are the bottom.
+
+**Underwater is not a mode.** Fly under the surface and you see it from
+below; nothing changes about the fog or the light. Building a submerged
+state is a whole render path for something nobody will do twice.
+
+##### Ground cover
+
+Grass, low scrub, moss on the rock. The thing that makes the ground read as
+ground rather than as a shaded surface.
+
+**Instanced blades on a camera-relative disc**, not per chunk. Density falls
+with distance and the disc moves with the viewer, which is exactly the
+construction §16 used for the old particle floor — that one failed because
+it was trying to *be* the ground, and this one is standing on ground that
+already exists.
+
+Only within about 120 units. Past that it is sub-pixel and the terrain's own
+colour carries it.
+
+Colour from the same three bands as the terrain, one step lighter, so cover
+reads as growth on the surface rather than as a texture applied to it.
+
+##### Trees and rocks
+
+**Instanced meshes, three or four variants each, one draw call per variant
+per chunk.** Placement per the rule above. Built from primitives like
+everything else in this world — a conifer at this distance and this palette
+is a silhouette, and a silhouette is a cone and a trunk.
+
+**They must cast into the shadow term.** A tree with no shadow reads as a
+decal. The worker already marches the field (§23); a scattered object is a
+bump on it, and the cheapest honest answer is a disc of occlusion under each
+one baked into the vertex attribute the ground already carries.
+
+**LOD, and it will pop the same way geomorphing fixes.** Fade by scaling to
+zero over a distance band rather than switching or clipping — an instance
+shrinking into the ground is invisible in flight and a hard cut is not.
+
+**Rocks are the cheaper half and probably the better one.** Scattered stone
+on slopes and scree at the foot of cliffs does more for scale than trees do,
+because it reads at every distance and does not need a treeline.
+
+##### Motes
+
+The thing that most says *alive* at night, and the cheapest thing here.
+
+Instanced points drifting in the air near the ground, denser over water and
+vegetation, sparse on bare rock. `--mint` — the reserved second accent from
+§2, which has been waiting for a reason since it came off the Vulpix.
+
+Slow, wandering, and they must not read as dust. Dust falls and drifts;
+these rise and hesitate.
+
+Additive, fogged like everything else, and they are the one thing in this
+world that is allowed to be brighter than the ground it is over.
+
+##### Wind
+
+One vector field, low frequency, drifting.
+
+Everything that should move reads it: grass bends, trees sway at the canopy,
+motes drift with it, the cloud deck advects along it. One field so they
+agree — vegetation leaning one way while cloud shadows move the other is the
+kind of wrongness nobody can name and everybody feels.
+
+Vertex animation, not simulation. A sine of position and time, amplitude by
+height above the ground so a trunk is still and a canopy is not.
+
+##### Clouds you can fly through
+
+The deck built at §23 is a ray–plane intersection: real parallax, no
+geometry, and you cannot reach it.
+
+**Add volume near the camera.** A small number of billboarded, banded cloud
+forms in the near field that the camera can actually pass through, sitting
+under the same deck. Flying into one should dim and diffuse the world for a
+second and come out the other side.
+
+This is the single most flight-like thing in this subsection. It is also the
+one most likely to look bad — soft billboards in a hard-banded world is a
+contradiction, and it may have to be banded to the point of looking like
+solid forms. Try it, look at it, cut it if it fights the shading.
+
+##### What it costs
+
+The binding constraint is frame time rather than bytes: the world chunk is
+at 200.9 KiB of 400 (§23) and everything here is instanced and most of it is
+fogged out beyond a few hundred units. **The ceiling is 8ms at cruise** on
+the machine §23 measured 0.48ms on, which leaves half the frame for a slower
+one (§0.7). Report per-layer cost the way §23 did — that measurement is what
+caught the sky costing five times the landscape.
+
+Generation cost matters more than render cost, as it did for shadows.
+Placement per chunk is more sampling in the worker, and the worker is
+already at 4.51ms a chunk under flight.
+
+**And worth saying plainly:** this is five steps of world before a single
+project appears in it. The site is a portfolio and the portfolio is
+currently a document behind a query parameter. A world that is beautiful and
+empty is a worse outcome than one that is adequate and inhabited, so if the
+choice ever comes down to one more atmospheric layer against getting the
+four structures standing in it, the structures win.
+
 ### 0.3 Movement
 
 Both, the way a flyable world has both.
@@ -224,6 +409,9 @@ The budget model changes because the world is no longer optional. See §6.
 - **60fps on integrated graphics**, with LOD doing the work
 - **Terrain generation off the main thread** if it stalls the frame — a
   worker, or generate ahead of the viewer
+- **8ms/frame at cruise** on the machine §23 measured 0.48ms on. That is the
+  ceiling everything §0.2 puts *on* the landscape shares, and it leaves half
+  the frame for a slower machine. Report per layer, not as a total
 
 Track chunk generation cost separately from render cost. At this scale the
 thing that breaks is a hitch when new ground arrives, not a low average.
@@ -235,7 +423,9 @@ the ones that make this its own rather than a copy. They are listed with the
 rest in §8.
 
 **Decided:** anime-adjacent, cel-shaded, night, in the existing palette. The
-lavender stays — it is not negotiable and it is the rim light.
+lavender stays — it is not negotiable and it is the rim light. **And the
+landscape is alive** (§0.2): water, ground cover, rocks and conifers, motes
+and wind. Not lush; inhabited.
 
 ---
 
@@ -849,7 +1039,7 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 - ~~Cap DPR at 1.5 for the background layer; it is out of focus behind text
   and does not need retina resolution~~ — **the world is not behind text any
   more (§0).** The cap may still be the right performance call and it is no
-  longer justified by focus. Re-decide it on frame time at §30
+  longer justified by focus. Re-decide it on frame time at §35
 - ~~Halve the simulation resolution below 1024px; disable entirely below
   768px~~ — **one tier now (§0.1).** Below 1024px there is no scene at all,
   so there is no halved tier to maintain
@@ -860,14 +1050,20 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 
 #### What this does not include
 
-Stated so nobody builds them by inference. **Three of these five are
+Stated so nobody builds them by inference. **Four of these five are
 reopened by §0.2** and are marked:
 
-- ~~No shadows and no shadow maps.~~ **Reopened.** They were refused because
-  the terrain was a background layer. Cel-shaded terrain without them is
-  noticeably flat, and hard edges suit a banded look. Decide by looking
+- ~~No shadows and no shadow maps.~~ **Reopened, and built at §23.** They
+  were refused because the terrain was a background layer. Cel-shaded
+  terrain without them is noticeably flat, and hard edges suit a banded
+  look. They are baked in the worker, not a second pass
 - ~~No trees, rocks, water, clouds, or any other landscape furniture.~~
-  **Clouds are reopened** as banded volumes (§0.2); the rest stands
+  **Reversed entire (§0.2, at §24).** Clouds went first, as banded volumes;
+  the rest followed for the same reason the whole of this section is
+  superseded. Furniture on a layer nobody looks closely at is cost with no
+  reader, and that was true — but a world you fly through has no scale
+  without things of known size standing on the ground. The vegetation is
+  conifers
 - No texture maps of any kind. Everything is procedural or accumulated
 - No collision. The ground is a height function, and free flight (§0.3) clamps the camera above it rather than colliding with it
 - ~~No time of day and no sun.~~ **Reopened: there is one key light now**,
@@ -1011,6 +1207,9 @@ it and it is why two of this project's decisions look arbitrary otherwise.
 - The world holds 60fps on integrated graphics. **LOD is what buys that now
   (§0.2)**, not a particle count — cut terrain LOD distance first, structure
   detail second, the election transition last, because it is the point
+- **8ms/frame at cruise** on the machine §23 measured 0.48ms on, per-layer
+  reported. That is the whole budget everything §0.2 scatters on the
+  landscape has to fit inside (§0.7)
 - **Interactive world under 3s** on a desktop connection (§0.1). If it
   cannot be, the terrain is where to cut
 - Track terrain chunk generation cost separately from render cost. At this
@@ -1045,10 +1244,17 @@ calls rather than architectural ones. The architecture is decided.
   a range: gates, monoliths, towers, shrine forms, abandoned machinery — and
   §4.4's laptop. It decides whether the world reads as sacred, industrial or
   derelict, and it is the one creative call the build order actually blocks
-  on (step 26). Ask before modelling.
-- **Is the terrain habitable or hostile?** A world you would want to be in,
-  or one that is impressive and cold? Both are valid and they lead to
-  different palettes, different light and different sound.
+  on (step 31). Ask before modelling.
+- ~~**Is the terrain habitable or hostile?**~~ **Answered at §24:
+  habitable.** §0.2 makes the landscape alive — water in the low ground,
+  conifers and scrub on the lower slopes, motes in the air — which is the
+  first of the two and settles the palette and the light with it. What it
+  does not settle is the second half of the same question, below.
+- **Whether anything moves in it.** Birds, animals, something in the water.
+  Cheap, and the difference between a landscape and a place. Also the
+  easiest thing here to make look like a screensaver. Not scheduled; §0.2's
+  wind field is what it would read, so it is cheaper after step 27 than
+  before it.
 - **Sound.** A world without audio is quieter than it should be, and it is
   cheap to add and expensive to get right. Not in the build order; it would
   be a step of its own.

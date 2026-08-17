@@ -23,7 +23,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
 shell.** That reversed at step 21; steps 15–20 built the world as a layer
 *behind* a scrolling document, and SPEC §0 records what that assumption
 cost. Document mode was finished and shipped first (steps 1–14) and stays
-finished — that is what makes the reversal survivable. Steps 21–30 build the
+finished — that is what makes the reversal survivable. Steps 21–35 build the
 world. See `docs/STEPS.md`.
 
 **The landscape is five files and only one of them can see a GPU** (§22).
@@ -41,6 +41,21 @@ allowed: the key light is one direction in a module that imports nothing, so
 it without either one importing the other. `chunk.ts` runs in Node too —
 extensionless relative imports need a resolver hook, and then the generation
 numbers are the shipped file's own output the way the field's are.
+
+**Since §24 the world is finite and the camera is held above it.** The floor,
+the bounds and the recall all live in `camera.ts` and nothing else may move
+the view. They are one construction: a term that reshapes the *wanted*
+velocity before it is damped, with a hard clamp behind it as the guarantee —
+so nobody is ever stopped, and nobody ever gets through. `height()` on the
+main thread is the floor, which makes `camera.ts` the second caller of the
+field after `terrain.ts`'s LOD criterion.
+
+**The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
+rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
+geomorph, water, ground cover and wind, rocks and conifers, motes and cloud
+volume. Everything scattered on the terrain is placed by a **pure function of
+`(x, z)`** — chunks generate independently, in three workers, in any order,
+and anything stateful would make two chunks disagree about their shared edge.
 
 ---
 
@@ -422,6 +437,29 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   inside the noise. Two conditions on it reading as light rather than
   speckle: march the coarse field (a floor on the sample spacing) and start
   from the coarse surface, or every detail hollow shadows itself.
+- A soft limit written as *cancel the input, add a return, both over a band*
+  is never reached: the reader settles where the two cancel. At boost that
+  is 80% of the way through the band, so the number to report is the
+  equilibrium and not the constant. The hard clamp behind it is a guarantee
+  against a dt spike, not a behaviour.
+- **The altitude ceiling is not an independent number — it is the cloud
+  deck.** `sky.ts` draws the deck only on rays that reach it from below, so
+  one unit above it the sky loses its clouds in every direction at once, and
+  the fog's 0.35 `dy` takes the ground at the same time. Judge the limit on
+  the *spread* of the lower half of the frame, not its mean: the mean falls
+  the whole way up and says nothing, the spread holds and then collapses.
+- **A headed browser loses OS focus, and `blur` clears every held key.** A
+  flight test driven by puppeteer's keyboard therefore measures 0.7s of
+  flight and 74s of coasting — and reports a beautifully consistent
+  clearance for a camera that is not moving. Re-assert the key as a
+  synthetic event every frame; then remember that synthetic keydowns are
+  never matched by a keyup, so dispatch a `blur` between runs or `held`
+  carries over and the next test flies with the last one's keys down.
+- A control test that switches a clamp *off* does not give a like-for-like
+  frame cost: with no floor the camera is 12km under the terrain within
+  seconds and there is nothing left to draw. Time the function directly
+  (`height()` is 0.354µs; the clamp takes five) and use the control only for
+  the depth it reaches.
 
 ---
 
@@ -435,26 +473,31 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §23: 55.3 KiB, unchanged in content since §21 — the
+  1024px). Measured at §24: 55.3 KiB, unchanged in content since §21 — the
   one byte that moves is the hash of the scene chunk it names
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §23: 200.9 KiB, of which the terrain worker is 1.7
-  — the whole of the cel look, the sky and the shadows was 2.0 KiB
+  own merits. Measured at §24: 201.4 KiB, of which the terrain worker is 1.7
+  — the whole movement system was 555 bytes
+- **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
+  landscape shares (steps 25–29), against 0.48 today. Report per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §23: **57** at the lowest of three
-  altitudes, at **0.548ms/frame** — 0.98 at DPR 1.5 (§22: 56 at 0.302; §21,
-  empty: 2 at 0.108; §20: 6 at 2.26). Of a cruise frame the sky dome is
-  0.18ms and the landscape 0.19
+- Under 100 draw calls. Measured at §24: **57 / 44 / 24** at 70, 190 and 520
+  units of altitude, at **0.521 / 0.477 / 0.455 ms/frame** — 0.98 at DPR 1.5
+  (§23: 57 at 0.548; §22: 56 at 0.302; §21, empty: 2 at 0.108; §20: 6 at
+  2.26). Of a cruise frame the sky dome is 0.18ms and the landscape 0.19
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
-  Measured at §23 over 75s of boosted flight: 1,772 chunks, 4.51ms each in
-  the worker pool (worst 9.1), 0.2ms worst on the main thread, **zero frames
-  over 25ms**. §22 was 2.25ms a chunk; the shadow march is 31% of the
-  difference and the rest is the landform lattice
+  Measured at §24 over 75s of boosted flight: level at 190, 549 chunks at
+  4.65ms each in the worker pool (worst 8.1), 0.2ms worst on the main
+  thread, **zero frames over 25ms**; terrain-hugging at boost, 632 at 5.06.
+  §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
+  reproduced now that the world is 6.4km across
+- The camera's clearance over the ground is **exactly 6.000 units** in every
+  flight that tries to break it, and the clamp costs 1.8µs a frame
 - 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off

@@ -34,9 +34,9 @@
    the ground and not a look. What replaces it is the whole of §0.2's
    shading model: three bands with a hard terminator, a rim in --leader, a
    shadow the worker marched against the field, and a fog that arrives at
-   the sky rather than at --void. §24 owns the altitude clamp, which will
-   read `height()` on the main thread exactly as the LOD criterion below
-   already does. */
+   the sky rather than at --void. §24's altitude clamp reads `height()` on
+   the main thread exactly as the LOD criterion below already does — two
+   callers, one field, and neither of them a copy of it. */
 
 import {
   BufferAttribute,
@@ -323,8 +323,8 @@ export function buildTerrain(palette: Palette) {
      190 away from everything, the finest level needs 144, and it never
      appears at all — the criterion has to be about how far away the *ground*
      is, and the only honest answer to that is the height field. It is the
-     one place the main thread samples it, and §24's clamp will sample the
-     same function the same way. */
+     one place in this file the main thread samples it; §24's clamp is the
+     other caller and samples the same function the same way. */
   function collect(cx: number, cy: number, cz: number) {
     wanted.clear();
     const dy = Math.max(cy - height(cx, cz), 0);
@@ -486,7 +486,8 @@ export function buildTerrain(palette: Palette) {
     update,
     dispose,
     stats,
-    /** For §24 and for the harness — the same field the workers sample. */
+    /** For the harness — the same field the workers sample and §24 clamps
+        the camera against. */
     height,
     counts: () => ({
       alive: chunks.size,

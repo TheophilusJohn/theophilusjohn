@@ -6,17 +6,22 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–21 are done. The site is live. **Update this line at the end of
+Steps 1–24 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
 `/` is the document and carries no Three. The world is at `?world` until
-§25 builds world-first entry, and it is currently stars and a camera.
+§30 builds world-first entry, and it is a landscape you can fly over
+without going through it.
 
 **The architecture turned at 21.** SPEC §0 makes the world the site and the
 document the escape hatch; the divider above step 21 records what that
 replaces and where the old 21–26 went. Steps 15–20 stand as built and their
 reports are still true of what they measured.
+
+**And the landscape came alive at 24.** The divider above step 25 records
+that one: SPEC §4.7's "no trees, rocks, water, clouds" is reversed, steps
+25–29 are new, and everything after them shifted by five.
 
 ---
 
@@ -1162,16 +1167,16 @@ becomes the escape hatch rather than the shell.
 
 | was | now |
 |---|---|
-| 21 The laptop | Absorbed into **26**, and reopened: a laptop is one candidate answer to "what are the four structures" (SPEC §8), not a settled landmark |
-| 22 Landmarks 2–4 | **26** (what they are) and **27** (the three states) |
-| 23 Mode switch and scroll ↔ camera sync | **25** (entry, escape, memory) and **27** (URL sync). The modes no longer share a scroll position, so there is nothing to sync |
+| 21 The laptop | Absorbed into **31**, and reopened: a laptop is one candidate answer to "what are the four structures" (SPEC §8), not a settled landmark |
+| 22 Landmarks 2–4 | **31** (what they are) and **32** (the three states) |
+| 23 Mode switch and scroll ↔ camera sync | **30** (entry, escape, memory) and **32** (URL sync). The modes no longer share a scroll position, so there is nothing to sync |
 | 24 Free flight, bounds, altitude clamp | **24**, unchanged in substance and promoted: it is the default now, not something unlocked at the fourth landmark |
 | 25 Accumulation texture | **Unscheduled.** It modulates a heightfield that is about to become one layer of a procedural terrain, so it cannot be specified until 22 lands. Kept in SPEC §4.7; still cut before the election |
-| 26 Performance pass | **30**, widened to brightness and accessibility, both of which re-solve in the new frame |
+| 26 Performance pass | **35**, widened to brightness and accessibility, both of which re-solve in the new frame |
 
 **Step 22 is the one that decides whether this works.** If procedural
 terrain at scale does not read as a landscape worth flying over, nothing
-after it rescues that — and it is better to find that out at 22 than at 29.
+after it rescues that — and it is better to find that out at 22 than at 34.
 
 ---
 
@@ -1186,7 +1191,7 @@ old terrain. Land on an empty world: stars, fog, and a camera you can fly.
   `camera.ts` that reads `ranges()`, `onLayout` or `scrollY`
 - The terrain goes entire — the radial mesh, the mist, the horizon arc, the
   leader light and the fill, `h(p)`, `shares()`. Step 22 builds a landscape
-  from a different construction and step 29 rebuilds the cluster as a place;
+  from a different construction and step 34 rebuilds the cluster as a place;
   neither is this file with different constants
 - The traffic field goes with it, for the same reason: it is a thing you see
   *at* Homonoia now (SPEC §0.5), not the air over every screen
@@ -1198,7 +1203,7 @@ old terrain. Land on an empty world: stars, fog, and a camera you can fly.
   bounds and the return-to-path control are step 24's
 
 **The question this step has to answer:** what does `/` serve between here
-and step 25, which is where world-first entry is actually built? Every
+and step 30, which is where world-first entry is actually built? Every
 commit deploys. Answer it in the report rather than leaving the live site
 in an undecided state.
 
@@ -1212,11 +1217,11 @@ was deleted, and what `/` serves.
 now instead of one.** `/` serves the document — finished, and for the first
 time since §15 carrying no Three at all. The world is at `?world`.
 
-**What `/` serves, which is the question this step had to answer.** §25 owns
+**What `/` serves, which is the question this step had to answer.** §30 owns
 world-first entry and it is four steps away, so the alternative was leaving
 a free-flight camera behind a scrolling document on a live site for four
 commits. Instead the gate inverts *later*: `?world` opts in, everything else
-gets the document, and §25 flips one condition in `world.ts` and adds the
+gets the document, and §30 flips one condition in `world.ts` and adds the
 loader, the visible control and the mode memory around it. `?doc` already
 works today by being anything other than `?world`, and it is checked
 explicitly so the flip is a line rather than a re-reading of a comment.
@@ -1284,16 +1289,16 @@ Lenis reads the wheel itself and moves the window programmatically, which is
 not a scroll the root can refuse — measured at **2,978px on one flick**
 before `holdScroll()` existed. It is Lenis's own `stop()`, so the instance,
 the ticker wiring and every ScrollTrigger stay exactly where they are for
-§25 to hand back. After: 0 → 0.
+§30 to hand back. After: 0 → 0.
 
 **The document is hidden, not removed**, so it is still what the browser
-paints, what a crawler reads, and what §27 opens the writeup panel out of.
+paints, what a crawler reads, and what §32 opens the writeup panel out of.
 `visibility: hidden` is what takes it out of the tab order and the
 accessibility tree together: **0 focusables** behind the canvas, so Tab
 cannot land on a link nobody can see. `Esc` leaves — it strips `?world` and
 replaces the entry, landing on `/` with the document visible and no canvas.
 That is a placeholder and it is here at all because §0.1 is explicit that
-nobody is trapped; §25 owns the visible, persistent control.
+nobody is trapped; §30 owns the visible, persistent control.
 
 **Gates, all four measured by whether the scene chunk is requested at all:**
 `?world` at 1000px wide — no. `/` bare — no. `?world&doc` — no. `?world`
@@ -1309,7 +1314,7 @@ modes. LCP **48ms** desktop and mobile, CLS 0 (one shift entry at 2.6e-5
 desktop, zero mobile). `/projects/homonoia` still lands at **y 3,354**,
 which is its pin start and beat 1. Four sections pin at 1512×804. In world
 mode the document still paints first and the world arrives over it: **LCP
-68ms, `data-world` set at 91ms**, on localhost — §25 owns the number that
+68ms, `data-world` set at 91ms**, on localhost — §30 owns the number that
 matters, which is over a real connection with a cold cache.
 
 **Left for §22, deliberately.** There is nothing in the world to fly *to*.
@@ -1318,7 +1323,7 @@ ground disc's radius; with no ground there is no angle to derive, so it
 fades from level and the lower half of the frame is `--void`. §23 replaces
 the sky wholesale. The DPR 1.5 cap is still in `scene.ts` and its
 justification is not — it was there because the layer was out of focus
-behind text, and it is the whole frame now; it stays until §30 has a
+behind text, and it is the whole frame now; it stays until §35 has a
 measurement to keep or drop it on.
 
 ### 22. Terrain
@@ -1376,8 +1381,8 @@ weighted by share (σ160 on a 120-unit ring, ×26) raise the ground *and* open
 the range mask where they land, so what the traffic builds is a massif with
 the same crests everywhere else has rather than a dome sitting on a plain —
 which is the failure §0 names. Equal shares is what an idle cluster looks
-like; §26 sites it and §29 brings back the election. Note left in the file
-for §29: this runs inside the worker, so a share change is a message and a
+like; §31 sites it and §34 brings back the election. Note left in the file
+for §34: this runs inside the worker, so a share change is a message and a
 regeneration of the chunks within reach, not a uniform.
 
 **A quadtree, and rings were tried first on paper.** Rings are far cheaper —
@@ -1467,7 +1472,7 @@ open ground under the camera, nothing within 300 units, a 125-unit range
 between 380 and 900, and more ground standing behind it: (−60, 190, 60),
 yaw 30°, pitch −9°. The heading lands within five degrees of the bearing to
 the cluster massif a kilometre out, which is the search's coincidence rather
-than a composition — §26 is what makes it deliberate.
+than a composition — §31 is what makes it deliberate.
 
 **Document mode did not regress.** axe-core **0 violations across eight
 states**, LCP 24ms desktop and 48ms mobile, CLS 3.0e-5 and 0, page height
@@ -1627,13 +1632,13 @@ the chunk it dynamically imports has a different hash in it. All four gates
 still hold on the built site — only `?world` at ≥1024px with an adapter and
 motion on fetches the scene chunk or the worker.
 
-**Left where it is.** The DPR 1.5 cap is still in `scene.ts` and §30 still
+**Left where it is.** The DPR 1.5 cap is still in `scene.ts` and §35 still
 owns whether it stays; at 0.98ms it is affordable either way now. The star
 fade is finally taken from something real — there is a horizon band in
 `sky.ts` and the stars come out of it — but stars, sky and ground are three
-separate brightness measurements and §30 is where they are re-solved
+separate brightness measurements and §35 is where they are re-solved
 together. And the sun is now a shared constant in `sun.ts` (the worker bakes
-against it, the material shades against it), which is what §29 will have to
+against it, the material shades against it), which is what §34 will have to
 message when the cluster's ground moves.
 
 ### 24. Movement
@@ -1644,7 +1649,268 @@ bounds: fly far enough and you are turned back rather than hitting a wall.
 **Done when:** the camera cannot go under the ground at any speed; a visitor
 who flies into empty black can always get back.
 
-### 25. Entry
+*Done.* **The camera cannot go under the ground, and the ceiling turned out
+to be the cloud deck.** All three of the things §21 left open are the same
+shape — a term that reshapes the *wanted* velocity before it is damped, with
+a hard clamp behind it as the guarantee — and the one number in the step
+that was going to be taste was measured instead.
+
+**The floor holds at exactly six units, in every flight that tried to break
+it.** Ten held runs: level at cruise and at boost, nose down 25° and 85° at
+boost, straight down on Q, forward-and-down together for 90 seconds, and
+four more. Every run that descends reports a worst `y − height(x, z)` of
+**6.000** — not 5.9, the clamp's own arithmetic read back out of the shipped
+field on the main thread. The control is the same 90-second flight with the
+clamp switched off: it ends **12,245 units under the terrain**, still flying.
+What makes it a floor rather than a bounce is the pair around it — the
+descent *input* is faded out over the last 24 units, and arrested downward
+velocity is zeroed rather than banked, so clearing a ridge does not fire the
+camera off the far side of it.
+
+**The look-ahead is a time, not a distance**, so it is 16 units in front at
+cruise and 63 at boost, sampled at four points along that leg rather than
+only at the end. One sample at the end skips whatever stands between here
+and there, which at boost is a whole ridge.
+
+**The ceiling is 560 because the cloud deck is at 620.** §23's deck is a
+ray–plane intersection drawn only on rays that reach it from below, so above
+620 the sky loses its clouds in every direction at once — and the ground
+goes with it, because the fog weights `dy` at 0.35 and a camera that high is
+220 units of haze from the ground under it. Measured over the lower half of
+the frame at eleven altitudes:
+
+| altitude | 190 | 340 | 480 | 590 | 620 | 880 |
+|---|---|---|---|---|---|---|
+| mean luminance | 71.2 | 59.8 | 45.2 | 38.5 | 36.8 | 25.6 |
+| spread (sd) | 17.8 | 24.3 | 20.4 | 20.4 | 19.8 | 11.7 |
+
+The mean falls the whole way; what says the ground has stopped being *shape*
+is the spread, and it peaks at 340 and holds near 20 to 590 before it goes.
+So: soft edge 360, band 200, hard 560. **If §29 moves the deck, the ceiling
+moves with it** — this is not an independent number.
+
+**Nobody reaches either limit, and that is the construction working.** Over
+the band the outward part of the input is taken away in proportion and a
+drift home is added in the same, so a climb settles where they cancel:
+`180(1−t) = 45t` puts boost at t = 0.8. Measured — max altitude **520.0** at
+boost and **460.0** at cruise against a hard 560, and max radius **3080.0**
+in every horizontal run against a hard 3200. There is no frame in which
+anything stops.
+
+**The radius is 2,600 and it is a decision about where the site is**, since
+the field is infinite. What has to be inside it: Homonoia's massif, which
+reaches 1,639 from the origin, and §31's four structures. Measured out of
+`height.ts` in Node over the bounded disc — **80,381 samples, −24.6 to
+126.2, mean 11.2, 39.9% below zero and 2.7% above sixty, 16.8 range
+wavelengths across the diameter.** Mountains standing in open country, and
+enough of them that the bound is not a small world.
+
+**The way back is a recall to the opening pose**, because there is no path
+to return to until §33 and no chrome until §30. `R` or `Home`; any input at
+all cancels it. Eased, over a duration that grows with the distance and caps
+at 2.5s: from the far edge it takes **2.50s and lands on the opening pose to
+0.000 units**. The floor still applies while it runs, so a recall from a
+terrain-hugging profile holds clearance **6.000** the whole way home rather
+than cutting a line through the ranges.
+
+**The clamp costs 1.8µs a frame.** `height()` is **0.354µs** per call
+measured in-page over 200,000 spread coordinates, and the clamp takes five;
+that is 0.011% of a 16.7ms frame. **Render is unchanged**, as it should be:
+**57 / 44 / 24 draw calls at 0.521 / 0.477 / 0.455 ms** at 70, 190 and 520
+units (§23: 57 / 44 / 23 at 0.548 / 0.478 / 0.452), and 0.98 / 0.95 / 0.96
+at DPR 1.5.
+
+**No hitch, including in the flight §23 could not run.** Two 75-second held
+boosts: level at 190, which is §23's own test, and the terrain-hugging
+profile the clamp makes possible, where every chunk under the camera is at
+the finest level.
+
+| 75s at boost | frames | median | p99 | max | >25ms | chunks | gen mean/worst | holes |
+|---|---|---|---|---|---|---|---|---|
+| level 190 (§23's test) | 4,499 | 16.7 | 18.2 | 19.7 | **0** | 549 | 4.65 / 8.1ms | 0 |
+| terrain-hugging | 4,501 | 16.7 | 18.3 | 20.5 | **0** | 632 | 5.06 / 8.0ms | worst 3 |
+
+Main-thread attach was 23.0ms in total across the level run, **worst 0.2ms
+in any one frame**. §23 generated 1,772 chunks in the same 75 seconds and
+this run generated 549 — not a regression: §23's flight was unbounded and
+covered 13.5km, and 75 seconds now reaches the edge at 24 and holds there.
+**The world is finite, so that number cannot be reproduced and should not
+be.**
+
+**Bundle.** World chunk **204,577 + 1,694 worker = 206,271 gzipped (201.4
+KiB)** of 400, up 555 bytes on §23 for the whole of the movement system. The
+document side is byte-identical apart from the hash in the chunk name:
+`motion` 49,117, `LogBand` 569, CSS 2,031 — **55.3 KiB**, unchanged. All
+four gates verified on the built site with the probes removed.
+
+**Two things the harness got wrong first, both worth recording.** A headed
+browser loses OS focus within a fraction of a second here, and `camera.ts`
+clears every held key on `blur` — which is correct, a window that loses
+focus must not keep flying — so a flight driven by puppeteer's keyboard
+measures 0.7 seconds of flight and 74 of coasting, and reports a beautifully
+consistent clearance for a camera that is not moving. Re-asserting the key
+as a synthetic event every frame fixes it and introduces the second one:
+synthetic keydowns are never matched by a keyup, so `held` carries from one
+run into the next, and the first ceiling test flew with W and Q still down
+and measured a horizontal flight at 132 units. A dispatched `blur` between
+runs is the reset.
+
+**Left where it is.** Pointer lock is still not offered: it is a permission
+prompt, a browser-drawn escape overlay and a mode with edges the reader
+cannot see, and §0.6 is explicit that the world is escapable first. The
+return control is a key rather than a visible affordance, the same
+placeholder status `Esc` has had since §21 — **§30 owns the chrome for
+both.** And one thing the flight made obvious rather than measured: at nine
+units over an open valley floor the ground is a featureless fill over three
+quarters of the frame. That is not the clamp; that is the case §0.2's ground
+cover exists for, and it is step 27.
+
+---
+
+## ▲ The landscape is alive.
+
+**SPEC §0.2 gains a subsection and §4.7 loses an exclusion, and this is
+where the build order takes five more steps for it.** The list that goes is
+"no trees, rocks, water, clouds, or any other landscape furniture", written
+when the terrain was a background layer nobody would look closely at. It is
+kept struck through in §4.7 rather than deleted: it was right for a layer
+glimpsed between paragraphs and it is wrong for a world you fly through,
+which is the same reversal §0 already made about everything else in that
+section. Bare terrain reads as terrain at distance and as nothing up close,
+because scale comes from things of known size standing on the ground.
+
+**Decided outside this file: the vegetation is conifers.** Pines and low
+scrub, high country. Not luminous, not alien. SPEC §8 held that open as the
+last big creative call before the structures; it is closed.
+
+**Everything after this shifts by five.** Entry is 30, the structures 31,
+content in world 32, the guided path 33, the cluster 34, the final pass 35.
+
+**And that is five steps of world before a single project appears in it.**
+The site is a portfolio and the portfolio is currently a document behind a
+query parameter. A world that is beautiful and empty is a worse outcome than
+one that is adequate and inhabited, so if the choice ever comes down to one
+more atmospheric layer against getting the four structures standing in it,
+the structures win.
+
+---
+
+## Life
+
+### 25. Geomorph
+**The pop, before anything is scattered on ground that jumps.** Crossing a
+split distance swaps a coarse chunk for a finer one in one frame — new
+geometry, new normals, new baked shadow. In flight that reads as ground
+darkening and then resolving as you approach, which is the shadow term: a
+coarse chunk marches a coarse field and has less occlusion in it than the
+fine chunk replacing it. **It was never measured** — §22 instrumented
+*holes*, which are a bug, and a pop is a quality problem.
+
+Each vertex carries the position it would have at its parent's resolution
+and blends toward its own over the last stretch before the split distance.
+The two levels are alive at once during the blend, which they already are:
+the parent is retained on a four-second clock (§22). Three attributes morph,
+not one — position, the shading normal and the baked shadow.
+
+**Done when:** flying a straight line at cruise across four split distances
+shows no frame where the ground changes. Capture it and step through rather
+than deciding by eye — a single-frame pop is invisible in motion and obvious
+in a scrub.
+**Report:** the worst per-frame change across a boundary before and after,
+per attribute, and ms/frame either side.
+
+### 26. Water
+**Lakes, not rivers.** A global water level and a plane where the terrain is
+below it — nearly free on a heightfield, and it fills the basins the field
+already produces. Rivers need flow accumulation over the whole field or
+carved channels in the generator, which is a project of its own: **not now,
+and say so** rather than approximating them with noise, which reads as a
+stain rather than a river.
+
+Banded like everything else: a flat mirror of the sky gradient, `--leader`
+where the key light glances off it, `--void` in shadow, one quantised
+specular band rather than a smooth highlight. Still, mostly — a slow normal
+perturbation, no waves. **Underwater is not a mode**: fly under and you see
+the surface from below, and nothing changes about the fog or the light.
+
+**Done when:** the valleys have bottoms, and the water level reads as one
+level everywhere rather than as a plane per basin.
+**Report:** ms/frame and draw calls, and the fraction of a cruise frame the
+surface covers.
+
+### 27. Ground cover and wind
+The two together because the first is the first thing that reads the second.
+
+**Cover:** instanced blades on a camera-relative disc, not per chunk —
+exactly §16's construction for the old particle floor, which failed because
+it was trying to *be* the ground and here is standing on ground that already
+exists. Within about 120 units; past that it is sub-pixel and the terrain's
+own colour carries it. Colour from the same three bands, one step lighter,
+so it reads as growth on the surface rather than as a texture applied to it.
+
+**Wind:** one vector field, low frequency, drifting, that everything which
+moves reads — grass bends, canopies sway, motes drift, the cloud deck
+advects along it. One field so they agree. Vertex animation, not simulation:
+a sine of position and time, amplitude by height above the ground.
+
+Placement follows SPEC §0.2's rule and it is not negotiable: a pure function
+of `(x, z)`, no storage, no seeds carried between chunks.
+
+**Done when:** the ground under the camera reads as ground, and nothing in
+the frame leans against anything else in it.
+**Report:** ms/frame with and without the disc, blade count, and the
+generation cost the placement sampling adds per chunk.
+
+### 28. Rocks and trees
+Instanced meshes, three or four variants each, one draw call per variant per
+chunk, placed per the same pure function. Built from primitives like
+everything else here — a conifer at this distance and this palette is a
+silhouette, and a silhouette is a cone and a trunk.
+
+**They must cast into the shadow term.** A tree with no shadow reads as a
+decal; the worker already marches the field (§23), so a disc of occlusion
+under each one baked into the vertex attribute the ground already carries is
+the cheapest honest answer. **LOD will pop the way §25 fixes** — fade by
+scaling to zero over a distance band rather than switching or clipping.
+
+**Rocks are the cheaper half and probably the better one:** scattered stone
+on slopes and scree at the foot of cliffs does more for scale than trees do,
+because it reads at every distance and does not need a treeline. Build them
+first, and if only one of the two survives the budget it is this one.
+
+**Done when:** altitude is readable from the ground cover alone — a treeline
+you can see from above — and nothing stands on a slope it could not hold.
+**Report:** ms/frame, draw calls, instances at cruise, and the per-chunk
+generation cost against §23's 4.51ms.
+
+### 29. Motes and cloud volume
+The two atmospheric ones, together because they share the wind field.
+
+**Motes:** instanced points drifting in the air near the ground, denser over
+water and vegetation, sparse on bare rock, in `--mint` — the second accent
+§2 has held in reserve since it came off the Vulpix. Slow, wandering, and
+they must not read as dust: dust falls and drifts, these rise and hesitate.
+Additive and fogged, and the one thing in this world allowed to be brighter
+than the ground it is over.
+
+**Cloud volume:** §23's deck is a ray–plane intersection and you cannot
+reach it. Add a small number of billboarded, banded forms in the near field
+that the camera can pass through, under the same deck — flying into one
+should dim and diffuse the world for a second and come out the other side.
+The single most flight-like thing in this block and the one most likely to
+look bad: soft billboards in a hard-banded world is a contradiction. Try it,
+look at it, **cut it if it fights the shading** and say so.
+
+**Done when:** the air is not empty, and flying into a cloud is a thing that
+happens to the frame.
+**Report:** ms/frame per layer against SPEC §0.7's 8ms cruise ceiling, which
+this step is the last one spending against.
+
+---
+
+## The projects as places
+
+### 30. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 
 - The world loads on WebGPU + ≥1024px + motion on; everything else, and
@@ -1658,13 +1924,13 @@ World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 trapped; a crawler still gets real HTML at every URL; LCP unchanged.
 **Report:** time to interactive world, LCP both modes, bundle both sides.
 
-### 26. The four structures
+### 31. The four structures
 Whatever SPEC §8 decides they are — and that decision is Theo's, not this
 session's. **Ask before modelling.** Four places in the landscape, far
 enough apart that reaching one is a journey and close enough that the next
 is visible from the last.
 
-### 27. Content in world
+### 32. Content in world
 The writeup panel — the same HTML the document serves, over the scene, with
 its own backing. The three landmark states: distant silhouette, approaching
 (name and machine ID resolve), arrived (the writeup opens). URL sync in both
@@ -1674,18 +1940,18 @@ that URL drops you there.
 **Done when:** close the panel and you are where you were, still flying;
 deep links and the back button both work in both modes.
 
-### 28. The guided path
+### 33. The guided path
 A route between the four projects for visitors who will not fly, followed by
 scroll or by a "take me there" control. Same camera: the path drives it when
 engaged and releases when the visitor takes over.
 
-### 29. The cluster at Homonoia
+### 34. The cluster at Homonoia
 The traffic simulation and the five-node cluster from §15–§16, as a thing in
 a place rather than the air over every screen. The election is still the one
 thing to get right (SPEC §4.7): a term ends and the ground under the cluster
 rearranges.
 
-### 30. Brightness, performance, accessibility
+### 35. Brightness, performance, accessibility
 Re-solved for the new frame. The measurement harness from §17–§20 stands and
 most of what it was constraining is gone: text is confined to the writeup
 panel, so the bound applies behind the panel and nowhere else.

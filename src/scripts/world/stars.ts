@@ -72,7 +72,7 @@ const FADE = 0.2;
    so the ceiling this number was solved under does not apply to it. Left
    exactly where §18 put it through §23, which put a lit gradient under the
    stars rather than changing what a star is: the sky, the ground and this
-   are three separate measurements and §30 re-solves all three together. */
+   are three separate measurements and §35 re-solves all three together. */
 const ALPHA = 0.30;
 
 /* **The contrast multiplier is gone (§21).** It was a legibility measure:
@@ -81,7 +81,7 @@ const ALPHA = 0.30;
    carried a factor for it. There is no text over the world now, so a
    toggle about reading text has nothing to say to it. What high contrast
    still does here is what it does everywhere — it moves the tokens, and
-   both of these are read from the tokens on every change. §30 decides
+   both of these are read from the tokens on every change. §35 decides
    whether a world needs more than that. */
 export function buildStars(palette: Palette, time: UniformNode<'float', number>) {
   // One tier (§0.1): the world does not load below 1024px at all, so the
