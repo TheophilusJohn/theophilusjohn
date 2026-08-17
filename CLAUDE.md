@@ -50,6 +50,15 @@ so nobody is ever stopped, and nobody ever gets through. `height()` on the
 main thread is the floor, which makes `camera.ts` the second caller of the
 field after `terrain.ts`'s LOD criterion.
 
+**Since §25 a chunk carries its parent's surface as well as its own.**
+Three attributes morph — position, shading normal, baked shadow — and the
+weight is **one number per chunk**, read from the *parent's* rectangle
+distance so it is the same arithmetic the split is decided on. It must
+reach 0 by half the birth distance (`MORPH` ≥ 0.5) or every level pops at
+once. `chunk.ts` builds a block of any level's grid, so a chunk's morph
+target is that same function over the quarter of its parent it covers —
+never an approximation of it.
+
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
 rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
 geomorph, water, ground cover and wind, rocks and conifers, motes and cloud
@@ -455,6 +464,26 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   synthetic event every frame; then remember that synthetic keydowns are
   never matched by a keyup, so dispatch a `blur` between runs or `held`
   carries over and the next test flies with the last one's keys down.
+- **A per-vertex LOD morph is wrong on a quadtree.** All four children are
+  born in the same frame across the whole of the parent's square, so a fade
+  keyed to each vertex's own distance has finished at the near corner and
+  not started at the far one — and the far half of that square then changes
+  in one frame, which is the pop it was there to remove. One weight per
+  chunk, off the *parent's* rect distance. It does not open a seam between
+  same-level neighbours: along a shared edge both chunks agree about the
+  ground and both parents agree about it, so the two ends of the blend are
+  equal there and the mix is the same at any weight.
+- A morph that is not finished when a chunk is replaced by its own children
+  pops by the remainder, because the children show its *unmorphed* surface.
+  A chunk is replaced at half the distance it was born at and its rect is
+  inside its parent's, so "finished by half the birth distance" is the
+  exact condition at every level at once.
+- A pop cannot be measured in pixels while the camera is moving — at cruise
+  every pixel changes every frame and 0.75 units of travel swamps it. Two
+  instruments that do work: read the drawn surface out of the geometry
+  buffers at fixed world points (the rasteriser's own interpolation, in
+  JS), and for a picture, **hold the pose the frame is drawn from and
+  advance only the pose the LOD is decided from**.
 - A control test that switches a clamp *off* does not give a like-for-like
   frame cost: with no floor the camera is 12km under the terrain within
   seconds and there is nothing left to draw. Time the function directly
@@ -479,21 +508,33 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §24: 201.4 KiB, of which the terrain worker is 1.7
-  — the whole movement system was 555 bytes
+  own merits. Measured at §25: 202.1 KiB, of which the terrain worker is 2.1
+  — the geomorph was 666 bytes (§24: 201.4)
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–29), against 0.48 today. Report per layer
+  landscape shares (steps 25–29), against 0.51 today. The geomorph took
+  0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
+  more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Report
+  per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §24: **57 / 44 / 24** at 70, 190 and 520
-  units of altitude, at **0.521 / 0.477 / 0.455 ms/frame** — 0.98 at DPR 1.5
-  (§23: 57 at 0.548; §22: 56 at 0.302; §21, empty: 2 at 0.108; §20: 6 at
-  2.26). Of a cruise frame the sky dome is 0.18ms and the landscape 0.19
+- Under 100 draw calls. Measured at §25 on one harness against both builds:
+  **53 / 41 / 21** at 70, 190 and 520 units of altitude — unchanged by the
+  geomorph — at **0.64 / 0.54 / 0.50 ms/frame** against §24's 0.56 / 0.49 /
+  0.49 on the same machine, and ~1.05 at DPR 1.5 either way. Counts and
+  timings are a function of the window the harness opens, so compare within
+  a run: §24's own figures were 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
+  57 at 0.548; §22: 56 at 0.302; §21, empty: 2 at 0.108; §20: 6 at 2.26).
+  Of a cruise frame the sky dome is 0.18ms and the landscape 0.19
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
   Measured at §24 over 75s of boosted flight: level at 190, 549 chunks at
   4.65ms each in the worker pool (worst 8.1), 0.2ms worst on the main
   thread, **zero frames over 25ms**; terrain-hugging at boost, 632 at 5.06.
+  §25's parent patch put that up 4% on the mix and 26% on a level-0 chunk
+  (1.21 → 1.52ms in Node; a root chunk, which never morphs, is 1.14), and
+  geometry per chunk from 109.7 to 160.4 KB — 28.2 MB alive at the opening
+  pose. Nothing under it moved: same draw calls, same triangles, same end
+  pose, same 6.000 clearance.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every

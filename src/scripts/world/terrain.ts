@@ -48,7 +48,18 @@ import {
   Vector3,
   type Camera,
 } from 'three/webgpu';
-import { attribute, cameraPosition, float, fwidth, mix, normalWorld, positionWorld, smoothstep, vec3 } from 'three/tsl';
+import {
+  attribute,
+  cameraPosition,
+  float,
+  fwidth,
+  mix,
+  positionLocal,
+  positionWorld,
+  smoothstep,
+  uniform,
+  vec3,
+} from 'three/tsl';
 import { fog } from './fog';
 import { height } from './height';
 import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
@@ -87,6 +98,49 @@ const SKIRT_MAX = 24;
    while they are being generated, so the ground never has a hole in it
    where the camera is heading. */
 const RETIRE = 4000;
+
+/* ── The morph, and why the band is where it is (§25) ───────────────────
+   A chunk is born the frame its parent's distance falls under SPLIT × the
+   parent's width, and it dies the frame its own distance falls under SPLIT
+   × its own. Between those two the reader is shown one square of ground
+   whose geometry differs from the square that preceded it by the octaves
+   `height.ts` drops between two levels — and the swap is a single frame, so
+   it is a pop rather than a transition. The fix is standard: carry the
+   parent's surface on every vertex and cross-fade to your own. What is not
+   standard is where the fade is allowed to sit, and it is forced rather
+   than chosen.
+
+   **The weight is one number per chunk, not per vertex**, and it is a
+   function of the *parent's* distance — the same quantity the split is
+   decided on, computed by the same arithmetic a few lines below. A
+   per-vertex weight is the usual construction and it is wrong on a
+   quadtree: all four children are born in the same frame across the whole
+   of the parent's square, while a per-vertex fade would have finished at
+   the near corner and not started at the far one, and the far half of that
+   square changes in one frame.
+
+   **MORPH is 0.55 and 0.5 is a hard floor.** The fade has to be finished by
+   the time this chunk is replaced by its own children, or they show its
+   unmorphed surface while it was showing a morphed one — and a chunk is
+   replaced when *its* distance reaches SPLIT × its width, which is half the
+   distance at which it was born. A rect is inside its parent's rect, so its
+   distance is never the greater of the two, and completing the fade by half
+   the birth distance is therefore the exact condition. Anything above 0.5
+   is margin against float; anything below it is a pop at every level in the
+   tree at once.
+
+   Which puts the fade over 90% of a chunk's life — 130 units of travel on a
+   level-0 chunk, 2.9 seconds at cruise — and that is the *slowest* the
+   morph can be made. The alternative was measured rather than argued: at
+   0.8 the fade is squeezed into the outer fifth of the range, the drawn
+   ground is 0.06 units closer to the field on a level-1 chunk, and the
+   worst per-frame change goes from 0.008 units to 0.018. Both are invisible
+   and only one of them is derived from the condition above.
+
+   Smoothstepped rather than linear: the ends of the fade are where the
+   morph sits next to something that is not morphing, so the ends are what
+   have to have no velocity in them. */
+const MORPH = 0.55;
 
 /* ── The bands ──────────────────────────────────────────────────────────
    §0.2: "a slope lit at 0.6 and one lit at 0.45 land in the same band, so
@@ -172,14 +226,38 @@ export function buildTerrain(palette: Palette) {
 
   const material = new MeshBasicNodeMaterial();
 
+  /* Per **object**, which is what `uniform` already is: its group is the
+     object group, so the value the callback writes is the one this mesh is
+     drawn with and the next mesh gets its own. That is the whole plumbing
+     cost of a per-chunk weight, against a vertex attribute that would have
+     to be re-uploaded every frame. */
+  const morph = uniform(0);
+  morph.onObjectUpdate((frame) => {
+    morph.value = (frame.object?.userData.morph as number | undefined) ?? 0;
+  });
+
+  /* §25 — three attributes morph, and all three are differences from this
+     chunk's own value, so a root chunk carries zeroes and needs no branch.
+     Position is the one that is a vertex-stage node; the other two are read
+     in the fragment stage, where blending the varying and blending at the
+     vertex come to the same thing because both are linear. */
+  material.positionNode = positionLocal.add(
+    vec3(0, attribute<'float'>('morphY', 'float').mul(morph), 0),
+  );
+
+  const normal = attribute<'vec3'>('normal', 'vec3')
+    .add(attribute<'vec3'>('morphNormal', 'vec3').mul(morph))
+    .normalize();
+
   /* Lit by hand rather than through a lighting model, and at §23 that is
      no longer only a bundle argument. A quantised N·L with a baked cast
      shadow is not something a light node computes and then gets banded —
      the banding *is* the model, and every term below feeds the same scalar
      that the two edges cut. BasicNodeLibrary stays (§21). */
   const sun = vec3(SUN.x, SUN.y, SUN.z);
-  const facing = normalWorld.dot(sun);
-  const cast = attribute<'float'>('shadow', 'float');
+  const facing = normal.dot(sun);
+  const cast = attribute<'float'>('shadow', 'float')
+    .add(attribute<'float'>('morphShadow', 'float').mul(morph));
   const lum = facing.max(0).mul(mix(float(1).sub(CAST), 1, cast));
 
   /* One pixel of edge, wherever the edge lands. */
@@ -208,8 +286,11 @@ export function buildTerrain(palette: Palette) {
     step(LIT),
   );
 
+  /* The blended attribute stands in for `normalWorld` in both terms. A
+     chunk's matrix is a translation and nothing else, so its normal matrix
+     is the identity and the two were already the same vector. */
   const toEye = cameraPosition.sub(positionWorld).normalize();
-  const grazing = float(1).sub(normalWorld.dot(toEye).max(0));
+  const grazing = float(1).sub(normal.dot(toEye).max(0));
   const backlit = smoothstep(RIM_BACK, 0, facing);
   const rim = smoothstep(RIM_IN, RIM_OUT, grazing).mul(backlit).mul(RIM);
 
@@ -273,6 +354,9 @@ export function buildTerrain(palette: Palette) {
     geometry.setAttribute('position', new BufferAttribute(data.position, 3));
     geometry.setAttribute('normal', new BufferAttribute(data.normal, 3));
     geometry.setAttribute('shadow', new BufferAttribute(data.shadow, 1));
+    geometry.setAttribute('morphY', new BufferAttribute(data.morphY, 1));
+    geometry.setAttribute('morphNormal', new BufferAttribute(data.morphNormal, 3));
+    geometry.setAttribute('morphShadow', new BufferAttribute(data.morphShadow, 1));
     // Its own copy — see grid.ts on why this is not one shared buffer.
     geometry.setIndex(new BufferAttribute(indices.slice(), 1));
     /* Set rather than computed. computeBoundingSphere reads the whole
@@ -287,6 +371,9 @@ export function buildTerrain(palette: Palette) {
     const mesh = new Mesh(geometry, material);
     mesh.position.set(chunk.ix * chunk.size, 0, chunk.iz * chunk.size);
     mesh.visible = false;
+    // Never read before `update` writes it — a mesh is invisible until then
+    // — but the uniform is not a place to find out.
+    mesh.userData.morph = 0;
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
     chunk.mesh = mesh;
@@ -316,6 +403,12 @@ export function buildTerrain(palette: Palette) {
     return chunk;
   }
 
+  /* The vertical leg of every distance this file measures, and it is one
+     sample of the field a frame. `morphOf` needs the same one the split
+     used, or the weight is answering a slightly different question from the
+     criterion it has to agree with exactly. */
+  let dy = 0;
+
   /* ── Which squares exist ─────────────────────────────────────────────
      Distance is to the cell's own rectangle, in three dimensions, with the
      vertical leg measured from the ground under the camera rather than from
@@ -327,7 +420,7 @@ export function buildTerrain(palette: Palette) {
      other caller and samples the same function the same way. */
   function collect(cx: number, cy: number, cz: number) {
     wanted.clear();
-    const dy = Math.max(cy - height(cx, cz), 0);
+    dy = Math.max(cy - height(cx, cz), 0);
 
     const walk = (level: number, ix: number, iz: number) => {
       const size = BASE * 2 ** level;
@@ -352,6 +445,24 @@ export function buildTerrain(palette: Palette) {
     for (let j = -span; j <= span; j++) {
       for (let i = -span; i <= span; i++) walk(LEVELS - 1, rx + i, rz + j);
     }
+  }
+
+  /* How far this chunk is from being replaced by its own geometry, 1 at the
+     frame it was born and 0 well before the frame it is subdivided. The
+     distance is to the *parent's* rectangle and it is `collect`'s own
+     arithmetic — same rect, same vertical leg, same threshold — because a
+     morph that finishes at a different distance from the one the split
+     happens at is a pop wherever the two disagree. */
+  function morphOf(chunk: Chunk, cx: number, cz: number) {
+    if (chunk.level >= LEVELS - 1) return 0;
+    const size = chunk.size * 2;
+    const x = (chunk.ix >> 1) * size;
+    const z = (chunk.iz >> 1) * size;
+    const dx = Math.max(x - cx, cx - (x + size), 0);
+    const dz = Math.max(z - cz, cz - (z + size), 0);
+    const t = Math.hypot(dx, dz, dy) / (SPLIT * size);
+    const s = Math.min(Math.max((t - MORPH) / (1 - MORPH), 0), 1);
+    return s * s * (3 - 2 * s);
   }
 
   const near = (chunk: Chunk, cx: number, cy: number, cz: number) => {
@@ -393,6 +504,12 @@ export function buildTerrain(palette: Palette) {
         z: chunk.iz * chunk.size,
         size: chunk.size,
         drop: Math.min((SKIRT * chunk.size) / SEG, SKIRT_MAX),
+        // A root has no coarser level to have come from, and asking for one
+        // would be a third of a chunk's generation cost spent on zeroes.
+        quadrant:
+          chunk.level >= LEVELS - 1
+            ? null
+            : { x: (chunk.ix & 1) as 0 | 1, z: (chunk.iz & 1) as 0 | 1 },
       };
       chunk.requested = true;
       busy[slot] = chunk.key;
@@ -458,8 +575,11 @@ export function buildTerrain(palette: Palette) {
     let pending = 0;
     for (const chunk of chunks.values()) {
       const live = wanted.has(chunk.key) || shown.has(chunk.key);
-      if (chunk.mesh) chunk.mesh.visible = shown.has(chunk.key);
-      else if (chunk.requested) pending++;
+      if (chunk.mesh) {
+        const visible = shown.has(chunk.key);
+        chunk.mesh.visible = visible;
+        if (visible) chunk.mesh.userData.morph = morphOf(chunk, p.x, p.z);
+      } else if (chunk.requested) pending++;
       if (live) chunk.idle = 0;
       else {
         chunk.idle += dt * 1000;

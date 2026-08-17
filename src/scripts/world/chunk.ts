@@ -15,6 +15,16 @@ export type ChunkData = {
   normal: Float32Array;
   /** How much of the key light reaches each vertex, 0..1. */
   shadow: Float32Array;
+  /* §25 — where this vertex would be, and what it would be lit by, on the
+     parent's surface. Stored as the difference from its own value, so a
+     root chunk with no parent is the zeroed array these are allocated as
+     and the shader's `+ delta * weight` needs no branch. All three, because
+     a chunk that morphs its position and keeps its shading pops in the two
+     terms the eye is most sensitive to: the shadow is the one that reads as
+     the ground darkening and resolving. */
+  morphY: Float32Array;
+  morphNormal: Float32Array;
+  morphShadow: Float32Array;
   /** Height bounds, so `terrain.ts` can set a bounding sphere without
       reading the buffer back on the main thread. */
   min: number;
@@ -121,22 +131,49 @@ export function sunlight(x: number, z: number, y: number): number {
   return 1 - Math.min(deepest / SOFT, 1);
 }
 
-export function buildChunk(spec: ChunkSpec): ChunkData {
-  const { x, z, size, drop } = spec;
+/* Smoothstepped rather than linear, which is not a nicety. A bilinear patch
+   is only C0 across a cell boundary, and a *hard band edge* drawn over that
+   discontinuity comes back as axis-aligned rectangles a few units across —
+   measured on the massif's mid slope. Fading the interpolant makes the
+   lattice C1 and the edges follow the ground. */
+const ease = (t: number) => t * t * (3 - 2 * t);
+
+/** One level's surface over a square block of its own grid: the heights, the
+    shading normals and the marched shadow, with nothing about where the
+    numbers are going. */
+type Surface = {
+  y: Float32Array;
+  normal: Float32Array;
+  shadow: Float32Array;
+  min: number;
+  max: number;
+};
+
+/* ── A patch of one level's surface ─────────────────────────────────────
+   The whole of a chunk is `buildSurface(corner, size, 0, 0, SEG)`, and §25's
+   morph target is the *parent's* level over the quarter of it this chunk
+   covers: same function, coarser size, offset into the parent's grid. It is
+   one function rather than two so that the target is the parent's own
+   arithmetic and not a re-derivation of it — a morph that lands on
+   something the parent would not have drawn is a pop with extra steps.
+
+   (ox, oz) is the level's grid origin, `size` its chunk size, and the block
+   runs from grid index (i0, j0) for n quads a side. */
+function buildSurface(ox: number, oz: number, size: number, i0: number, j0: number, n: number): Surface {
   const spacing = size / SEG;
-  const w = SEG + 1;
+  const w = n + 1;
 
   /* SPAN vertices of padding on every side, sampled from the same field, so
-     the central differences below are exact at the chunk's own edge. Two
+     the central differences below are exact at the block's own edge. Two
      chunks of the same level therefore agree on the normal along their
      shared edge as well as on the height — the seam is invisible rather
      than merely closed. */
-  const pw = SEG + 1 + SPAN * 2;
+  const pw = w + SPAN * 2;
   const H = new Float32Array(pw * pw);
-  for (let j = -SPAN; j <= SEG + SPAN; j++) {
-    const wz = z + j * spacing;
-    for (let i = -SPAN; i <= SEG + SPAN; i++) {
-      H[(j + SPAN) * pw + (i + SPAN)] = height(x + i * spacing, wz, spacing);
+  for (let j = -SPAN; j <= n + SPAN; j++) {
+    const wz = oz + (j0 + j) * spacing;
+    for (let i = -SPAN; i <= n + SPAN; i++) {
+      H[(j + SPAN) * pw + (i + SPAN)] = height(ox + (i0 + i) * spacing, wz, spacing);
     }
   }
 
@@ -145,72 +182,67 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
      lattice point and the interpolation is only doing work between them —
      a shadow edge is tens of units across at this sun elevation, so
      resolving it at 8 units of ground and softening the rest is the whole
-     of what a march this expensive can afford. */
+     of what a march this expensive can afford.
+
+     Clamped at the top edge so the last row of vertices interpolates inside
+     the last cell rather than off the end of the lattice. Both ends of the
+     morph go through the same clamp, so a parent patch agrees with the
+     parent's own chunk about it. */
   const ss = size / SHADOW_SEG;
-  const sw = SHADOW_SEG + 3;
-  const S = new Float32Array(sw * sw);
-  const C = new Float32Array(sw * sw);
   const cs = Math.max(ss, COARSE);
-  for (let j = -1; j <= SHADOW_SEG + 1; j++) {
-    const wz = z + j * ss;
-    for (let i = -1; i <= SHADOW_SEG + 1; i++) {
-      const wx = x + i * ss;
-      /* The landform height at this lattice point, which two things read.
-         One ring of padding, so the differences at the chunk's own edge are
-         as exact as the fine ones are. */
+  const per = SHADOW_SEG / SEG;
+  const cell = (index: number) => Math.min(Math.floor(index * per), SHADOW_SEG - 1);
+
+  /* One ring of padding around the cells the block touches, because the
+     landform gradient below differences across a whole cell either side. */
+  const lx = cell(i0) - 1;
+  const lz = cell(j0) - 1;
+  const lw = cell(i0 + n) + 2 - lx;
+  const lh = cell(j0 + n) + 2 - lz;
+  const S = new Float32Array(lw * lh);
+  const C = new Float32Array(lw * lh);
+  for (let j = 0; j < lh; j++) {
+    const wz = oz + (lz + j) * ss;
+    for (let i = 0; i < lw; i++) {
+      const wx = ox + (lx + i) * ss;
+      // The landform height at this lattice point, which two things read.
       const c = height(wx, wz, cs);
-      C[(j + 1) * sw + (i + 1)] = c;
+      C[j * lw + i] = c;
       /* From that coarse surface, which is also the one being marched: a
          vertex sitting in a detail dip is *below* the field the ray travels
          over, and starting there would shadow every hollow in the world. */
-      S[(j + 1) * sw + (i + 1)] = sunlight(wx, wz, c);
+      S[j * lw + i] = sunlight(wx, wz, c);
     }
   }
 
-  const position = new Float32Array(VERTEX_COUNT * 3);
-  const normal = new Float32Array(VERTEX_COUNT * 3);
-  const shadow = new Float32Array(VERTEX_COUNT);
+  const y = new Float32Array(w * w);
+  const normal = new Float32Array(w * w * 3);
+  const shadow = new Float32Array(w * w);
 
   let min = Infinity;
   let max = -Infinity;
   const inv = 1 / (2 * SPAN * spacing);
   const cinv = 1 / (2 * ss);
-  const per = SHADOW_SEG / SEG;
 
-  /* Smoothstepped rather than linear, which is not a nicety. A bilinear
-     patch is only C0 across a cell boundary, and a *hard band edge* drawn
-     over that discontinuity comes back as axis-aligned rectangles a few
-     units across — measured on the massif's mid slope. Fading the
-     interpolant makes the lattice C1 and the edges follow the ground. */
-  const ease = (t: number) => t * t * (3 - 2 * t);
-
-  for (let j = 0; j <= SEG; j++) {
-    const sj = j * per;
-    const j0 = Math.min(Math.floor(sj), SHADOW_SEG - 1);
-    const tj = ease(sj - j0);
-    for (let i = 0; i <= SEG; i++) {
+  for (let j = 0; j <= n; j++) {
+    const gj = cell(j0 + j);
+    const cj = gj - lz;
+    const tj = ease((j0 + j) * per - gj);
+    for (let i = 0; i <= n; i++) {
       const p = (j + SPAN) * pw + (i + SPAN);
-      const y = H[p]!;
-      if (y < min) min = y;
-      if (y > max) max = y;
+      const h = H[p]!;
+      if (h < min) min = h;
+      if (h > max) max = h;
+      y[j * w + i] = h;
 
-      const v = (j * w + i) * 3;
-      /* Local to the chunk's own corner. A world-space buffer would be
-         hundreds of thousands of units from the origin after a long flight
-         and would quantise visibly in a float32; the mesh carries the
-         offset in its matrix, which is a float64 on the CPU. */
-      position[v] = i * spacing;
-      position[v + 1] = y;
-      position[v + 2] = j * spacing;
-
-      const si = i * per;
-      const i0 = Math.min(Math.floor(si), SHADOW_SEG - 1);
-      const ti = ease(si - i0);
+      const gi = cell(i0 + i);
+      const ci = gi - lx;
+      const ti = ease((i0 + i) * per - gi);
       const at = (G: Float32Array) => {
-        const a = G[(j0 + 1) * sw + i0 + 1]!;
-        const b = G[(j0 + 1) * sw + i0 + 2]!;
-        const c = G[(j0 + 2) * sw + i0 + 1]!;
-        const d = G[(j0 + 2) * sw + i0 + 2]!;
+        const a = G[cj * lw + ci]!;
+        const b = G[cj * lw + ci + 1]!;
+        const c = G[(cj + 1) * lw + ci]!;
+        const d = G[(cj + 1) * lw + ci + 1]!;
         return (a + (b - a) * ti) * (1 - tj) + (c + (d - c) * ti) * tj;
       };
       shadow[j * w + i] = at(S);
@@ -221,17 +253,110 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
          lattice, which is what stops a hard band edge from finding the
          detail layer. Nothing else reads a normal, so there is one
          attribute and it is this one. */
-      const cx = ((C[(j0 + 1) * sw + i0 + 2]! - C[(j0 + 1) * sw + i0]!) * (1 - tj)
-        + (C[(j0 + 2) * sw + i0 + 2]! - C[(j0 + 2) * sw + i0]!) * tj) * cinv;
-      const cz = ((C[(j0 + 2) * sw + i0 + 1]! - C[j0 * sw + i0 + 1]!) * (1 - ti)
-        + (C[(j0 + 2) * sw + i0 + 2]! - C[j0 * sw + i0 + 2]!) * ti) * cinv;
+      const cx = ((C[cj * lw + ci + 1]! - C[cj * lw + ci - 1]!) * (1 - tj)
+        + (C[(cj + 1) * lw + ci + 1]! - C[(cj + 1) * lw + ci - 1]!) * tj) * cinv;
+      const cz = ((C[(cj + 1) * lw + ci]! - C[(cj - 1) * lw + ci]!) * (1 - ti)
+        + (C[(cj + 1) * lw + ci + 1]! - C[(cj - 1) * lw + ci + 1]!) * ti) * cinv;
 
       const dx = (H[p + SPAN]! - H[p - SPAN]!) * inv * LANDFORM + cx * (1 - LANDFORM);
       const dz = (H[p + pw * SPAN]! - H[p - pw * SPAN]!) * inv * LANDFORM + cz * (1 - LANDFORM);
       const len = Math.hypot(dx, 1, dz);
+      const v = (j * w + i) * 3;
       normal[v] = -dx / len;
       normal[v + 1] = 1 / len;
       normal[v + 2] = -dz / len;
+    }
+  }
+
+  return { y, normal, shadow, min, max };
+}
+
+export function buildChunk(spec: ChunkSpec): ChunkData {
+  const { x, z, size, drop, quadrant } = spec;
+  const spacing = size / SEG;
+  const w = SEG + 1;
+
+  const base = buildSurface(x, z, size, 0, 0, SEG);
+
+  const position = new Float32Array(VERTEX_COUNT * 3);
+  const normal = new Float32Array(VERTEX_COUNT * 3);
+  const shadow = new Float32Array(VERTEX_COUNT);
+  const morphY = new Float32Array(VERTEX_COUNT);
+  const morphNormal = new Float32Array(VERTEX_COUNT * 3);
+  const morphShadow = new Float32Array(VERTEX_COUNT);
+
+  normal.set(base.normal);
+  shadow.set(base.shadow);
+  for (let j = 0; j <= SEG; j++) {
+    for (let i = 0; i <= SEG; i++) {
+      const v = (j * w + i) * 3;
+      /* Local to the chunk's own corner. A world-space buffer would be
+         hundreds of thousands of units from the origin after a long flight
+         and would quantise visibly in a float32; the mesh carries the
+         offset in its matrix, which is a float64 on the CPU. */
+      position[v] = i * spacing;
+      position[v + 1] = base.y[j * w + i]!;
+      position[v + 2] = j * spacing;
+    }
+  }
+
+  /* ── The morph target ──────────────────────────────────────────────────
+     Every vertex of a chunk lies on the parent's *drawn* surface, not just
+     near it: at even indices it is a parent vertex, at odd ones it is the
+     midpoint of a parent edge — and the diagonal of `grid.ts`'s
+     triangulation is self-similar under a halving, so the child's diagonal
+     lies along the parent's wherever the two cross. So the target is the
+     average of at most two parent vertices, which is exactly what the
+     parent's rasteriser interpolates there, for all three attributes.
+
+     A chunk fully morphed is therefore its parent, to the bit — which is
+     what makes the swap at the split distance a no-op rather than a small
+     pop. */
+  let swing = 0;
+  if (quadrant) {
+    const half = SEG / 2;
+    const pw = half + 1;
+    const parent = buildSurface(
+      x - quadrant.x * size,
+      z - quadrant.z * size,
+      size * 2,
+      quadrant.x * half,
+      quadrant.z * half,
+      half,
+    );
+
+    for (let j = 0; j <= SEG; j++) {
+      for (let i = 0; i <= SEG; i++) {
+        const odd = i & 1;
+        const oddj = j & 1;
+        let a: number;
+        let b: number;
+        if (odd && oddj) {
+          // The centre of a parent cell, which is the midpoint of its
+          // diagonal edge and not of its corners.
+          a = ((j - 1) / 2) * pw + (i + 1) / 2;
+          b = ((j + 1) / 2) * pw + (i - 1) / 2;
+        } else if (odd) {
+          a = (j / 2) * pw + (i - 1) / 2;
+          b = (j / 2) * pw + (i + 1) / 2;
+        } else if (oddj) {
+          a = ((j - 1) / 2) * pw + i / 2;
+          b = ((j + 1) / 2) * pw + i / 2;
+        } else {
+          a = (j / 2) * pw + i / 2;
+          b = a;
+        }
+
+        const s = j * w + i;
+        const dy = (parent.y[a]! + parent.y[b]!) * 0.5 - base.y[s]!;
+        morphY[s] = dy;
+        if (Math.abs(dy) > swing) swing = Math.abs(dy);
+        morphShadow[s] = (parent.shadow[a]! + parent.shadow[b]!) * 0.5 - base.shadow[s]!;
+        for (let k = 0; k < 3; k++) {
+          morphNormal[s * 3 + k] =
+            (parent.normal[a * 3 + k]! + parent.normal[b * 3 + k]!) * 0.5 - base.normal[s * 3 + k]!;
+        }
+      }
     }
   }
 
@@ -251,6 +376,13 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
     normal[d + 1] = normal[s + 1]!;
     normal[d + 2] = normal[s + 2]!;
     shadow[o] = shadow[surface]!;
+    // The apron's morph is its edge's, so it hangs from the edge wherever
+    // the morph has put it rather than from where it started.
+    morphY[o] = morphY[surface]!;
+    morphNormal[d] = morphNormal[s]!;
+    morphNormal[d + 1] = morphNormal[s + 1]!;
+    morphNormal[d + 2] = morphNormal[s + 2]!;
+    morphShadow[o] = morphShadow[surface]!;
     o++;
   };
   for (let k = 0; k <= SEG; k++) hang(k);
@@ -258,5 +390,16 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
   for (let k = 0; k <= SEG; k++) hang(k * w);
   for (let k = 0; k <= SEG; k++) hang(k * w + SEG);
 
-  return { position, normal, shadow, min: min - drop, max };
+  /* Widened by the morph, because the bounding sphere has to hold the chunk
+     at every weight it will be drawn at and not only at its own. */
+  return {
+    position,
+    normal,
+    shadow,
+    morphY,
+    morphNormal,
+    morphShadow,
+    min: base.min - drop - swing,
+    max: base.max + swing,
+  };
 }

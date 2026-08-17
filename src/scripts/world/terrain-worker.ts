@@ -34,7 +34,14 @@ scope.onmessage = (event: MessageEvent<Request>) => {
   const data = buildChunk(spec);
   scope.postMessage(
     { key, ...data, ms: performance.now() - started },
-    // Transferred, not copied. 72KB a chunk each way otherwise.
-    [data.position.buffer, data.normal.buffer, data.shadow.buffer],
+    // Transferred, not copied. 125KB a chunk each way otherwise.
+    [
+      data.position.buffer,
+      data.normal.buffer,
+      data.shadow.buffer,
+      data.morphY.buffer,
+      data.morphNormal.buffer,
+      data.morphShadow.buffer,
+    ],
   );
 };

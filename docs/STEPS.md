@@ -1819,6 +1819,164 @@ in a scrub.
 **Report:** the worst per-frame change across a boundary before and after,
 per attribute, and ms/frame either side.
 
+*Done.* **The pop was 8.6 units of ground in one frame and it is now 0.011,
+which is a rate rather than an event.** The step's instinct that it had
+never been measured was right, and the measurement is the part worth
+keeping: the worst frame before is a spike in a series of zeroes, and after
+it there is no series to speak of — every frame in a 700-frame flight
+changes by the same hundredth of a unit and none changes by more.
+
+**The instrument is the geometry, not the pixels.** What the reader sees is
+the *drawn* surface, and the drawn surface is entirely in JS — the buffers
+the worker sent, the weight `terrain.ts` wrote this frame, and `grid.ts`'s
+triangulation — so the probe evaluates the same interpolation the rasteriser
+does at 9,016 fixed world points and differences them frame to frame. A
+pixel diff cannot do this while the camera is moving: at cruise every pixel
+changes every frame, and a 0.75-unit step of the camera swamps a pop in the
+mid distance. Flying at 40 units over the ground, heading 30°, stepped one
+frame at a time with the chunk queue drained at each step so that what is
+between two frames is the LOD and nothing else:
+
+| worst change in one frame | height | normal | shadow |
+|---|---|---|---|
+| before | **8.586 units** | 19.73° | 1.0000 |
+| after | **0.011 units** | 0.11° | 0.0020 |
+
+**The distributions are the real answer.** Before: median 0.0000, forty-one
+frames over 0.05 units, and the worst is isolated — `… 2.748, 0.000, 0.638,
+8.586, 0.000, 0.000 …`. After: median 0.0094, maximum 0.0109, and the
+neighbourhood of the worst frame is `0.0109` seven times in a row. There is
+no tail. The frame a split happens on cannot be picked out of the series.
+
+| boundary (coarser side) | before y / n / shadow | after |
+|---|---|---|
+| 192 — level 0↔1 | 1.172 / 19.61° / 0.047 | 0.009 / 0.06° / 0.0018 |
+| 384 — level 1↔2 | 2.588 / 19.73° / 0.847 | 0.011 / 0.03° / 0.0020 |
+| 768 — level 2↔3 | 8.586 / 19.16° / 1.000 | **0.000 / 0.00° / 0.0000** |
+
+**The shadow was the worst of the three and the step named it in advance.**
+A full swing from lit to occluded, 1.0000, in one frame at the coarsest
+boundary — that is the "darkening and then resolving" the step describes,
+and it is a whole band of colour rather than a nudge of geometry. The
+outermost boundary comes back as *exactly* zero afterwards, because a root
+chunk has no parent and never morphs, so its four children are born at
+weight 1 holding its surface to the bit.
+
+**Also measured undrained**, which is the flight a reader actually takes:
+the same 700 frames with the workers left to arrive when they arrive. Before
+4.966 units worst and 22 frames over 0.05; after 0.011 and none. A chunk
+that finishes late still arrives near its birth distance, so it arrives at
+weight ≈1 — the morph covers the queue as well as the split, which was not
+the point of it.
+
+**And in pixels, because the step asks for a capture rather than an eye.**
+The trick is to hold the pose the frame is *drawn* from and advance only the
+pose the LOD is decided from: two shots then differ by the geometry and by
+nothing else. Worst 12×12 block change, luma of 255, over six consecutive
+frames across the worst near-field crossing:
+
+| | 346→7 | 347→8 | **348→9** | 349→50 | 350→1 |
+|---|---|---|---|---|---|
+| before | 0.00 | 0.00 | **17.20** | 0.00 | 0.00 |
+| after | 0.69 | 0.97 | **0.53** | 1.16 | 0.43 |
+
+Before, four bit-identical frames and one that moves seventeen levels. After,
+the split frame is the *smallest* of the five.
+
+**The weight is one number per chunk and the band it moves over is forced,
+not chosen.** A per-vertex fade is the usual construction and it is wrong on
+a quadtree: all four children are born in the same frame across the whole of
+the parent's square, so a fade keyed to each vertex's own distance would
+have finished at the near corner and not started at the far one — and the
+far half of that square then changes in one frame, which is the thing being
+fixed. So the weight is a function of the *parent's* rectangle distance,
+which is the quantity the split itself is decided on, computed by the same
+arithmetic in the same file. Two same-level neighbours with different
+parents therefore hold different weights, and it does not open a seam: along
+a shared edge both chunks agree about the ground *and* both parents agree
+about it, so the two ends of the blend are equal there and the mix is the
+same whatever the weight.
+
+**MORPH is 0.55 and 0.5 is a floor with a proof under it.** The fade has to
+be over by the time a chunk is replaced by its own children — they show its
+unmorphed surface, so if it were still part-way to *its* parent the swap
+would pop by the remainder. A chunk is replaced at half the distance it was
+born at, and its rectangle is inside its parent's so its distance is never
+the greater of the two: finishing by half the birth distance is exactly the
+condition, at every level at once. The alternative was measured rather than
+argued — at 0.8 the fade is squeezed into the outer fifth of the range, the
+worst per-frame change goes from 0.008 to 0.018 units and the drawn ground
+sits 0.06 units closer to the field on a level-1 chunk. Both are invisible;
+only one of them is derived.
+
+**The morph target is the parent's own arithmetic, not an approximation of
+it.** `chunk.ts` now builds a surface for a block of *any* level's grid, and
+a chunk is that function over its own square while its target is the same
+function over the quarter of its parent it covers. Every vertex then sits
+either on a parent vertex or halfway along a parent edge — and `grid.ts`'s
+anti-diagonal is self-similar under a halving, so a child quad that straddles
+the parent's diagonal is split along it — which makes the target the average
+of at most two parent vertices for all three attributes. Checked in Node
+against the parent's own chunk: **7.5e-9 units** of height, 1.9e-9 of normal,
+0 of shadow. The §23 surface is untouched by the refactor: **zero difference
+in every byte** of position, normal and shadow over five specs.
+
+**What it costs to look at.** A chunk at weight 1 *is* its parent, so the
+landscape spends most of each level's range part-way to the coarser one. The
+number for that is how far the drawn ground is from the field itself, and it
+is small: mean distance **0.04 / 0.19 / 0.45 → 0.09 / 0.30 / 0.48 units** on
+96 / 192 / 384-unit chunks. What is not small is what a band edge does with
+it — the opening frame differs from §24's by up to 38 luma in a 12×12 block,
+because a tenth of a unit of ground at the mid distance is enough to move a
+terminator. That is the trade the whole step is: the difference that used to
+arrive in one frame now arrives over three seconds.
+
+**Cost.** Draw calls and triangles are identical — **53 / 41 / 21** and
+268,577 / 208,673 / 108,833 at 70, 190 and 520 units — because nothing about
+which squares exist has changed. Frame cost, against the §24 build measured
+by the same harness on the same machine, two runs each:
+
+| altitude | 70 | 190 | 520 |
+|---|---|---|---|
+| §24, DPR 1 | 0.553 / 0.569 | 0.492 / 0.489 | 0.484 / 0.495 |
+| §25, DPR 1 | 0.625 / 0.655 | 0.569 / 0.505 | 0.508 / 0.491 |
+| §24, DPR 1.5 | 1.008 / 1.041 | 1.008 / 1.013 | 1.034 / 1.028 |
+| §25, DPR 1.5 | 1.059 / 1.046 | 1.042 / 1.027 | 1.070 / 1.036 |
+
+**+0.08ms at the densest stop and nothing above the noise at DPR 1.5**,
+which is the shape to expect: five more floats a vertex is a vertex-bound
+cost, and DPR 1.5 is where the frame is fill-bound. 0.5% of a 16.7ms frame,
+against a budget of 8ms for everything §0.2 puts on the landscape.
+
+**Generation is up 4% in the worker and 26% on a level-0 chunk.** The two are
+not in conflict: the parent patch is 81 more shadow marches and 841 more
+field samples against a chunk's own 225 and 2,809, and a root chunk asks for
+none of it — measured in Node on one spec, 1.21ms at §23, 1.14 for a §25
+root, 1.52 with a parent. Over a 75-second terrain-hugging boost the mix
+comes out at **3.16–3.26 → 3.38–3.51ms mean** per chunk, worst 6.1–6.8 →
+7.2–7.9.
+
+| 75s at boost, terrain-hugging | frames | median | p99 | max | >25ms | chunks | gen mean |
+|---|---|---|---|---|---|---|---|
+| §24, two runs | 4,473 / 4,491 | 16.7 | 23.9 / 18.3 | 26.7 / 25.3 | 12 / 5 | 641 / 638 | 3.26 / 3.16 |
+| §25, two runs | 4,488 / 4,482 | 16.7 | 18.3 / 18.6 | 25.3 / 25.3 | 8 / 9 | 648 / 641 | 3.38 / 3.51 |
+
+Both builds end the flight at the same pose to the unit and hold clearance
+**6.000** the whole way, which is §24's guarantee still standing. The
+handful of frames over 25ms is this harness rather than this step: it is in
+both columns and §24's own run of the same flight had none.
+
+**Memory is where this is expensive.** Five more floats a vertex is
+**109.7 → 160.4 KB a chunk**, and 180 chunks alive at the opening pose is
+**19.3 → 28.2 MB** of geometry. It buys the deltas for three attributes; the
+cheaper packings all trade exactness at the two ends of the blend, which is
+the only property that matters.
+
+**Bundle.** World chunk **204,820 + 2,117 worker = 206,937 gzipped (202.1
+KiB)** of 400, up 666 bytes on §24 — 423 of them the worker, which is where
+the parent patch lives. The document side is byte-identical apart from the
+hash of the scene chunk it names.
+
 ### 26. Water
 **Lakes, not rivers.** A global water level and a plane where the terrain is
 below it — nearly free on a heightfield, and it fills the basins the field

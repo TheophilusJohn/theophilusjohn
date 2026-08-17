@@ -185,6 +185,19 @@ they already are — the parent is retained on a four-second clock. Three
 attributes morph, not one: position, the shading normal, and the baked
 shadow. Shadow is the one that shows most, so it is the one to check.
 
+**Built at §25, and one thing about it is not what it looks like.** The
+blend *weight* is per chunk rather than per vertex, because all four
+children of a cell are born in the same frame across the whole of the
+parent's square — a fade keyed to each vertex's own distance is finished at
+the near corner and unstarted at the far one, and the far half then changes
+in one frame. It comes off the parent's rectangle distance, which is the
+quantity the split is decided on, and it has to reach zero by half the
+distance the chunk was born at or the chunk's own children pop by whatever
+is left of it. Measured: the worst change in one frame was 8.586 units of
+height, 19.73° of normal and a full 1.0000 of shadow; it is 0.011, 0.11° and
+0.0020 now, and it is a rate rather than an event — the frame a split
+happens on can no longer be found in the series.
+
 ##### Placement is a pure function
 
 Everything scattered on this terrain is placed by a function of `(x, z)` and

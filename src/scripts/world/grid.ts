@@ -51,6 +51,12 @@ export type ChunkSpec = {
   size: number;
   /** How far the apron hangs, in world units. */
   drop: number;
+  /* Which quadrant of its parent this chunk is, or `null` at the root level
+     where there is no coarser geometry to have come from. It is the only
+     thing §25's morph needs to know about the tree: the parent's grid origin
+     is this chunk's own corner less the quadrant, and every vertex here sits
+     either on a parent vertex or exactly halfway along one of its edges. */
+  quadrant: { x: 0 | 1; z: 0 | 1 } | null;
 };
 
 /* Index buffer for the grid and its four aprons. A pure function of SEG, so
