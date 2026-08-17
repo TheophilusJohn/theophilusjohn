@@ -12,8 +12,8 @@ Full design spec: `docs/SPEC.md`. Numbered build steps: `docs/STEPS.md`.
 Portfolio-first, four projects, heavily animated, dark. Two modes:
 
 - **World mode** — a flyable, cel-shaded night landscape. The four projects
-  are structures standing in it. **This is what loads** on WebGPU, ≥1024px,
-  motion on. See SPEC §0.
+  are scenes standing in it, on a route driven by scroll. **This is what
+  loads** on WebGPU, ≥1024px, motion on. See SPEC §0.
 - **Document mode** — the site is ONE page. All content lives on `/`. Deep
   links work via History API `replaceState`, not routes. Crawlable,
   accessible, fast. It must stand entirely alone. It is what everything else
@@ -23,8 +23,15 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
 shell.** That reversed at step 21; steps 15–20 built the world as a layer
 *behind* a scrolling document, and SPEC §0 records what that assumption
 cost. Document mode was finished and shipped first (steps 1–14) and stays
-finished — that is what makes the reversal survivable. Steps 21–36 build the
+finished — that is what makes the reversal survivable. Steps 21–38 build the
 world. See `docs/STEPS.md`.
+
+**And the world is inhabited (SPEC §0.2–§0.4, after step 29).** Scroll is the
+route and free flight is what the last station unlocks; the four projects are
+*scenes* of the systems rather than structures; twelve landmarks and two
+visitable cities stand off the route; and everything **built** is solid —
+§4.7's "no collision" is true of terrain only. Everything after step 30 was
+renumbered for it; the divider above step 31 carries the mapping.
 
 **The landscape is a set of files that cannot see a GPU and a few that can**
 (§22). `height.ts` is the field and imports nothing — no three, no DOM — so
@@ -119,7 +126,7 @@ the bands are placed around flat ground and a cone has facets at every angle.
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
 rocks, water, clouds" is reversed and steps 25–28 and 30 build what replaces
 it: geomorph, water, ground cover and wind, rocks and conifers, motes and
-cloud volume. §30 is what is left, and §29 between them is a throwaway probe
+cloud volume. §30 is what is left of it, and §29 between them is a throwaway probe
 that does not ship. Everything scattered on the terrain is placed by a **pure
 function of `(x, z)`** — chunks generate independently, in three workers, in
 any order, and anything stateful would make two chunks disagree about their

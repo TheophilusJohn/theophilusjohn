@@ -433,43 +433,256 @@ project appears in it. The site is a portfolio and the portfolio is
 currently a document behind a query parameter. A world that is beautiful and
 empty is a worse outcome than one that is adequate and inhabited, so if the
 choice ever comes down to one more atmospheric layer against getting the
-four structures standing in it, the structures win.
+four stations standing in it, the stations win.
+
+#### The world is inhabited
+
+**Added after §29, and it is what free flight is for.** Everything above
+this line is landscape — ground, water, growth, weather. What makes a world
+worth flying *through* rather than looking at is that there are places in
+it, and four stations on a route are not enough places: a visitor who
+unlocks the stick (§0.3) and finds nothing but ridges has been handed a
+control with nothing to point it at.
+
+##### Twelve landmarks, and they are not stations
+
+Findable, never on the route, carrying no writeup and no machine ID.
+Distinct enough in silhouette from the four stations (§0.4) that nobody
+flies to one expecting content.
+
+| | |
+|---|---|
+| **Houston** | A tight cluster of towers on flat ground that stops abruptly. Visitable, below |
+| **Delhi** | Low, dense, spread wide, with an arch and a fluted tower above it. Visitable, below |
+| **The stadium** | A bowl with floodlights, lit, empty, and a figure on a plinth outside it. No crest and no wordmark — the silhouette does the work |
+| **A datacenter hall** | Long, low, lit racks visible through it. The only landmark that is literally the subject of the site |
+| **A dish array** | Six or eight radio telescopes on a hillside, all pointed the same way. Machines listening and agreeing on what they heard |
+| **Wind turbines** | On a ridge, and they turn with the gust wave §27 already built. Free motion |
+| **A torii gate** | On a peak. Pure silhouette, and it reads as a threshold rather than a building |
+| **A basketball court** | One, lit, netted, on a plateau where it has no business being. The smallest thing in the world |
+| **A bridge** | Across a valley. Infrastructure that connects, and a line to follow |
+| **A lighthouse** | On a lake, one turning light, visible from further than it should be |
+| **Five standing stones** | A Raft cluster as a monument. Legible only to someone who knows what five nodes means |
+| **A wreck** | A collapsed tower or a dry dock. A world with a past does not read as generated |
+
+**Siting is searched, not chosen.** The height field knows where ridges,
+shores and flat ground are; §22 found the opening pose that way and §29
+sited its slab that way. A landmark on an arbitrary patch reads as dropped;
+one at the head of a valley reads as sited.
+
+##### The two cities, and they are visitable
+
+You fly down into them, between the buildings, and the buildings are solid
+(§0.3).
+
+**Oversized, deliberately.** Towers **180–320 units**, against a landscape
+whose highest ground is 128 and whose conifers are 12. A city is therefore
+taller than the mountains and a tower is twenty-five trees. Streets **60–80
+units** wide.
+
+That is not realism and it is not a mistake: it is the register the whole
+world is in. A city at true scale in a world with 380-unit ridge spacing is
+a smudge; at this scale, flying between two towers is the most vertical
+thing in the site.
+
+Delhi inverts it — mostly **15–40 units**, dense, spread over four times the
+footprint, with two or three monuments reaching 120. The contrast between
+the two skylines is the point of having both.
+
+##### And the world has to grow
+
+The bound is 2,600 units (§24), which held four stations and a massif. Two
+cities, four stations and ten more landmarks do not fit in 6.4km without
+being a theme park.
+
+**Raise it to 5,000** — a 10km world, 220 seconds across at cruise and 55 at
+boost. The ceiling and the recall stay as measured; the fog, the chunk reach
+and the star sphere are all camera-relative and do not care.
 
 ### 0.3 Movement
 
-Both, the way a flyable world has both.
+**Replaced after §29: scroll is the site, and free flight is what you
+earn.** The record of what that reverses, because it was wrong in a way
+worth keeping — free flight was the default and a guided route was the
+alternative "for people who do not want to fly":
 
-**Free flight is the default.** Pointer to look, WASD or drag to move,
-momentum and damping. Bounded softly — fly far enough and you are turned
-back rather than hitting a wall.
+> ~~**Free flight is the default.** Pointer to look, WASD or drag to move,
+> momentum and damping. Bounded softly — fly far enough and you are turned
+> back rather than hitting a wall.~~
+>
+> ~~**A path exists for people who do not want to fly.** A guided route
+> between the four projects, followed by scroll or by a "take me there"
+> control. It is the same camera; the path drives it when engaged and
+> releases when the visitor takes over.~~
 
-**A path exists for people who do not want to fly.** A guided route between
-the four projects, followed by scroll or by a "take me there" control. It is
-the same camera; the path drives it when engaged and releases when the
-visitor takes over.
+That is backwards. Scroll is what everybody does to a website without being
+told, and free flight is a mode nobody discovers by accident. So the route
+is the default, and reaching the end of it unlocks the stick.
 
-**Altitude clamp**, not collision: the camera may not go under the terrain.
+**Altitude clamp**, and — new with §0.2's landmarks — collision against
+everything built. The camera may not go under the terrain and may not enter
+anything made.
 
-### 0.4 The projects, as places
+#### The route
+
+One scroll, top to bottom, and it is a flight.
+
+| scroll | what happens |
+|---|---|
+| 0% | Arrival. High over the landscape, the name in `--paper`, stations visible in the distance |
+| ~15–40% | Travelling. The first station's ID and headline resolve as you close |
+| ~40% | **Settle.** The camera eases into a composition, the writeup arrives |
+| … | Climb away, travel, settle, four times |
+| 100% | The end of the route, and the offer of the stick |
+
+**Position along the route is scroll position**, damped, evaluated on a
+curve. `curve.ts`'s discipline applies and it is why that module was written
+the way it was: the pose is a pure function of its input and lives in one
+module with no three and no DOM in it (§4.7's camera).
+
+#### The settle, and §29's four constraints
+
+§29 flew this arrival and it works — display type over the landscape reads
+as composed. Four things came out of the probe and they are requirements
+rather than notes:
+
+1. **The metric strip does not fit a 45ch column.** Four metrics at `--t-xl`
+   wrap to two rows with a stranded fourth. It needs its own width outside
+   the column, a tighter gap, or fewer than four in world mode.
+2. **The display size needs no change.** `--t-2xl` — 100px at 1440 — over
+   the landscape reads as composed. It was the thing most likely to fail.
+3. **The scrim is right as §17 built it and needs no still mode.**
+   Measured: the mean luma behind the column moved 0.01 levels in a second
+   against 0.23 in the open half. A live world behind text is not
+   distracting.
+4. **The arrival needs something after it.** The camera reaching its pose
+   and stopping dead reads as the scroll running out rather than as
+   arriving. A slow drift, a parallax, or a few last units of travel after
+   the type is up. **This is the beat the whole route is judged on** — get
+   it wrong and four stations are a slideshow.
+
+The reference framing is §29's report: two poses, and the 17° yaw offset
+that puts the subject at 65% of frame width with the column clear of it.
+
+#### Free flight, unlocked
+
+Reaching the last station offers the stick. **A visible control, not a
+hidden key** — and the choice persists, so a returning visitor is not made
+to scroll the route again.
+
+Everything §24 built is what it hands over: look, move, momentum, the
+altitude clamp, the soft bounds, the recall. What changes is when it is
+available and that it now has somewhere to go (§0.2's landmarks).
+
+**The route stays available from inside it.** Scrolling picks the route back
+up at the nearest station rather than teleporting to the top.
+
+#### Collision, which the world now has
+
+**The camera cannot enter anything made.** §4.7's "no collision, the ground
+is a height function" holds for terrain and is false for everything built —
+not just the cities: every landmark and every station is solid, because a
+world where a tower stops you and a stadium does not is a rule nobody can
+learn.
+
+Not general collision: oriented boxes in a spatial hash, a sphere against a
+box, resolved by pushing out along the shallowest axis. Cheap, exact for a
+world made of primitives, and it never needs a physics engine.
+
+- The camera has a radius. Four units, so it stops a little short rather
+  than touching.
+- Resolution is a push, not a stop: sliding along a wall is what a camera
+  that hits a building should do.
+- **The altitude clamp still applies underneath.** Ground and architecture
+  are two separate constraints and both hold.
+
+**Every landmark and every station carries a collision proxy**, and it is
+authored rather than derived. A proxy is a handful of boxes — a stadium is a
+ring of them, a bridge is a deck and two piers, an arch is two legs and a
+span. Deriving one from a mesh is a project; hand-writing eight boxes beside
+the geometry that produced them is an afternoon, and it is exact about the
+thing that matters, which is where the openings are.
+
+**A bad proxy is worse than none**, and that is the rule to build by:
+bouncing off nothing is a bug a reader cannot explain, where flying through
+a torii gate is merely a world that does not stop you. So a proxy has to be
+*inside* its own silhouette everywhere — under-approximate, never over.
+
+**What is not solid:** trees, rocks, grass, water. Scattered things are
+placed by a pure function in their thousands and are flown through, as they
+are now — a forest you could not fly into would be a wall around every
+station.
+
+### 0.4 The four stations, as scenes
 
 Four locations in the landscape, far enough apart that reaching one is a
 journey and close enough that the next is visible from the last.
 
-Each is a **structure** — something built, standing in the terrain, that
-reads as made rather than grown. What the four structures are is the biggest
-open creative question in this document and it is not decided here (§8).
+**Replaced after §29: a station is a scene, not a monument.** The record of
+what that reverses:
+
+> ~~Each is a **structure** — something built, standing in the terrain, that
+> reads as made rather than grown. What the four structures are is the
+> biggest open creative question in this document and it is not decided here
+> (§8).~~
+
+A structure needs explaining. A *scene* is the explanation: Philoi is two
+workstations sharing one document, Homonoia is five nodes passing something
+between them. The writeup arrives as the caption to a thing already on
+screen. That also closes most of §8's open question — the range it held open
+(gates, monoliths, towers, shrine forms, derelict machinery, §4.4's laptop)
+is gone, and what is left open is scale.
+
+Each is a picture of the system rather than a monument to it, and the test
+from the four-worlds spec still holds: **an engineer who knows the domain
+should recognise what they are looking at without being told.**
+
+- **Enargeia** — a machine thinking. A stack of layers with a wave of
+  activation travelling through it, or one machine with the forward pass
+  visible on it. It runs on the visitor's own hardware; the scene should not
+  look like a datacenter.
+- **Homonoia** — five nodes in the landscape, passing something between
+  them, with one of them holding the term. **This absorbs the cluster step
+  entirely**: the election happens here, and the ground under the cluster is
+  where §16's heightfield term already raises a massif (§0.5, §4.7).
+- **Philoi** — two workstations, screens lit, the same document open on
+  both. Edits appear on one and arrive on the other. Nothing is discarded,
+  and a reader should be able to see that.
+- **Basis** — something assembled and running. Modules wired together, a
+  request tracing through them on a slow loop. Deliberately the quietest.
+
+#### Scale is the open question here
+
+Two desks is a human-sized scene in a world where the camera cruises at 45
+units a second and the nearest visible ground at cruise is 315 units out
+(§28). Two ways, and they are different worlds:
+
+- **Enormous** — desks the size of buildings, monitors like billboards. Fits
+  the oversized register the cities are in (§0.2) and needs no change to the
+  flight profile.
+- **Human, with the camera descending** — the route drops to a few units at
+  each station. More intimate, and it changes the whole altitude curve.
+
+**Decide by looking**, at one station, before building four.
+
+#### What does not change
 
 **Three states**, as §4.8 already had them: distant silhouette, approaching
 (name and machine ID resolve), arrived (the writeup opens).
 
-**The writeup opens in the world.** A panel, in DOM, over the scene — the
-same HTML the document serves, with its own backing so text stays readable.
-Close it and you are back where you were, still flying.
+**The writeup opens in the world.** In DOM, over the scene — the same HTML
+the document serves. Its backing is **§17's scrim rather than a panel**,
+which §29 measured and §0.3's third constraint records: a gradient with no
+edge holds the reading half of the frame still, and the moment it has an
+edge it reads as content pasted onto a background. Close it and you are back
+where you were, still on the route.
 
 **The URL follows.** Arriving at Enargeia pushes `/projects/enargeia`;
 loading that URL in world mode drops you at Enargeia. Deep links work in
 both modes and mean the same thing (§4.6 is unchanged — the History API
 carries them, and `getStaticPaths` still emits real pages).
+
+**And every station is solid** (§0.3), like everything else built.
 
 ### 0.5 What survives §15–§20
 
@@ -482,7 +695,8 @@ Most of the hard-won parts:
   panel rather than covering the frame
 - The whole measurement harness, per-element and per-stop (§17–§20)
 - The traffic simulation and the five-node cluster (§15–§16), which becomes
-  something you see *at* Homonoia rather than everywhere
+  something you see *at* Homonoia rather than everywhere — and since §0.4 it
+  is built *as* that scene rather than as a step of its own
 - The document site entire (§1–§20 of the build, steps 1–20)
 
 **What goes:** the scroll-driven camera curve, the beats as the world's
@@ -534,6 +748,11 @@ rest in §8.
 lavender stays — it is not negotiable and it is the rim light. **And the
 landscape is alive** (§0.2): water, ground cover, rocks and conifers, motes
 and wind. Not lush; inhabited.
+
+**And decided after §29: what the four stations are** (§0.4) — scenes of the
+systems rather than structures, which was the one creative call the build
+order blocked on. What is still open there is their *scale*, and it is
+answered by looking at one before building four.
 
 ---
 
@@ -727,6 +946,14 @@ machinery. It decides whether the world reads as sacred, industrial or
 derelict, and a laptop decides it toward none of those. So this subsection
 is not cancelled and it is not scheduled either: it is one answer to §8's
 open question, and it is the only one with a build already specified.
+
+**Closed after §29, and the answer is not a laptop.** §0.4 replaces the
+structures with scenes, so the question this subsection was a candidate for
+is no longer asked. Philoi is the nearest survivor — two workstations with
+screens lit, sharing one document — and it inherits the parts below that
+were never about laptops: primitives, `CanvasTexture` for a screen, the
+visually-hidden `<pre>`, the depth and blending rules, and a real focusable
+DOM element rather than a hit test against a mesh.
 
 Everything below stays true of it *if it is built*. What is already
 independent of the decision: one GPU context, geometry from primitives,
@@ -1147,7 +1374,7 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 - ~~Cap DPR at 1.5 for the background layer; it is out of focus behind text
   and does not need retina resolution~~ — **the world is not behind text any
   more (§0).** The cap may still be the right performance call and it is no
-  longer justified by focus. Re-decide it on frame time at §36
+  longer justified by focus. Re-decide it on frame time at §38
 - ~~Halve the simulation resolution below 1024px; disable entirely below
   768px~~ — **one tier now (§0.1).** Below 1024px there is no scene at all,
   so there is no halved tier to maintain
@@ -1173,7 +1400,14 @@ reopened by §0.2** and are marked:
   without things of known size standing on the ground. The vegetation is
   conifers
 - No texture maps of any kind. Everything is procedural or accumulated
-- No collision. The ground is a height function, and free flight (§0.3) clamps the camera above it rather than colliding with it
+- ~~No collision. The ground is a height function, and free flight (§0.3)
+  clamps the camera above it rather than colliding with it~~ — **true of
+  terrain only now (§0.3).** The clamp is still the whole story for the
+  ground: a height function is not a surface you can hit. It stopped being
+  the whole story for the world when §0.2 put cities in it, and everything
+  *built* — every station, every landmark, every tower — is solid against
+  oriented boxes in a spatial hash. Scattered things (trees, rocks, grass,
+  water) are not, and that is the line
 - ~~No time of day and no sun.~~ **Reopened: there is one key light now**,
   and it is the thing that makes the bands (§0.2). Its position is open. The
   leader light survives as what lights the cluster at Homonoia (§0.5), not
@@ -1211,6 +1445,13 @@ work in both directions; and the accessibility story is that nothing is
 world-only. Three things do not: the modes no longer share a scroll
 position, free flight is not something to unlock, and the query parameter is
 `?doc` rather than `?mode=doc`.
+
+**And one of those three came back (§0.3).** Free flight *is* something to
+unlock — at the end of the route rather than at the fourth landmark, and
+offered by a visible control rather than found. What this section had right
+was the shape; what it had wrong was that world mode was an addition to a
+document. The route is the world's own structure now, not the document's
+scroll read twice.
 
 The same scene given control of the camera. Not a separate build — same renderer, same simulation, same world as §4.7. Document mode already flies it; world mode hands over the stick.
 
@@ -1348,11 +1589,18 @@ with it.
 **The three from §0.8 are the ones that matter**, and they are creative
 calls rather than architectural ones. The architecture is decided.
 
-- **What the four structures are.** Anime-adjacent and *built*, but that is
-  a range: gates, monoliths, towers, shrine forms, abandoned machinery — and
-  §4.4's laptop. It decides whether the world reads as sacred, industrial or
-  derelict, and it is the one creative call the build order actually blocks
-  on (step 32). Ask before modelling.
+- ~~**What the four structures are.** Anime-adjacent and *built*, but that
+  is a range: gates, monoliths, towers, shrine forms, abandoned machinery —
+  and §4.4's laptop. It decides whether the world reads as sacred,
+  industrial or derelict, and it is the one creative call the build order
+  actually blocks on (step 32). Ask before modelling.~~ **Answered after
+  §29: they are scenes, not structures** (§0.4), and the four are named
+  there. The range above is closed — a scene of the system explains itself,
+  where a monolith has to be explained.
+- **How big a station is.** The half of the question above that is still
+  open, and the build order still blocks on it (step 34): desks the size of
+  buildings in the cities' oversized register, or human-scale with the route
+  descending to a few units. Decide by looking at one, not by argument.
 - ~~**Is the terrain habitable or hostile?**~~ **Answered at §24:
   habitable.** §0.2 makes the landscape alive — water in the low ground,
   conifers and scrub on the lower slopes, motes in the air — which is the
@@ -1370,10 +1618,11 @@ calls rather than architectural ones. The architecture is decided.
 Carried over:
 
 - **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
-- ~~**The laptop's idle motion.**~~ Moot until the structures are decided:
-  §4.4 is one candidate answer to the first bullet above, and the camera it
-  was going to be judged against (a scroll-driven curve with its own pointer
-  parallax) does not exist any more.
+- ~~**The laptop's idle motion.**~~ **Moot, and now closed with it:** the
+  stations are scenes and none of them is a laptop (§4.4). What the question
+  was really about — whether an object's own idle motion fights the camera's
+  parallax — comes back at the settle instead, where §0.3's fourth
+  constraint asks for residual motion after the arrival.
 
 ---
 

@@ -11,7 +11,7 @@ every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
 `/` is the document and carries no Three. The world is at `?world` until
-§31 builds world-first entry, and it is a landscape you can fly over
+§33 builds world-first entry, and it is a landscape you can fly over
 without going through it.
 
 **The architecture turned at 21.** SPEC §0 makes the world the site and the
@@ -28,6 +28,14 @@ the only step in this file that does not ship: it builds the cheapest
 possible version of the arrival, asks one judgement question about it, and
 deletes the code. It sits where it does because §28 is the first step after
 which there is something standing in the world to fly at.
+
+**And the world became inhabited after 29.** The divider above step 31
+records that one: SPEC §0.3 and §0.4 are replaced — scroll is the route and
+free flight is unlocked at the end of it, and the four projects are scenes
+rather than structures — the world gains twelve landmarks and two cities,
+and everything built is solid. **Everything after 30 is renumbered**, and
+that divider carries the mapping. A step number in an older report means the
+step, not the number it had.
 
 ---
 
@@ -1180,6 +1188,9 @@ becomes the escape hatch rather than the shell.
 | 25 Accumulation texture | **Unscheduled.** It modulates a heightfield that is about to become one layer of a procedural terrain, so it cannot be specified until 22 lands. Kept in SPEC §4.7; still cut before the election |
 | 26 Performance pass | **35**, widened to brightness and accessibility, both of which re-solve in the new frame |
 
+**The numbers in that table are the ones this file used at §21.** Two shifts
+have happened since — see the top of this file and the divider above step 31.
+
 **Step 22 is the one that decides whether this works.** If procedural
 terrain at scale does not read as a landscape worth flying over, nothing
 after it rescues that — and it is better to find that out at 22 than at 34.
@@ -1197,7 +1208,7 @@ old terrain. Land on an empty world: stars, fog, and a camera you can fly.
   `camera.ts` that reads `ranges()`, `onLayout` or `scrollY`
 - The terrain goes entire — the radial mesh, the mist, the horizon arc, the
   leader light and the fill, `h(p)`, `shares()`. Step 22 builds a landscape
-  from a different construction and step 35 rebuilds the cluster as a place;
+  from a different construction and step 34 rebuilds the cluster as a place;
   neither is this file with different constants
 - The traffic field goes with it, for the same reason: it is a thing you see
   *at* Homonoia now (SPEC §0.5), not the air over every screen
@@ -1209,7 +1220,7 @@ old terrain. Land on an empty world: stars, fog, and a camera you can fly.
   bounds and the return-to-path control are step 24's
 
 **The question this step has to answer:** what does `/` serve between here
-and step 31, which is where world-first entry is actually built? Every
+and step 33, which is where world-first entry is actually built? Every
 commit deploys. Answer it in the report rather than leaving the live site
 in an undecided state.
 
@@ -1223,11 +1234,11 @@ was deleted, and what `/` serves.
 now instead of one.** `/` serves the document — finished, and for the first
 time since §15 carrying no Three at all. The world is at `?world`.
 
-**What `/` serves, which is the question this step had to answer.** §31 owns
+**What `/` serves, which is the question this step had to answer.** §33 owns
 world-first entry and it is four steps away, so the alternative was leaving
 a free-flight camera behind a scrolling document on a live site for four
 commits. Instead the gate inverts *later*: `?world` opts in, everything else
-gets the document, and §31 flips one condition in `world.ts` and adds the
+gets the document, and §33 flips one condition in `world.ts` and adds the
 loader, the visible control and the mode memory around it. `?doc` already
 works today by being anything other than `?world`, and it is checked
 explicitly so the flip is a line rather than a re-reading of a comment.
@@ -1295,16 +1306,17 @@ Lenis reads the wheel itself and moves the window programmatically, which is
 not a scroll the root can refuse — measured at **2,978px on one flick**
 before `holdScroll()` existed. It is Lenis's own `stop()`, so the instance,
 the ticker wiring and every ScrollTrigger stay exactly where they are for
-§31 to hand back. After: 0 → 0.
+§33 to hand back — and, since the route is scroll (SPEC §0.3), for §31 to
+drive the camera from. After: 0 → 0.
 
 **The document is hidden, not removed**, so it is still what the browser
-paints, what a crawler reads, and what §33 opens the writeup panel out of.
+paints, what a crawler reads, and what §32 opens the writeup out of.
 `visibility: hidden` is what takes it out of the tab order and the
 accessibility tree together: **0 focusables** behind the canvas, so Tab
 cannot land on a link nobody can see. `Esc` leaves — it strips `?world` and
 replaces the entry, landing on `/` with the document visible and no canvas.
 That is a placeholder and it is here at all because §0.1 is explicit that
-nobody is trapped; §31 owns the visible, persistent control.
+nobody is trapped; §33 owns the visible, persistent control.
 
 **Gates, all four measured by whether the scene chunk is requested at all:**
 `?world` at 1000px wide — no. `/` bare — no. `?world&doc` — no. `?world`
@@ -1320,7 +1332,7 @@ modes. LCP **48ms** desktop and mobile, CLS 0 (one shift entry at 2.6e-5
 desktop, zero mobile). `/projects/homonoia` still lands at **y 3,354**,
 which is its pin start and beat 1. Four sections pin at 1512×804. In world
 mode the document still paints first and the world arrives over it: **LCP
-68ms, `data-world` set at 91ms**, on localhost — §31 owns the number that
+68ms, `data-world` set at 91ms**, on localhost — §33 owns the number that
 matters, which is over a real connection with a cold cache.
 
 **Left for §22, deliberately.** There is nothing in the world to fly *to*.
@@ -1329,7 +1341,7 @@ ground disc's radius; with no ground there is no angle to derive, so it
 fades from level and the lower half of the frame is `--void`. §23 replaces
 the sky wholesale. The DPR 1.5 cap is still in `scene.ts` and its
 justification is not — it was there because the layer was out of focus
-behind text, and it is the whole frame now; it stays until §36 has a
+behind text, and it is the whole frame now; it stays until §38 has a
 measurement to keep or drop it on.
 
 ### 22. Terrain
@@ -1387,9 +1399,9 @@ weighted by share (σ160 on a 120-unit ring, ×26) raise the ground *and* open
 the range mask where they land, so what the traffic builds is a massif with
 the same crests everywhere else has rather than a dome sitting on a plain —
 which is the failure §0 names. Equal shares is what an idle cluster looks
-like; §32 sites it and §35 brings back the election. Note left in the file
-for §35: this runs inside the worker, so a share change is a message and a
-regeneration of the chunks within reach, not a uniform.
+like; §34 sites it and brings back the election with it. Note left in the
+file for §34: this runs inside the worker, so a share change is a message
+and a regeneration of the chunks within reach, not a uniform.
 
 **A quadtree, and rings were tried first on paper.** Rings are far cheaper —
 twelve chunks cover what forty-six quadtree leaves do — and they do not
@@ -1478,7 +1490,7 @@ open ground under the camera, nothing within 300 units, a 125-unit range
 between 380 and 900, and more ground standing behind it: (−60, 190, 60),
 yaw 30°, pitch −9°. The heading lands within five degrees of the bearing to
 the cluster massif a kilometre out, which is the search's coincidence rather
-than a composition — §32 is what makes it deliberate.
+than a composition — §34 is what makes it deliberate.
 
 **Document mode did not regress.** axe-core **0 violations across eight
 states**, LCP 24ms desktop and 48ms mobile, CLS 3.0e-5 and 0, page height
@@ -1638,13 +1650,13 @@ the chunk it dynamically imports has a different hash in it. All four gates
 still hold on the built site — only `?world` at ≥1024px with an adapter and
 motion on fetches the scene chunk or the worker.
 
-**Left where it is.** The DPR 1.5 cap is still in `scene.ts` and §36 still
+**Left where it is.** The DPR 1.5 cap is still in `scene.ts` and §38 still
 owns whether it stays; at 0.98ms it is affordable either way now. The star
 fade is finally taken from something real — there is a horizon band in
 `sky.ts` and the stars come out of it — but stars, sky and ground are three
-separate brightness measurements and §36 is where they are re-solved
+separate brightness measurements and §38 is where they are re-solved
 together. And the sun is now a shared constant in `sun.ts` (the worker bakes
-against it, the material shades against it), which is what §35 will have to
+against it, the material shades against it), which is what §34 will have to
 message when the cluster's ground moves.
 
 ### 24. Movement
@@ -1705,14 +1717,20 @@ anything stops.
 
 **The radius is 2,600 and it is a decision about where the site is**, since
 the field is infinite. What has to be inside it: Homonoia's massif, which
-reaches 1,639 from the origin, and §32's four structures. Measured out of
+reaches 1,639 from the origin, and §34's four stations. Measured out of
 `height.ts` in Node over the bounded disc — **80,381 samples, −24.6 to
 126.2, mean 11.2, 39.9% below zero and 2.7% above sixty, 16.8 range
 wavelengths across the diameter.** Mountains standing in open country, and
 enough of them that the bound is not a small world.
 
-**The way back is a recall to the opening pose**, because there is no path
-to return to until §34 and no chrome until §31. `R` or `Home`; any input at
+**And it is not big enough any more (SPEC §0.2).** Two cities, four stations
+and ten landmarks do not fit in 6.4km without being a theme park, so §36
+raises it to 5,000. Everything measured here holds — the ceiling, the
+recall, the clamp — because nothing above depends on the radius except the
+sampling of the disc.
+
+**The way back is a recall to the opening pose**, because there is no route
+to return to until §31 and no chrome until §33. `R` or `Home`; any input at
 all cancels it. Eased, over a duration that grows with the distance and caps
 at 2.5s: from the far edge it takes **2.50s and lands on the opening pose to
 0.000 units**. The floor still applies while it runs, so a recall from a
@@ -1765,7 +1783,7 @@ runs is the reset.
 prompt, a browser-drawn escape overlay and a mode with edges the reader
 cannot see, and §0.6 is explicit that the world is escapable first. The
 return control is a key rather than a visible affordance, the same
-placeholder status `Esc` has had since §21 — **§31 owns the chrome for
+placeholder status `Esc` has had since §21 — **§33 owns the chrome for
 both.** And one thing the flight made obvious rather than measured: at nine
 units over an open valley floor the ground is a featureless fill over three
 quarters of the frame. That is not the clamp; that is the case §0.2's ground
@@ -1791,6 +1809,8 @@ last big creative call before the structures; it is closed.
 
 **Everything after this shifts by five.** Entry is 30, the structures 31,
 content in world 32, the guided path 33, the cluster 34, the final pass 35.
+Those numbers are two shifts stale: §29 moved everything after 30 by one
+more, and the divider above step 31 renumbered the rest again.
 
 **And that is five steps of world before a single project appears in it.**
 The site is a portfolio and the portfolio is currently a document behind a
@@ -2033,7 +2053,7 @@ against the same frame with the plane hidden: **7.9%** at the opening pose,
 6.5% from 520 units up, 8.9% standing on a shore, and 43% / 53% looking down
 a lake and flying low over one. It is *darker* than what it covers — mean
 luma 48.2 against 50.8 at the opening pose, 45.7 against 67.4 on the low
-pass — so it spends brightness budget rather than costing it (§36).
+pass — so it spends brightness budget rather than costing it (§38).
 
 **Cost, on built code, against a §25 build measured by the same harness on
 the same machine:**
@@ -2306,7 +2326,7 @@ world whose water had to be slowed down to belong in it. At 0.28 Hz it is
 **1.53** with the deck and 1.93 for the whole frame: the grass adds half a
 level to what was already moving.
 
-**What it costs the brightness budget**, which §36 owns and this step only
+**What it costs the brightness budget**, which §38 owns and this step only
 has to report:
 
 | pose | mean luma §26 → §27 | lower half of the frame | brightest 12×12 |
@@ -2549,7 +2569,7 @@ over a forest:
 A conifer is wood: the canopies add 0.18 levels where the grass adds 0.46,
 which makes them the slowest-moving thing added to this world since the deck.
 
-**What it costs the brightness budget it gives back.** §36 owns this and the
+**What it costs the brightness budget it gives back.** §38 owns this and the
 step only has to report it, but the direction is the story:
 
 | pose | mean luma §27 → §28 | lower half | brightest 12×12 |
@@ -2587,7 +2607,7 @@ file whose code is deleted at the end of it.
 Everything from §31 on assumes the world and the document can be one thing:
 that huge Archivo in `--paper` over a cel-shaded violet landscape reads as
 one design rather than as two projects stapled together. Nothing has tested
-that, and §33 is where finding out is expensive — four more steps of world
+that, and §32 is where finding out is expensive — four more steps of world
 would already be built around the assumption.
 
 So: build the cheapest possible version of the arrival, look at it, and
@@ -2598,7 +2618,7 @@ something standing in the world to fly at.
 
 - **One placeholder object** in the landscape, a few hundred units from the
   opening pose. A box, a monolith, anything with a silhouette. It is not the
-  structure §32 designs and it should look nothing like a candidate, or the
+  scene §34 designs and it should look nothing like a candidate, or the
   test becomes about the object.
 - **Scroll drives the camera toward it.** A curve from the opening pose to a
   framing of the object, evaluated at scroll position, smoothstepped. §18's
@@ -2622,7 +2642,7 @@ And **no measurement pass**: no brightness harness, no per-layer frame cost,
 no flight test. This code does not ship and its numbers are worthless.
 
 Rough is the point. If it takes more than a session it has stopped being a
-probe and started being §33 built early.
+probe and started being §31 built early.
 
 **The question it answers** is one, and it is a judgement rather than a
 number:
@@ -2640,12 +2660,12 @@ worth having flown to?
 
 **The three outcomes.**
 
-*It works.* Steps 31–36 proceed as specced and this probe's framing becomes
-the reference for §33. Delete the code.
+*It works.* Steps 31–38 proceed as specced and this probe's framing becomes
+the reference for §31. Delete the code.
 
 *It works, with changes.* Most likely: the type wants a different size in the
 world than on the page, or the scrim wants to be stronger, or the settle
-wants to be a slower ease. Write those down as constraints on §33 — that is
+wants to be a slower ease. Write those down as constraints on §31 — that is
 the probe having paid for itself.
 
 *It does not work.* The register is wrong and the two cannot be married as
@@ -2667,12 +2687,12 @@ there. Four constraints came out of it, and they are what the probe was for.
 
 **The code is deleted.** What is left is this section. The probe was one
 file (`probe.ts`), a `--scrim` token brought back from §17, and four lines of
-`scene.ts`; §33 rebuilds all of it properly and against four stations rather
-than one.
+`scene.ts`; §31 and §32 rebuild all of it properly and against four stations
+rather than one.
 
 **What was built.** A 42×13×9 slab at (−450, −293), sited in Node against the
 field — 500 units down the opening view axis, on dry ground flat enough to
-stand on, and deliberately nothing like a candidate for §32. Wheel delta
+stand on, and deliberately nothing like a candidate for §34. Wheel delta
 accumulated into a 0..1 progress and damped, because Lenis is stopped and
 there is no scroll *position* behind an opaque canvas — the gesture is what
 the question is about. The camera lerped between two poses on a smoothstep
@@ -2680,7 +2700,7 @@ with a floor under it, and Homonoia's machine ID, headline, metric strip and
 first paragraph **cloned out of the document underneath** rather than
 retyped, scoped styles and all. `F` released it to free flight.
 
-### The framing, which is what §33 asked for
+### The framing, which is what §31 asked for
 
 | | |
 |---|---|
@@ -2695,7 +2715,7 @@ retyped, scoped styles and all. `F` released it to free flight.
 of centre with the type clear of it. That number is the composition: at 0°
 the slab is behind the paragraph and at 30° it is at the edge of the frame.
 
-### The four constraints on §33
+### The four constraints on §31 and §32
 
 **1. The metric strip does not fit a 45ch column.** Four metrics at
 `--t-xl` wrap to two rows with a stranded fourth and uneven gaps — the
@@ -2718,14 +2738,14 @@ levels against 0.23 in the open half**, because the two things that move —
 the cloud deck at the top of the sky and the grass in the near ground — are
 mostly outside the column and the scrim damps what is left. So the
 sub-question answers itself: **a live world behind text is not distracting
-and nothing needs stilling.** Do not build a still mode for §33.
+and nothing needs stilling.** Do not build a still mode for §31.
 
 **4. The arrival needs something after it.** The camera reaches a fixed pose
 and stops dead. The damped gesture eases the approach, so it does not jolt —
 but with no residual motion at the station it reads as *the scroll running
 out* rather than as having arrived somewhere. A slow drift, a parallax, or a
 last few units of travel after the type is up is the fix, and choosing which
-is §33's.
+is §31's.
 
 **And the other half of the worry is answered too.** §28's conifers are what
 made this frame judgeable: the mid-flight picture is a slab standing against
@@ -2736,8 +2756,8 @@ which is why this probe sits after it.
 **And the other half of the worry.** Separately from this probe, and worth
 saying because it is the same sentence from the other side: **the world feels
 bare because nothing stands in it.** Terrain, water and grass, and no object
-anywhere. Steps 28, 30 and 32 are exactly that — rocks and conifers, motes
-and cloud volume, and the four structures — so the plan already answers it.
+anywhere. Steps 28, 30 and 34 are exactly that — rocks and conifers, motes
+and cloud volume, and the four scenes — so the plan already answers it.
 This probe is scheduled after §28 rather than before it for that reason:
 there should be something in the frame that is not ground before anyone
 judges whether type belongs over it.
@@ -2767,9 +2787,94 @@ this step is the last one spending against.
 
 ---
 
+## ▲ The world is inhabited.
+
+**SPEC §0.3 and §0.4 are replaced and §0.2 gains a subsection, and this is
+where the build order turns for the third time.** Nothing §21–§29 built is
+withdrawn — the terrain, the water, the cover, the stands, the shading, the
+camera and the probe's findings all stand. What changes is what the world is
+*for*.
+
+**Three things go, and they are kept struck through in the SPEC rather than
+deleted:**
+
+| was | now |
+|---|---|
+| **Free flight is the default**, with a guided path for people who will not fly (§0.3) | **Scroll is the site and free flight is what you earn.** Scroll is what everybody does to a website without being told; free flight is a mode nobody discovers by accident. The route is the default and the last station unlocks the stick |
+| Each project is **a structure** — "something built, standing in the terrain" — and what the four are is the biggest open question in the SPEC (§0.4, §8) | **Each is a scene.** Philoi is two workstations sharing one document; Homonoia is five nodes passing something between them. A structure needs explaining; a scene *is* the explanation. §8's question is answered, and what is left open there is scale |
+| **No collision.** The ground is a height function and the camera is clamped above it (§4.7) | **True of terrain only.** Everything *built* is solid — oriented boxes in a spatial hash. Scattered things (trees, rocks, grass, water) are still flown through |
+
+**And the world gains twelve landmarks and two cities** (§0.2), which is what
+free flight is *for*: a visitor handed the stick in a world of four stations
+and ten thousand ridges has a control with nothing to point it at. The
+cities are visitable — you fly down between the towers and the towers are
+solid — and the world bound goes from 2,600 to 5,000 to hold them.
+
+**Everything after 30 is renumbered.** Motes and cloud volume keep their
+number; the route is 31 and entry drops to 33, because the route is the site
+and a world with no route is a demo. The old numbering, and where it went:
+
+| was | now |
+|---|---|
+| 31 Entry | **33** |
+| 32 The four structures | **34**, as scenes |
+| 33 Content in world | **32** (the writeup at a station, the three states, URL sync) |
+| 34 The guided path | **31**, promoted: it is the route, and it is the default |
+| 35 The cluster at Homonoia | **Absorbed into 34.** Homonoia's scene *is* five nodes and an election, so a step of its own would build the same thing twice |
+| 36 Brightness, performance, accessibility | **38**, and it re-solves for a world with cities in it |
+
+**31 and 32 before everything else.** If the budget ever runs out, a site
+with four stations and no landmarks is finished; a site with twelve
+landmarks and no route is not.
+
+---
+
 ## The projects as places
 
-### 31. Entry
+### 31. The route
+**Scroll drives the camera, four stations, and the settle** (SPEC §0.3).
+One scroll top to bottom, and it is a flight: arrival high over the
+landscape, travel, settle into a composition, climb away, four times, and
+the offer of the stick at the end.
+
+- Position along the route is scroll position, damped, evaluated on a curve.
+  §18's `curve.ts` is the shape of it and its discipline is the requirement:
+  a pose is a pure function of its input, in a module with no three and no
+  DOM in it
+- **§29's framing is the reference** — two poses, the 17° yaw offset that
+  puts the subject at 65% of frame width with the column clear of it
+- **Its fourth constraint is the thing to get right.** A camera that reaches
+  its pose and stops dead reads as the scroll running out rather than as
+  arriving. A slow drift, a parallax, or a last few units of travel after
+  the type is up; choosing which is this step's
+- Free flight is not the default any more. It stays on a key until §35
+  builds the unlock, and §24's camera is untouched underneath
+
+**Done when:** one scroll carries a reader past four stations and each
+settle reads as arriving somewhere.
+**Report:** the four station poses, what the residual motion is and why,
+ms/frame along the route.
+
+### 32. Content at a station
+The writeup arrives, in document mode's own register, over the scene — the
+same HTML the document serves, cloned rather than retyped (§29 proved that
+path). The three landmark states: distant silhouette, approaching (name and
+machine ID resolve), arrived (the writeup opens). URL sync in both
+directions: arriving at Enargeia pushes `/projects/enargeia`, and loading
+that URL drops you there.
+
+- **The metric strip is re-laid for a column** — §29's first constraint, and
+  the only thing in that frame that was visibly laid out wrong. Its own
+  width outside the 45ch column, a tighter gap, or fewer than four in world
+  mode
+- The scrim is §17's, unchanged, and **there is no still mode** — §29's
+  third constraint measured that a live world behind text is not
+  distracting
+
+**Done when:** close the writeup and you are where you were, still on the
+route; deep links and the back button both work in both modes.
+
+### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 
 - The world loads on WebGPU + ≥1024px + motion on; everything else, and
@@ -2783,41 +2888,88 @@ World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 trapped; a crawler still gets real HTML at every URL; LCP unchanged.
 **Report:** time to interactive world, LCP both modes, bundle both sides.
 
-### 32. The four structures
-Whatever SPEC §8 decides they are — and that decision is Theo's, not this
-session's. **Ask before modelling.** Four places in the landscape, far
-enough apart that reaching one is a journey and close enough that the next
-is visible from the last.
+### 34. The four scenes
+Four places in the landscape, far enough apart that reaching one is a
+journey and close enough that the next is visible from the last. Each is a
+picture of the system rather than a monument to it (SPEC §0.4): an engineer
+who knows the domain should recognise what they are looking at without being
+told.
 
-### 33. Content in world
-The writeup panel — the same HTML the document serves, over the scene, with
-its own backing. The three landmark states: distant silhouette, approaching
-(name and machine ID resolve), arrived (the writeup opens). URL sync in both
-directions: arriving at Enargeia pushes `/projects/enargeia`, and loading
-that URL drops you there.
+- **Enargeia** — a machine thinking, running on the visitor's own hardware
+- **Homonoia** — five nodes passing something between them, one holding the
+  term. **This absorbs the old cluster step**: the traffic simulation from
+  §15–§16 comes back here, the election is the set piece (SPEC §4.7's one
+  thing to get right), and the ground under it is where §16's heightfield
+  term raises a massif
+- **Philoi** — two workstations, the same document open on both, edits
+  arriving
+- **Basis** — modules wired together with a request tracing through them.
+  Deliberately the quietest
 
-**Done when:** close the panel and you are where you were, still flying;
-deep links and the back button both work in both modes.
+**Scale is the open question and it is Theo's call** (SPEC §8): enormous, in
+the cities' register, or human with the route descending to a few units.
+**Decide by looking at one before building four** — and ask before modelling.
 
-### 34. The guided path
-A route between the four projects for visitors who will not fly, followed by
-scroll or by a "take me there" control. Same camera: the path drives it when
-engaged and releases when the visitor takes over.
+**Done when:** a term ends and the ground under Homonoia rearranges, with
+three stations standing elsewhere in the world.
 
-### 35. The cluster at Homonoia
-The traffic simulation and the five-node cluster from §15–§16, as a thing in
-a place rather than the air over every screen. The election is still the one
-thing to get right (SPEC §4.7): a term ends and the ground under the cluster
-rearranges.
+### 35. Collision and the unlock
+Oriented boxes in a spatial hash, a sphere against a box, resolved by
+pushing out along the shallowest axis (SPEC §0.3). The camera has a radius
+of four units and resolution is a push, not a stop. **The altitude clamp
+still applies underneath** — ground and architecture are two constraints and
+both hold.
 
-### 36. Brightness, performance, accessibility
-Re-solved for the new frame. The measurement harness from §17–§20 stands and
-most of what it was constraining is gone: text is confined to the writeup
-panel, so the bound applies behind the panel and nowhere else.
+- **Every built thing carries an authored proxy**, a handful of boxes beside
+  the geometry that produced them. Under-approximate, never over: a bad
+  proxy is worse than none, because bouncing off nothing is a bug a reader
+  cannot explain
+- The four scenes get theirs here, since they are the only built things that
+  exist yet
+- **Free flight is offered at the end of the route** — a visible control,
+  not a hidden key — and the choice persists. Scrolling from inside it picks
+  the route back up at the nearest station
+
+**Done when:** you cannot get inside anything built, sliding along a wall
+works, and a returning visitor is not made to scroll the route again.
+**Report:** the proxy convention, box counts, the cost of a query per frame.
+
+### 36. The cities
+Houston and Delhi, oversized, visitable, solid (SPEC §0.2). Towers 180–320
+units against a landscape whose highest ground is 128; streets 60–80 wide;
+Delhi mostly 15–40 and spread over four times the footprint, with two or
+three monuments reaching 120. The contrast between the two skylines is the
+point of having both.
+
+**The world bound goes from 2,600 to 5,000** with them — a 10km world, 220
+seconds across at cruise. The ceiling and the recall stay as measured; the
+fog, the chunk reach and the star sphere are camera-relative and do not care.
+
+**Done when:** you can fly down a street between two towers and the towers
+stop you.
+**Report:** ms/frame and draw calls inside a city and from outside it, the
+bound change measured against §24's flight tests.
+
+### 37. The other ten landmarks
+The stadium, the datacenter hall, the dish array, the turbines, the torii
+gate, the court, the bridge, the lighthouse, the standing stones, the wreck
+(SPEC §0.2). None on the route, none carrying a writeup, each distinct
+enough in silhouette that nobody flies to one expecting content.
+
+**Siting is searched, not chosen** — the height field knows where ridges,
+shores and flat ground are, the way §22 found the opening pose and §29 sited
+its slab. Each gets a proxy per §35's convention.
+
+### 38. Brightness, performance, accessibility
+Re-solved for a world with cities in it. The measurement harness from
+§17–§20 stands and most of what it was constraining is gone: text is
+confined to the writeup column, so the bound applies behind it and nowhere
+else.
 
 60fps on integrated graphics, with LOD doing the work. Lighthouse
 accessibility 100 in document mode; escapable, and nothing world-only, in
-world mode.
+world mode. The DPR 1.5 cap is re-decided here on frame time rather than on
+focus (SPEC §4.7).
 
 **Report:** ms/frame, draw calls, chunk generation cost, bundle both sides,
 LCP both modes, axe across every state.
