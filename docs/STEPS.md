@@ -10,6 +10,11 @@ Steps 1–20 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
+**The architecture turned at 21.** SPEC §0 makes the world the site and the
+document the escape hatch; the divider above step 21 records what that
+replaces and where the old 21–26 went. Steps 15–20 stand as built and their
+reports are still true of what they measured.
+
 ---
 
 ## Document mode
@@ -301,6 +306,10 @@ Steps 1–14 are the portfolio, and they stand entirely on their own: every
 fact, every writeup, every link, reachable by scrolling one page with no
 GPU involved. Everything below this line is world mode — a second project
 layered on a finished one, and atmosphere rather than information.
+
+**Still true, and it is what makes §0 survivable.** From step 21 the world
+loads *first*, but this line is where the thing it falls back to was
+finished. Nothing below it is ever the only way to reach a fact.
 
 ---
 
@@ -1125,53 +1134,170 @@ lands at its own pose — `/projects/homonoia` at alt 12.00/21°, `/#about` at
 **One thing seen and not fixed:** the site has no `rel="icon"`, so every
 load 404s on `/favicon.ico`. Pre-existing, nothing to do with this step.
 
-### 21. The laptop
-Primitives only — no GLTF, no loader, no Draco. Geometry inside the scene
-from 15, not a new canvas. Terminal on the screen via `CanvasTexture`,
-updated at ~8fps. Log lines duplicated into a visually-hidden `<pre>` for
-screen readers.
+---
 
-Landmark one, and it **stands on the ground** — which is why it moved
-behind the terrain rather than in front of it.
+## ▲ The world is the site.
 
-**Done when:** particles depth-test correctly against the lid; the laptop
-sits on `h(x, z)` rather than floating; a focusable DOM element over it
-routes to Homonoia by keyboard.
+**SPEC §0 replaces the architecture, and this is where the build order turns
+with it.** Steps 15–20 are not withdrawn and nothing in their reports is
+wrong. What is wrong is the frame they were built in: a world *behind* a
+scrolling document. Read §0 before step 21.
 
-### 22. Landmarks 2–4
-Three more structures, one per remaining project, standing on the ground in
-`order`. Three states: distant (silhouette), approaching (label + machine
-ID resolve), arrived (writeup opens in the panel). LOD: silhouette at
-distance, detail only on approach.
+**The record, because it should not be quietly deleted.** §16–§20 built a
+terrain that is correct, measured and **boring**. Every symptom that was
+chased across those five steps — the ground too dim to see, the camera
+pinned to a 22-unit descent, five Gaussians that never read as a landscape,
+an exposure solved against a 10px `--dim` metric label, a composition angle
+cropped by the fold — was a consequence of sitting under body copy, not a
+tuning failure. §17 spent a step making *room* for the world by tripling the
+page. §20 spent a step buying back brightness the document had taken. Both
+succeeded, and the ceiling they were working under is the thing §0 removes.
+So the world loads first, the projects become places in it, and the document
+becomes the escape hatch rather than the shell.
 
-**Design work not yet done:** what the three structures actually *are*.
-Ask before modelling.
+**The old 21–26 are gone**, and where they went:
 
-### 23. Mode switch and scroll ↔ camera sync
-Visible persistent control, choice in `localStorage`. Arriving at a landmark
-replaces its route; loading that route flies the camera there. The writeup
-panel and its backing — the only place text lives in world mode, and the
-reason the brightness bound can lift outside it (SPEC §4.7).
+| was | now |
+|---|---|
+| 21 The laptop | Absorbed into **26**, and reopened: a laptop is one candidate answer to "what are the four structures" (SPEC §8), not a settled landmark |
+| 22 Landmarks 2–4 | **26** (what they are) and **27** (the three states) |
+| 23 Mode switch and scroll ↔ camera sync | **25** (entry, escape, memory) and **27** (URL sync). The modes no longer share a scroll position, so there is nothing to sync |
+| 24 Free flight, bounds, altitude clamp | **24**, unchanged in substance and promoted: it is the default now, not something unlocked at the fourth landmark |
+| 25 Accumulation texture | **Unscheduled.** It modulates a heightfield that is about to become one layer of a procedural terrain, so it cannot be specified until 22 lands. Kept in SPEC §4.7; still cut before the election |
+| 26 Performance pass | **30**, widened to brightness and accessibility, both of which re-solve in the new frame |
 
-**Done when:** deep links work, browser back works, `Esc` returns to path,
-mode switch reachable by keyboard from anywhere, and switching modes at
-Philoi lands at Philoi rather than at the start of the curve.
+**Step 22 is the one that decides whether this works.** If procedural
+terrain at scale does not read as a landscape worth flying over, nothing
+after it rescues that — and it is better to find that out at 22 than at 29.
 
-### 24. Free flight, bounds, altitude clamp
-Unlocks at the fourth landmark or via a control. Bounded volume, camera
-clamped above `h(x, z)` — a floor it may not go under, not collision.
-Always-visible return-to-path control.
+---
 
-### 25. Accumulation texture
-Only if the budget allows, and only once 16–23 are measured with everything
-in place. 512×512 `r32uint`, `atomicAdd` one per particle per frame in the
-existing compute pass, decayed 2% per frame, sampled into `h` at low
-amplitude. It lags the simulation, so a leader change leaves the old
-mountain subsiding for a few seconds after the traffic has left it.
+## World-first
 
-**If it does not fit, the world is complete without it.** Cut it before
-cutting the election.
+### 21. Strip
+**Demolition, and it is meant to leave the site smaller.** Remove the
+scroll-driven camera, the beats as the world's structure, the scrim and the
+old terrain. Land on an empty world: stars, fog, and a camera you can fly.
 
-### 26. Performance pass
-Instancing, LOD, frustum culling, 60fps on integrated graphics.
-**Report:** ms/frame, draw calls, particle counts per buffer.
+- `curve.ts` and the scroll→pose keyframes go. So does everything in
+  `camera.ts` that reads `ranges()`, `onLayout` or `scrollY`
+- The terrain goes entire — the radial mesh, the mist, the horizon arc, the
+  leader light and the fill, `h(p)`, `shares()`. Step 22 builds a landscape
+  from a different construction and step 29 rebuilds the cluster as a place;
+  neither is this file with different constants
+- The traffic field goes with it, for the same reason: it is a thing you see
+  *at* Homonoia now (SPEC §0.5), not the air over every screen
+- **Keep** the renderer, the canvas, the tier gate, the fog (squashed
+  vertical axis and all), and the starfield
+- The scrim goes from `ProjectSection.astro`, `projects.ts` and
+  `tokens.css`. Document mode keeps all three beats
+- A minimal free-flight camera: look and move, damped. The clamp, the soft
+  bounds and the return-to-path control are step 24's
+
+**The question this step has to answer:** what does `/` serve between here
+and step 25, which is where world-first entry is actually built? Every
+commit deploys. Answer it in the report rather than leaving the live site
+in an undecided state.
+
+**Done when:** a document-mode load fetches no Three at all; the world is
+reachable and flyable; `npm run build` passes; nothing on the document side
+regresses — axe clean in all four states, deep links land, both toggles hold.
+**Report:** bundle sizes both sides of the gate, draw calls, ms/frame, what
+was deleted, and what `/` serves.
+
+### 22. Terrain
+**The step that decides whether any of this works.** SPEC §0.2.
+
+Ridged multifractal over fBm. Multiple octaves, so there are ranges,
+foothills, valleys and detail at every scale you approach. Chunked
+generation around the viewer, freed as they are left, extending far past the
+horizon. LOD is not optional at this scale — concentric rings or a quadtree.
+Generation off the main thread if it stalls the frame.
+
+The cluster heightfield from §16 comes back as a **modulation layer** on the
+base, raising ground where message density is high — not as the landscape.
+
+**Done when:** the camera can fly a long time in one direction and keep
+finding new ground; no hitch when new chunks arrive; it reads as a landscape
+worth flying over. That last one is judged by looking, and if it fails, stop
+and say so rather than tuning octaves for a session.
+**Report:** ms/frame, chunk generation cost separately from render cost,
+draw calls, triangle count, and screenshots from three altitudes.
+
+### 23. Cel shading and atmosphere
+Banded light — lit, mid, shadow, hard terminator — replacing the Phong
+material outright. **Rim light on every crest in `--leader`**; it is the
+single most important part of the look. Sky gradient from `--void` at the
+zenith to a lighter band at the horizon, stars in the upper half, clouds as
+banded volumes, height fog in the valleys. One key light. Shadows if they
+hold.
+
+The palette does not change. Brighter than §19 — bands need contrast between
+them to read at all.
+
+**Done when:** the terminator sweeps across a slope as you come round a
+ridge; ridgelines are legible at distance; it is judged in motion, not in a
+still.
+**Report:** ms/frame with and without shadows, and a short capture rather
+than a screenshot.
+
+### 24. Movement
+Free flight as the default: pointer to look, WASD or drag to move, momentum
+and damping. Altitude clamp above the terrain — a floor, not collision. Soft
+bounds: fly far enough and you are turned back rather than hitting a wall.
+
+**Done when:** the camera cannot go under the ground at any speed; a visitor
+who flies into empty black can always get back.
+
+### 25. Entry
+World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
+
+- The world loads on WebGPU + ≥1024px + motion on; everything else, and
+  `?doc`, gets the document
+- A visible, honest progress state — a percentage and what it is doing, in
+  the site's own mono. Not a spinner
+- The escape control is reachable by keyboard on the first frame, from
+  anywhere, and `Esc` reaches it. The choice persists
+
+**Done when:** interactive world under 3s on a desktop connection; nobody is
+trapped; a crawler still gets real HTML at every URL; LCP unchanged.
+**Report:** time to interactive world, LCP both modes, bundle both sides.
+
+### 26. The four structures
+Whatever SPEC §8 decides they are — and that decision is Theo's, not this
+session's. **Ask before modelling.** Four places in the landscape, far
+enough apart that reaching one is a journey and close enough that the next
+is visible from the last.
+
+### 27. Content in world
+The writeup panel — the same HTML the document serves, over the scene, with
+its own backing. The three landmark states: distant silhouette, approaching
+(name and machine ID resolve), arrived (the writeup opens). URL sync in both
+directions: arriving at Enargeia pushes `/projects/enargeia`, and loading
+that URL drops you there.
+
+**Done when:** close the panel and you are where you were, still flying;
+deep links and the back button both work in both modes.
+
+### 28. The guided path
+A route between the four projects for visitors who will not fly, followed by
+scroll or by a "take me there" control. Same camera: the path drives it when
+engaged and releases when the visitor takes over.
+
+### 29. The cluster at Homonoia
+The traffic simulation and the five-node cluster from §15–§16, as a thing in
+a place rather than the air over every screen. The election is still the one
+thing to get right (SPEC §4.7): a term ends and the ground under the cluster
+rearranges.
+
+### 30. Brightness, performance, accessibility
+Re-solved for the new frame. The measurement harness from §17–§20 stands and
+most of what it was constraining is gone: text is confined to the writeup
+panel, so the bound applies behind the panel and nowhere else.
+
+60fps on integrated graphics, with LOD doing the work. Lighthouse
+accessibility 100 in document mode; escapable, and nothing world-only, in
+world mode.
+
+**Report:** ms/frame, draw calls, chunk generation cost, bundle both sides,
+LCP both modes, axe across every state.

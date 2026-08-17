@@ -6,6 +6,237 @@ Reference for feel: wodniack.dev — warm near-black, oversized display type, am
 
 Supersedes v1. The OpenLDAP writeup is out.
 
+**§0 replaces the architecture.** Read it before §4. Everything from §4.3 to
+§4.8 was written for a document with a world behind it, and that is the
+thing §0 reverses.
+
+---
+
+## 0. The world is the site
+
+Everything from §15 to §20 assumed a document with a world behind it. That
+assumption is what made the terrain dim, the camera constrained and the
+landscape unexplorable — none of those were tuning failures, they were
+consequences of the frame. §16–§20 shipped a terrain that is correct,
+measured and **boring**, and it is boring because it sat under a scrolling
+document: there was nowhere for a world to be, no reason to look at it, and
+every knob that could have made it worth looking at was held down by body
+copy passing in front of it.
+
+**The world loads first. The projects are places in it. The document is the
+escape hatch, not the shell.**
+
+This replaces the architecture, not a section of it. The work below it
+mostly survives (§0.5); what it reverses is what that work was *for*.
+
+### 0.1 Entry
+
+`theophilusjohn.com` loads the world on capable hardware.
+
+| condition | what loads |
+|---|---|
+| WebGPU, viewport ≥ 1024px, motion on | **the world** |
+| no WebGPU, or < 1024px, or reduced motion, or JS off | the document |
+| `?doc` on any URL | the document |
+| crawler / no-JS | the document, server-rendered as now |
+
+The document site is finished, accessible and fast (§1–§20 of the build).
+It stops being the main experience and becomes a first-class alternative —
+reachable in one click from inside the world, at every moment, from a
+control that is always visible.
+
+**Nobody is trapped.** A visitor who wants the resume in ninety seconds gets
+a way out on the first frame, and the choice is remembered (`localStorage`,
+the same mechanism as the two toggles in §5).
+
+Note what this deletes: below 1024px and under reduced motion there is no
+scene at all, so the halved tier §4.7 describes for 768–1024px is gone. The
+document is what those loads get, and it is the whole site.
+
+#### The first frame
+
+A world-first site has a loading problem the document never had: Three, the
+scene and the terrain all arrive before anything is usable.
+
+- The document's HTML still renders first and is what the browser paints —
+  the world mounts over it. LCP stays what it is.
+- A visible, honest progress state. Not a spinner: a percentage and what it
+  is doing, in the site's own mono. This is a portfolio for an engineer; a
+  loader that tells the truth is on-brand.
+- **Target: interactive world under 3s on a desktop connection.** If it
+  cannot be, the world is too big and the terrain is where to cut.
+
+### 0.2 The landscape
+
+Real terrain. Not five Gaussians.
+
+**Base: procedural.** Ridged multifractal over fBm — the standard
+construction for mountains, and the reason a landscape reads as one where
+§16–§20's did not. Multiple octaves, so there are ranges, foothills, valleys
+and detail at every scale you approach. Erosion-style ridging, so peaks have
+crests rather than being smooth bumps.
+
+**Modulation: the cluster.** The traffic heightfield from §16 does not
+disappear — it becomes a *layer* on the procedural base, raising ground
+where message density is high. The landscape is real terrain, and the
+cluster leaves its mark on it. That keeps the meaning without the shape
+being five lumps. `h(p)` and `shares()` as built in §16–§20 are the input to
+that layer, not the terrain itself.
+
+**Scale is the thing the old one lacked.** The camera should be able to fly
+a long time in one direction and find new ground. Terrain extends far past
+the horizon; chunks generate around the viewer as they are needed and free
+as they are left.
+
+**LOD is not optional at this scale.** Concentric rings of decreasing
+resolution around the camera, or quadtree chunks. The near ground gets
+detail you could land on; the far ground gets silhouette.
+
+#### Shading — cel, not smooth
+
+**The light is quantised into bands.** Three of them: lit, mid, shadow, with
+a hard terminator where each ends. Not a stylistic flourish on top of a
+realistic renderer — it replaces the Phong material of §19 outright.
+
+This is a lighting model, not flat art. The geometry is fully 3D and
+explorable; what changes is that a slope lit at 0.6 and one lit at 0.45 land
+in the same band, so terrain reads as broad shapes with hard edges rather
+than as gradients. Wind Waker, Breath of the Wild and Genshin are all this,
+and all worlds you fly through.
+
+**The terminator moves.** That is most of why it works in an engine and none
+of why it works in a still: come round a ridge and the band edge sweeps
+across the slope. Judge it in motion or not at all.
+
+**Rim light on every crest**, in `--leader`. This is what makes ridgelines
+legible at distance, and it is the single most important part of the look —
+without it a banded landscape is a set of flat shapes with nothing
+separating them.
+
+**The palette does not change.** `--void` for the deep sky, `--leader` as
+the key and the rim, `--rule` and `--muted` for the mid bands, `--paper` for
+the brightest faces and the stars, `--mint` where a structure needs a second
+accent. Cel shading is about how light quantises, not which colours it uses,
+and a banded violet landscape is a thing nobody else has — where a Shinkai
+sunset has been done a thousand times.
+
+**It has to be brighter than §19.** Bands need contrast between them to read
+at all, and §19–§20's exposure was solved for a scene sitting under body
+copy. World-first removes that constraint: text lives in a panel now (§0.4),
+and the brightness table in §4.7 collapses to its third row nearly
+everywhere.
+
+#### Atmosphere
+
+- **Night, in the existing palette.** A sky gradient from `--void` at the
+  zenith through violet to a lighter band at the horizon, with stars in the
+  upper half. Clouds as banded volumes, quantised like everything else.
+- Height fog in the valleys, so distance reads even in flat light. The
+  squashed vertical axis from §18 survives and is why the tuning holds at
+  more than one altitude — and altitude is now unbounded rather than a
+  22-unit descent.
+- One key light — position open, but it is the thing that makes the bands,
+  so it matters more than any light in the project so far.
+- **Shadows are worth considering now.** §4.7 refused them because the
+  terrain was a background layer. Cel-shaded terrain without them is
+  noticeably flat, and hard-edged shadows suit a banded look better than
+  soft ones do.
+
+### 0.3 Movement
+
+Both, the way a flyable world has both.
+
+**Free flight is the default.** Pointer to look, WASD or drag to move,
+momentum and damping. Bounded softly — fly far enough and you are turned
+back rather than hitting a wall.
+
+**A path exists for people who do not want to fly.** A guided route between
+the four projects, followed by scroll or by a "take me there" control. It is
+the same camera; the path drives it when engaged and releases when the
+visitor takes over.
+
+**Altitude clamp**, not collision: the camera may not go under the terrain.
+
+### 0.4 The projects, as places
+
+Four locations in the landscape, far enough apart that reaching one is a
+journey and close enough that the next is visible from the last.
+
+Each is a **structure** — something built, standing in the terrain, that
+reads as made rather than grown. What the four structures are is the biggest
+open creative question in this document and it is not decided here (§8).
+
+**Three states**, as §4.8 already had them: distant silhouette, approaching
+(name and machine ID resolve), arrived (the writeup opens).
+
+**The writeup opens in the world.** A panel, in DOM, over the scene — the
+same HTML the document serves, with its own backing so text stays readable.
+Close it and you are back where you were, still flying.
+
+**The URL follows.** Arriving at Enargeia pushes `/projects/enargeia`;
+loading that URL in world mode drops you at Enargeia. Deep links work in
+both modes and mean the same thing (§4.6 is unchanged — the History API
+carries them, and `getStaticPaths` still emits real pages).
+
+### 0.5 What survives §15–§20
+
+Most of the hard-won parts:
+
+- One `Renderer` on a `WebGPUBackend`, one canvas (§15)
+- Fog, including the squashed vertical axis (§18)
+- The starfield (§18)
+- The exposure system (§20) — now much simpler, since text is confined to a
+  panel rather than covering the frame
+- The whole measurement harness, per-element and per-stop (§17–§20)
+- The traffic simulation and the five-node cluster (§15–§16), which becomes
+  something you see *at* Homonoia rather than everywhere
+- The document site entire (§1–§20 of the build, steps 1–20)
+
+**What goes:** the scroll-driven camera curve, the beats as the world's
+structure, the scrim, the camera-relative ground disc, the horizon arc, and
+the leader light as the world's only illumination.
+
+### 0.6 Accessibility
+
+Harder than before, and it has to be answered rather than waved at.
+
+**Document mode is the answer, and it is a good one.** It is complete,
+axe-clean across eight states, keyboard-navigable, and it contains every
+fact the world does. Nothing is world-only.
+
+- Reduced motion → the document, always. No world, no toggle needed.
+- The escape control is reachable by keyboard on the first frame, from
+  anywhere, and `Esc` reaches it.
+- Every URL serves real HTML to a crawler.
+- The world is not required to be keyboard-navigable as a flight simulator.
+  It is required to be **escapable**, and to have no information in it that
+  the document lacks.
+
+That is the same standard §4.8 already set. It is now load-bearing.
+
+### 0.7 Performance and budget
+
+The budget model changes because the world is no longer optional. See §6.
+
+- **Desktop: 400 KiB gzipped** for the world chunk. The 260 in §6 was set
+  when the scene was one particle field
+- **Mobile: unchanged at 120 KiB.** The world never loads below 1024px
+- **60fps on integrated graphics**, with LOD doing the work
+- **Terrain generation off the main thread** if it stalls the frame — a
+  worker, or generate ahead of the viewer
+
+Track chunk generation cost separately from render cost. At this scale the
+thing that breaks is a hitch when new ground arrives, not a low average.
+
+### 0.8 Open
+
+The architecture above is decided. The creative calls are not, and they are
+the ones that make this its own rather than a copy. They are listed with the
+rest in §8.
+
+**Decided:** anime-adjacent, cel-shaded, night, in the existing palette. The
+lavender stays — it is not negotiable and it is the rim light.
+
 ---
 
 ## 1. Stack
@@ -117,6 +348,12 @@ Four beats, same every time: **constraint** (what was actually hard), **decision
 
 ## 4. The eight set pieces
 
+**Read §0 first.** §4.1–§4.6 are document mode and stand as written. §4.3's
+scrim, §4.7's camera curve and ground, and §4.8 entire were written for a
+world *behind* a document, and §0 reverses that. Where a subsection is
+superseded it says so and keeps the record rather than deleting it: the
+arguments were sound, and it matters which one failed.
+
 ### 4.1 Page-load intro
 
 Runs once per session, gated on `sessionStorage`. Nobody should sit through it twice.
@@ -132,6 +369,17 @@ GSAP SplitText, masked line reveal — lines translate up out of an overflow-hid
 SplitText's rewrite includes screen-reader handling, so it restores the original text to assistive tech. Verify with VoiceOver anyway; a hero split into per-character spans that reads as gibberish is a real failure mode.
 
 ### 4.3 The project stage — three beats
+
+**Superseded in part (§0).** The beats are document mode's structure and
+they stay exactly as built — three states, scrubbed, pinned, the headline
+persisting across all three. What goes is their second job: they are no
+longer the world's structure, nothing behind them is a landscape, and **the
+scrim goes with that**. A gradient of `--void` at 92% over a page that is
+`--void` is invisible; it existed to make beat 3 readable over a scene, and
+in world mode text lives in a panel (§0.4) that brings its own backing.
+
+The rest of this subsection is the record of the stage the beats are, and it
+holds. Only "world" in the table below is now always "nothing".
 
 Each of the four pins on scroll while a scrubbed timeline moves it through three states, then releases.
 
@@ -172,6 +420,21 @@ Beat 2's strip sits at the same left offset, so the two beats share an axis and 
 Under the scrim the old brightness bound holds; outside it the scene has no ceiling from legibility. See §4.7.
 
 ### 4.4 The laptop
+
+**Reopened (§0).** This was landmark one — a laptop standing on the terrain,
+clicked to reach the Homonoia writeup. §0.4 asks what the four structures
+*are* and answers "not decided", and a laptop is one candidate in a range
+that also holds gates, monoliths, towers, shrine forms and abandoned
+machinery. It decides whether the world reads as sacred, industrial or
+derelict, and a laptop decides it toward none of those. So this subsection
+is not cancelled and it is not scheduled either: it is one answer to §8's
+open question, and it is the only one with a build already specified.
+
+Everything below stays true of it *if it is built*. What is already
+independent of the decision: one GPU context, geometry from primitives,
+`CanvasTexture` for the screen, the visually-hidden `<pre>`, the depth and
+blending rules, and a real focusable DOM element rather than a hit test
+against a mesh. Those apply to whatever the four structures turn out to be.
 
 **Not a separate canvas.** The laptop is geometry inside the persistent scene described in §4.7 — same `Renderer` on the same `WebGPUBackend`, same scene graph, same render loop, same camera. There is exactly one GPU context on this site, and since §15 there is no WebGL context at all.
 
@@ -265,11 +528,39 @@ Consequences, all verified:
 
 ### 4.7 The render layer, and the world it contains
 
+**Superseded by §0 in its subject and kept in its mechanics.** Read §0.2
+before building any of the world below. What survives here is the render
+layer: one `Renderer` on one `WebGPUBackend`, one canvas, WebGPU-only tiers,
+the fog and its squashed vertical axis, the starfield, the exposure channel,
+the measurement harness, and every trap this section records. What goes is
+the *world it contains* — the camera-relative ground disc, the horizon arc,
+the analytic heightfield **as the landscape** (it is a modulation layer on a
+procedural base now, §0.2), the leader light as the only illumination, the
+Phong material, and the scroll-driven camera curve.
+
+The reason, recorded rather than deleted, because the arguments below were
+sound and it matters which one failed: none of §16–§20 was wrong for the
+frame it was built in. A world under a scrolling document has no room, no
+reason to be looked at, and a brightness ceiling set by whatever body copy
+is passing in front of it. Every constraint this section fought — the local
+bound, the exposure curve, the composition angle, the occlusion check — is a
+constraint the document imposed on the world. §0 removes the document from
+in front of the world instead of tuning the world under it.
+
+Two consequences worth naming here because they read as regressions
+otherwise. §4.7 argued for a heightfield over a landscape on the grounds
+that "the terrain has to be the work, or it is decoration on a portfolio
+about not decorating things" — §0.2 keeps that by making the cluster a
+*layer* on real terrain rather than the whole of it, so the ground is still
+a measurement and is also a place. And §4.7's brightness table collapses:
+its third row ("no ceiling from legibility") is nearly the whole frame once
+text is confined to a panel.
+
 **The architectural decision that separates this from a normal page.** Read before building anything in §4.
 
 A fixed, full-viewport canvas at `z-index: 0` that mounts once and never unmounts. All content is normal DOM above it at `z-index: 1`. The canvas is *not* a hero element — it is the environment the entire site sits inside.
 
-This is the **only** GPU context on the site, and it is created once for the session. The laptop in §4.4 is an object within this scene, not a second canvas.
+This is the **only** GPU context on the site, and it is created once for the session. Any structure in §0.4 is an object within this scene, not a second canvas.
 
 #### Built, and standing (§15)
 
@@ -423,6 +714,22 @@ Stars are the only thing in the world that does not mean anything. That is delib
 
 #### The camera
 
+**Superseded (§0.3): scroll is not altitude any more.** Free flight is the
+default and a guided path between the four projects is the alternative for
+visitors who will not fly. The curve below is what the path inherits — a
+route between four places, followed by scroll or by a control, releasing
+when the visitor takes over — but it stops being the only way the camera can
+be anywhere, and it stops being keyed to pin positions, because the projects
+are places in a landscape rather than ranges in a document.
+
+What survives verbatim: **a jump is not a scroll** (damping must not apply
+to a re-jump, a correction or the back button), smoothstep rather than
+linear between keys, exposure as a channel on the pose, and the whole of
+`curve.ts`'s discipline — a pose is a pure function of its input and lives
+in a module with no three and no DOM in it.
+
+The record of the curve as built, and why each keyframe is where it is:
+
 **Scroll is altitude.** One curve, and both modes read it.
 
 | scroll | altitude | pitch | what you see |
@@ -539,20 +846,34 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 
 #### Constraints
 
-- Cap DPR at 1.5 for the background layer; it is out of focus behind text and does not need retina resolution
-- Halve the simulation resolution below 1024px; disable entirely below 768px
-- Reduced motion → freeze on a single computed frame, do not remove the canvas
-- Pause the loop on `visibilitychange` — a compute simulation running in a background tab is a battery complaint
+- ~~Cap DPR at 1.5 for the background layer; it is out of focus behind text
+  and does not need retina resolution~~ — **the world is not behind text any
+  more (§0).** The cap may still be the right performance call and it is no
+  longer justified by focus. Re-decide it on frame time at §30
+- ~~Halve the simulation resolution below 1024px; disable entirely below
+  768px~~ — **one tier now (§0.1).** Below 1024px there is no scene at all,
+  so there is no halved tier to maintain
+- ~~Reduced motion → freeze on a single computed frame, do not remove the
+  canvas~~ — **reduced motion is document mode (§0.1).** There is no canvas
+  to freeze
+- Pause the loop on `visibilitychange` — a compute simulation running in a background tab is a battery complaint. Unchanged
 
 #### What this does not include
 
-Stated so nobody builds them by inference:
+Stated so nobody builds them by inference. **Three of these five are
+reopened by §0.2** and are marked:
 
-- No shadows and no shadow maps. There is a lit surface since §19 and there is still nothing casting.
-- No trees, rocks, water, clouds, or any other landscape furniture.
-- No texture maps of any kind. Everything is procedural or accumulated.
-- No collision. The ground is a height function, and free flight (§4.8) clamps the camera above it rather than colliding with it.
-- No time of day and no sun. The only lights in this world are the cluster's own (§19): the leader, and a fill low enough to keep its far side readable. Everything that is not the terrain still emits.
+- ~~No shadows and no shadow maps.~~ **Reopened.** They were refused because
+  the terrain was a background layer. Cel-shaded terrain without them is
+  noticeably flat, and hard edges suit a banded look. Decide by looking
+- ~~No trees, rocks, water, clouds, or any other landscape furniture.~~
+  **Clouds are reopened** as banded volumes (§0.2); the rest stands
+- No texture maps of any kind. Everything is procedural or accumulated
+- No collision. The ground is a height function, and free flight (§0.3) clamps the camera above it rather than colliding with it
+- ~~No time of day and no sun.~~ **Reopened: there is one key light now**,
+  and it is the thing that makes the bands (§0.2). Its position is open. The
+  leader light survives as what lights the cluster at Homonoia (§0.5), not
+  as the world's only illumination
 
 #### The one thing to get right
 
@@ -562,7 +883,30 @@ Everything else here is scaffolding for a single moment: a term ends, and the la
 
 If the frame budget forces a choice, that survives and everything else goes.
 
+**Two things to get right now (§0).** The election stands, and it becomes
+something you arrive at rather than something under every screen — the
+cluster and its ground are a place at Homonoia (§0.5). But §0.2's step 22 is
+the other one, and it comes first in every sense: if procedural terrain at
+scale does not read as a landscape worth flying over, nothing after it
+rescues that. The election needs a world to happen in before it is the thing
+that matters most about the world.
+
 ### 4.8 World mode
+
+**Replaced by §0.** This subsection made world mode an addition to a
+document — the same scroll, the same camera curve, free flight *unlocked* at
+the fourth landmark, and a mode switch between two representations of one
+scroll position. §0 inverts the default: the world is what loads, free
+flight is what it is, and the document is the escape hatch. The table below
+is the record of the arrangement it replaces.
+
+What survives into §0 unchanged, and it is most of the section: the
+writeups are identical in both modes; a visible, persistent control switches
+them and the choice is remembered; landmarks have three states; deep links
+work in both directions; and the accessibility story is that nothing is
+world-only. Three things do not: the modes no longer share a scroll
+position, free flight is not something to unlock, and the query parameter is
+`?doc` rather than `?mode=doc`.
 
 The same scene given control of the camera. Not a separate build — same renderer, same simulation, same world as §4.7. Document mode already flies it; world mode hands over the stick.
 
@@ -641,10 +985,37 @@ Toggles a `[data-contrast="high"]` token set: `--paper` to pure `#FFFFFF`, `--mu
 
 Hard limits. Check before launch, not after.
 
-- **Homepage JS, mobile: under 120KB gzipped.** Three.js is not loaded below 768px, so this stays achievable
-- **Homepage JS, desktop: under 260KB gzipped**, GSAP + Lenis + Three included
+**Revised (§0.7): the desktop number moves and the mobile one does not.**
+260 KiB was set when the world was one particle field behind a document and
+the desktop bundle was the document *plus* the scene. The world is the site
+now, so the number to hold is the world chunk on its own:
+
+| | budget | what it is |
+|---|---|---|
+| Document, any viewport | **120 KiB gzipped** | The whole document mode: GSAP, Lenis, no Three. §20 measured 55.2 |
+| World chunk, desktop | **400 KiB gzipped** | Three, the terrain, the structures. Loaded only under §0.1's conditions |
+
+The two do not add for a reader: a document-mode load never fetches the
+world chunk, and a world-mode load pays the document's HTML but not much of
+its JS. The old row is kept below because §15 and §19 are recorded against
+it and it is why two of this project's decisions look arbitrary otherwise.
+
+- ~~**Homepage JS, mobile: under 120KB gzipped.**~~ Unchanged, and easier:
+  Three is not loaded below 1024px now rather than 768px
+- ~~**Homepage JS, desktop: under 260KB gzipped**, GSAP + Lenis + Three
+  included~~ — superseded by the table above. It bound twice (§15, §19) and
+  those two decisions stand on their own merits: the WebGL 2 fallback is
+  still not worth 23.1 KiB when the document is the fallback, and nothing in
+  this world was ever shiny enough to want the standard material's GGX lobe
 - **LCP under 2.5s** on a throttled 4G mobile profile. There is no hero image — the LCP element is the `h1`, and the only thing that has ever delayed it is JS the intro was waiting on (§12). Measured at §15: 2.0s mobile, 0.6s desktop
-- The world holds 60fps on integrated graphics. If it can't, cut ground particle count first and the accumulation texture second — the election transition is last, because it is the point (§4.7)
+- The world holds 60fps on integrated graphics. **LOD is what buys that now
+  (§0.2)**, not a particle count — cut terrain LOD distance first, structure
+  detail second, the election transition last, because it is the point
+- **Interactive world under 3s** on a desktop connection (§0.1). If it
+  cannot be, the terrain is where to cut
+- Track terrain chunk generation cost separately from render cost. At this
+  scale the thing that breaks is a hitch when new ground arrives, not a low
+  average (§0.7)
 - No layout shift from the intro sequence — CLS under 0.1
 - Lighthouse accessibility 100
 - Every interactive element reachable and visibly focused by keyboard
@@ -667,8 +1038,28 @@ with it.
 
 ## 8. Open decisions
 
+**The three from §0.8 are the ones that matter**, and they are creative
+calls rather than architectural ones. The architecture is decided.
+
+- **What the four structures are.** Anime-adjacent and *built*, but that is
+  a range: gates, monoliths, towers, shrine forms, abandoned machinery — and
+  §4.4's laptop. It decides whether the world reads as sacred, industrial or
+  derelict, and it is the one creative call the build order actually blocks
+  on (step 26). Ask before modelling.
+- **Is the terrain habitable or hostile?** A world you would want to be in,
+  or one that is impressive and cold? Both are valid and they lead to
+  different palettes, different light and different sound.
+- **Sound.** A world without audio is quieter than it should be, and it is
+  cheap to add and expensive to get right. Not in the build order; it would
+  be a step of its own.
+
+Carried over:
+
 - **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
-- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 21, with the thing on screen.
+- ~~**The laptop's idle motion.**~~ Moot until the structures are decided:
+  §4.4 is one candidate answer to the first bullet above, and the camera it
+  was going to be judged against (a scroll-driven curve with its own pointer
+  parallax) does not exist any more.
 
 ---
 
@@ -683,8 +1074,15 @@ To learn, in build order:
 1. **Three.js core** — scene graph, cameras, materials, lights, render loop, disposal. The largest gap; a wide API rather than a hard one
 2. **TSL** — node-based shader authoring. New syntax, but the WGSL model transfers directly
 3. **GPGPU in Three** — compute nodes, storage buffers, instanced particles. Closest to work already done
-4. **Camera curves** — frames along a curve, damped follow. Small topic, and it is the entire movement system. Note the shape changed with the terrain fold: scroll drives *altitude and pitch* over a landscape (§4.7), not distance along a spline through empty volume
-5. **ScrollTrigger driving a camera** rather than DOM properties, plus the Lenis wiring in §4.6
+4. **Free-flight camera** — look, move, momentum, damping, an altitude clamp
+   over a height function, soft bounds. It is the entire movement system
+   (§0.3). Camera curves are still on the list but demoted to the guided
+   path: frames along a curve, damped follow, releasing to the visitor
+5. **Procedural terrain at scale** — ridged multifractal over fBm, chunked
+   generation around a moving viewer, LOD rings or a quadtree, generation
+   off the main thread. This is the largest new gap and the step the whole
+   plan turns on (§0.2). ~~ScrollTrigger driving a camera~~ is not a topic
+   any more; the Lenis wiring in §4.6 is still document mode's
 6. **Performance tooling** — `stats-gl`, `renderer.info`, Spector.js. Under 100 draw calls. Dispose geometries, materials, textures, render targets — leaks are what kill a scene that never unmounts, which is this architecture exactly
 7. **Astro islands** — smallest item. View Transitions persistence was on this list and is not a topic any more: §4.6 removed `<ClientRouter />` entirely, and the canvas persists because the site is one document and nothing ever unmounts
 

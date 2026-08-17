@@ -11,14 +11,20 @@ Full design spec: `docs/SPEC.md`. Numbered build steps: `docs/STEPS.md`.
 
 Portfolio-first, four projects, heavily animated, dark. Two modes:
 
+- **World mode** — a flyable, cel-shaded night landscape. The four projects
+  are structures standing in it. **This is what loads** on WebGPU, ≥1024px,
+  motion on. See SPEC §0.
 - **Document mode** — the site is ONE page. All content lives on `/`. Deep
   links work via History API `replaceState`, not routes. Crawlable,
-  accessible, fast. It must stand entirely alone.
-- **World mode** — a navigable 3D volume wrapped around the *same* HTML.
-  Additive. Never the only way to reach anything.
+  accessible, fast. It must stand entirely alone. It is what everything else
+  gets, what `?doc` forces, and the escape hatch from inside the world.
 
-Build order is strict: document mode is finished and shipped before world
-mode begins. Steps 1–14, then 15–26. See `docs/STEPS.md`.
+**The world loads first and the document is the escape hatch, not the
+shell.** That reversed at step 21; steps 15–20 built the world as a layer
+*behind* a scrolling document, and SPEC §0 records what that assumption
+cost. Document mode was finished and shipped first (steps 1–14) and stays
+finished — that is what makes the reversal survivable. Steps 21–30 build the
+world. See `docs/STEPS.md`.
 
 ---
 
@@ -35,10 +41,12 @@ These are not preferences. Violating one is a bug.
    toggle overrides the OS in both directions.
 4. **Reduced motion means final state, not fast animation.** No shortened
    durations. Skip to the end.
-5. **One WebGL context** on the whole site. The laptop is geometry inside
-   the persistent scene, not a second canvas.
+5. **One WebGL context** on the whole site. Every structure is geometry
+   inside the persistent scene, not a second canvas.
 6. **Every fact exists in document mode.** If information only appears in
-   world mode, that is a bug, not a feature.
+   world mode, that is a bug, not a feature. This is the whole accessibility
+   story now that the world loads first — the world must be **escapable**,
+   from the keyboard, on the first frame.
 7. **No new dependencies without asking.** Especially: no React, no R3F, no
    Tailwind, no second animation library.
 
@@ -317,13 +325,22 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 
 Check before claiming a step is done.
 
-- Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §20: 55.2 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §20: 254.8 KiB,
-  5.2 KiB spare, and it binds — it is why the WebGL 2 tier does not ship and
-  why the terrain is a Phong material rather than a standard one
+**Revised at §21 (SPEC §0.7).** The desktop number was set when the world
+was one particle field behind a document and the desktop bundle was the
+document *plus* the scene. The world is the site now, so the two are
+budgeted apart and a reader never pays both.
+
+- Document JS, any viewport: **under 120KB gzipped** (no Three below
+  1024px). Measured at §20: 55.2 KiB
+- World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
+  document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
+  is why the WebGL 2 tier does not ship and why the terrain was a Phong
+  material rather than a standard one. Both decisions still stand on their
+  own merits
 - LCP under 2.5s on throttled 4G. Measured at §20: 104ms desktop, 72ms mobile
+- **Interactive world under 3s** on a desktop connection
 - Under 100 draw calls. Measured at §20: 6, at 2.26ms/frame
+- 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
 
