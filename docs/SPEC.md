@@ -1147,7 +1147,7 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 - ~~Cap DPR at 1.5 for the background layer; it is out of focus behind text
   and does not need retina resolution~~ — **the world is not behind text any
   more (§0).** The cap may still be the right performance call and it is no
-  longer justified by focus. Re-decide it on frame time at §35
+  longer justified by focus. Re-decide it on frame time at §36
 - ~~Halve the simulation resolution below 1024px; disable entirely below
   768px~~ — **one tier now (§0.1).** Below 1024px there is no scene at all,
   so there is no halved tier to maintain
@@ -1352,7 +1352,7 @@ calls rather than architectural ones. The architecture is decided.
   a range: gates, monoliths, towers, shrine forms, abandoned machinery — and
   §4.4's laptop. It decides whether the world reads as sacred, industrial or
   derelict, and it is the one creative call the build order actually blocks
-  on (step 31). Ask before modelling.
+  on (step 32). Ask before modelling.
 - ~~**Is the terrain habitable or hostile?**~~ **Answered at §24:
   habitable.** §0.2 makes the landscape alive — water in the low ground,
   conifers and scrub on the lower slopes, motes in the air — which is the

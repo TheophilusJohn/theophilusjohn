@@ -23,7 +23,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
 shell.** That reversed at step 21; steps 15–20 built the world as a layer
 *behind* a scrolling document, and SPEC §0 records what that assumption
 cost. Document mode was finished and shipped first (steps 1–14) and stays
-finished — that is what makes the reversal survivable. Steps 21–35 build the
+finished — that is what makes the reversal survivable. Steps 21–36 build the
 world. See `docs/STEPS.md`.
 
 **The landscape is a set of files that cannot see a GPU and a few that can**
@@ -117,11 +117,13 @@ ridges came back covered in pools with nothing in them), and an object's own
 the bands are placed around flat ground and a cone has facets at every angle.
 
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
-rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
-geomorph, water, ground cover and wind, rocks and conifers, motes and cloud
-volume. §29 is what is left. Everything scattered on the terrain is placed by
-a **pure function of `(x, z)`** — chunks generate independently, in three workers, in any order,
-and anything stateful would make two chunks disagree about their shared edge.
+rocks, water, clouds" is reversed and steps 25–28 and 30 build what replaces
+it: geomorph, water, ground cover and wind, rocks and conifers, motes and
+cloud volume. §30 is what is left, and §29 between them is a throwaway probe
+that does not ship. Everything scattered on the terrain is placed by a **pure
+function of `(x, z)`** — chunks generate independently, in three workers, in
+any order, and anything stateful would make two chunks disagree about their
+shared edge.
 
 ---
 
@@ -646,7 +648,7 @@ budgeted apart and a reader never pays both.
   `__world` measurement hook lands in the *entry* script, not in the scene
   chunk, so an A/B of the world chunk is unaffected by it
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–29), against 0.82 today (§28, DPR 1). The geomorph took
+  landscape shares (steps 25–28 and 30), against 0.82 today (§28, DPR 1). The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
   took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the

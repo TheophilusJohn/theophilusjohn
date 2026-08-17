@@ -200,10 +200,10 @@ const RANGE_MASK_HIGH = 0.42;
    mask there — so what the traffic builds is a massif with crests of the
    same terrain everywhere else has, not a dome sitting on a plain.
 
-   **Sited and driven elsewhere.** §31 decides where Homonoia stands and
-   §34 brings back the election that moves the shares; equal shares is what
+   **Sited and driven elsewhere.** §32 decides where Homonoia stands and
+   §35 brings back the election that moves the shares; equal shares is what
    an idle cluster looks like and is the honest placeholder until there is a
-   simulation to read. Note for §34: this runs inside the worker, so a share
+   simulation to read. Note for §35: this runs inside the worker, so a share
    change is a message and a regeneration of the chunks within
    CLUSTER_REACH, not a uniform. */
 export const CLUSTER_SITE = { x: -520, z: -900 };

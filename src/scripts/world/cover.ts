@@ -1,6 +1,6 @@
 /* §0.2 — where things grow, as a pure function of (x, z).
 
-   This is the placement rule the whole of §27–§29 stands on, and §0.2 is
+   This is the placement rule §27, §28 and §30 all stand on, and §0.2 is
    explicit that it is not negotiable: "everything scattered on this terrain
    is placed by a function of (x, z) and nothing else. No storage, no seeds
    carried between chunks, no lists." Chunks are generated in three workers

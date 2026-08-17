@@ -24,7 +24,7 @@
    cloud deck and `sun.ts` is the one direction all of it agrees on. Still
    ahead:
 
-   - §34 brings the cluster back as a thing standing in a place, and with it
+   - §35 brings the cluster back as a thing standing in a place, and with it
      the election, which is still the one thing to get right
 
    The scene is no longer a function of scroll position, and that rule goes
@@ -94,7 +94,7 @@ export async function mount() {
     // §4.7 capped this at 1.5 because the layer was out of focus behind
     // text. It is the whole frame now and nothing is in front of it, so the
     // justification is gone and only the cost argument is left — which is a
-    // measurement (§35), not a decision this step gets to make on taste.
+    // measurement (§36), not a decision this step gets to make on taste.
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.setSize(w, h, false);
   }
@@ -213,7 +213,7 @@ export async function mount() {
      and the attribute that covers the page is set here — after there is a
      frame in the canvas — rather than in the head script.
 
-     `Esc` leaves. **This is a placeholder for §30**, which owns the visible,
+     `Esc` leaves. **This is a placeholder for §31**, which owns the visible,
      persistent, keyboard-reachable control and the mode memory. It is here
      at all because §0.1 is explicit that nobody is trapped, and a world
      with no way out is not a smaller version of that promise. */

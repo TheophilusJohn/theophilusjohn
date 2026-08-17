@@ -26,15 +26,15 @@ import { motionOff } from './motion';
    halved tier below it any more, there is the document. */
 const MIN_WIDTH = 1024;
 
-/* **Interim, and §30 removes it.** The build order puts world-first entry
-   at step 30 and the world itself at 21–24, so between the two there has to
+/* **Interim, and §31 removes it.** The build order puts world-first entry
+   at step 31 and the world itself at 21–24, so between the two there has to
    be an answer to "what does / serve", and every commit here deploys. The
    answer is that / serves the document — finished, fast, and carrying no
    Three at all — and the world is built at `?world` until the loader, the
    escape control and the mode memory exist to switch on it honestly.
 
    `?doc` is already §0.1's own opt-out and works today, by being anything
-   other than `?world`. It is checked explicitly so that the flip at §30 is
+   other than `?world`. It is checked explicitly so that the flip at §31 is
    one line here rather than a re-reading of this comment. */
 const params = new URLSearchParams(location.search);
 const asked = params.has('world') && !params.has('doc');

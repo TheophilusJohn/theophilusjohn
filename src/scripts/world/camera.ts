@@ -5,7 +5,7 @@
    where four pins put twelve beats, with a fourth channel carrying the
    exposure. That whole construction belongs to a world sitting *behind* a
    document, and §0 puts the world in front of it. The path between the four
-   projects comes back at §33 as one thing the camera can be driven by, not
+   projects comes back at §34 as one thing the camera can be driven by, not
    as the only place it can be.
 
    What survives from `curve.ts` is its discipline rather than its numbers:
@@ -18,7 +18,7 @@
    thread — the same function the workers sample and `terrain.ts` already
    calls once a frame for its LOD. The bounds are a radius and a ceiling.
    The way back is a recall to the opening pose, because the guided path
-   §0.3 would rather hand this to does not exist until §33. */
+   §0.3 would rather hand this to does not exist until §34. */
 
 import { PerspectiveCamera, Vector3 } from 'three/webgpu';
 import { height } from './height';
@@ -77,7 +77,7 @@ const DRIFT = 0.22;
 
    The heading is 30°, which is within five of the bearing to the cluster
    massif (`height.ts`, CLUSTER_SITE) a kilometre out. That is a
-   coincidence of the search rather than a composition, and §31 is what will
+   coincidence of the search rather than a composition, and §32 is what will
    make it deliberate — it sites the four structures, and this pose moves
    with them. */
 const START = new Vector3(-60, 190, 60);
@@ -118,7 +118,7 @@ const CUSHION = 24;
    the terrain runs out.
 
    The radius is set by what has to be inside it. Homonoia's massif stands
-   at 1,040 from the origin and reaches 600 past that (`height.ts`), and §31
+   at 1,040 from the origin and reaches 600 past that (`height.ts`), and §32
    sites four structures that have to be far enough apart to be a journey
    and close enough that the next is visible from the last. Inside 3,200 the
    field runs -24.6 to 126.2 with a mean of 11.2, 40% of it under zero and
@@ -152,7 +152,7 @@ const RETURN = SPEED;
 /* ── The recall ─────────────────────────────────────────────────────────
    The one thing here that is not a force. §4.8 asks for a *return to path*
    control that is always visible in free flight; there is no path until
-   §33 and no chrome until §30, so what exists now is the pose the world
+   §34 and no chrome until §31, so what exists now is the pose the world
    opens at and a key that flies back to it.
 
    Eased over a duration that grows with the distance and caps, so a recall
