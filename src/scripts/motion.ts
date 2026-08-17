@@ -72,9 +72,20 @@ new MutationObserver(() => {
   for (const fn of listeners) fn(off);
 }).observe(root, { attributeFilter: ['data-motion'] });
 
+/* One authority means the world has to ask it to let go. `overflow: hidden`
+   on the root is not enough on its own: Lenis reads the wheel itself and
+   moves the window programmatically, so the document keeps scrolling under
+   an opaque canvas — measured at 2,978px on one flick before this existed.
+   `stop()` is Lenis's own pause and it leaves the instance, the ticker
+   wiring and every ScrollTrigger exactly where they are, so §25 can hand
+   the document back without rebuilding any of it. */
+export function holdScroll() {
+  lenis?.stop();
+}
+
 /* One authority means programmatic jumps go through it too. A native
-   scrollIntoView() moves the document under Lenis, which then eases
-   back from its own stale position and undoes the jump. */
+   scrollIntoView() moves the document under Lenis, which then eases back
+   from its own stale position and undoes the jump. */
 export function jumpTo(el: Element) {
   if (lenis) lenis.scrollTo(el as HTMLElement, { immediate: true });
   else el.scrollIntoView();

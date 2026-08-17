@@ -1,5 +1,21 @@
 /* §4.7 / §18 — fog, and it is not atmosphere for its own sake.
 
+   **Nothing imports this between §21 and §22.** The strip took the ground,
+   the mist and the traffic with it and left the sky, which is exempt from
+   fog by construction, so there is currently nothing in the world for this
+   to fade. It is kept rather than deleted because §0.5 keeps it by name and
+   because the one finding in it — the squashed vertical axis — is the thing
+   that makes the tuning hold at more than one altitude, and §22 makes
+   altitude unbounded where §18 had 22 units of it. It costs nothing in the
+   bundle: an unimported module is not in the graph.
+
+   Two of the constants below are pinned to a world that no longer exists.
+   FOG 0.043 was solved against a ground disc of RADIUS 42 carried with the
+   camera, which was the only fixed distance there was; a chunked terrain
+   extending past the horizon has a different one. Re-tune at §22 and keep
+   LAYER's argument, which is about what an atmosphere *is* rather than
+   about how far away the ground was.
+
    Without it every point in a particle world is the same brightness at
    every depth and the volume flattens back into the diagram §16 exists to
    escape. It is also what hides the far clip, so the ground has no visible

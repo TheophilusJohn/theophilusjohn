@@ -30,23 +30,25 @@ import {
 } from 'three/tsl';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import type { Color } from 'three/webgpu';
-import { RADIUS } from './terrain';
 
-/* Inside the far plane at every altitude on the curve, and far enough
-   outside the ground disc that no star can be mistaken for one. */
+/* Inside the far plane, and far enough out that no star can be mistaken
+   for anything standing in the world. */
 const SPHERE = 200;
 
-/* Where the sky starts. The ground is a disc of radius RADIUS carried with
-   the camera, so what lies past its edge is not more ground — it is sky,
-   and the angle it begins at is the angle the horizon arc is drawn at.
-   Both ends of that meet: the fog takes the ground out as the arc arrives
-   and the stars come in from the same line, so there is no dark band
-   between the two and no hard cut at eye level. Written as a sine because
-   that is what a direction's y component already is.
+/* Where the sky starts, and **§21 had to change what that means.** It was
+   the angle the horizon arc was drawn at — a function of camera altitude,
+   because the ground was a disc of a known radius carried with the camera,
+   so what lay past its edge was sky by construction and the two met with
+   no band of nothing between them.
 
-   It is also why the stars are drawn over a band and not a hemisphere: at
-   the hero the camera is 26 up and the arc is half a radian below level. */
-const DIP = -0.55;
+   There is no ground and no arc now (§0.5), so there is no measured angle
+   to fade from and nothing below the horizon at all. Level is the honest
+   answer in the meantime: stars in the upper half (§0.2), fading in over a
+   tenth of a unit rather than cut, because a hard edge on a starfield is a
+   line and this is supposed to be the absence of one. §23 replaces the
+   whole of it with a sky gradient that has a horizon in it. */
+const DIP = -0.1;
+const FADE = 0.09;
 
 /* Per-star, not total ink (§15's convention, and the one place it does not
    apply). Halving the count on a small viewport has to mean fewer stars
@@ -64,17 +66,32 @@ const DIP = -0.55;
    §18 measured 1.24x of headroom here and did not spend it: stars are the
    only thing in this world that means nothing (§4.7), and buying more of
    them by putting a --dim label at exactly the AA floor is the wrong
-   trade. The ink the same measurement freed went to the ground. */
+   trade. The ink the same measurement freed went to the ground.
+
+   **All of which is now a record of a constraint that has gone (§21).**
+   There is no text over the world any more — it lives in a panel (§0.4) —
+   so the ceiling this number was solved under does not apply to it. Left
+   exactly where §18 put it, because §23 replaces the sky wholesale and
+   re-solving a value against nothing, twice, is worse than carrying it. */
 const ALPHA = 0.30;
 
+/* **The contrast multiplier is gone (§21).** It was a legibility measure:
+   §4.7 measures text against the busiest frame the scene can produce, so
+   the high-contrast toggle had to move that frame *down*, and every layer
+   carried a factor for it. There is no text over the world now, so a
+   toggle about reading text has nothing to say to it. What high contrast
+   still does here is what it does everywhere — it moves the tokens, and
+   both of these are read from the tokens on every change. §30 decides
+   whether a world needs more than that. */
 type Palette = {
   paper: UniformNode<'color', Color>;
   lead: UniformNode<'color', Color>;
-  contrast: UniformNode<'float', number>;
 };
 
 export function buildStars(palette: Palette, time: UniformNode<'float', number>) {
-  const count = 8_000 * (innerWidth >= 1024 ? 1 : 0.5);
+  // One tier (§0.1): the world does not load below 1024px at all, so the
+  // halved count §18 carried for the 768-1024 band has nothing to serve.
+  const count = 8_000;
 
   const si = float(instanceIndex);
   const rnd = (n: number) => hash(si.mul(6).add(n));
@@ -102,7 +119,7 @@ export function buildStars(palette: Palette, time: UniformNode<'float', number>)
      contrast, and a scene that read it once at mount behaves differently
      depending on whether the toggle was set before the load or after it. */
   const accent = rnd(2).lessThan(0.025);
-  material.colorNode = select(accent, palette.lead, palette.paper).mul(palette.contrast);
+  material.colorNode = select(accent, palette.lead, palette.paper);
 
   /* A few bright and most barely there, which is a power law and not a
      range: at 3.2 the median star is at 0.11 of the brightest and a
@@ -117,13 +134,7 @@ export function buildStars(palette: Palette, time: UniformNode<'float', number>)
   const phase = sin(time.div(period).mul(Math.PI * 2).add(rnd(5).mul(Math.PI * 2)));
   const twinkle = mix(0.40, 1.0, phase.mul(0.5).add(0.5));
 
-  /* The horizon, from the camera's own altitude: the arc sits at
-     -y / sqrt(y² + RADIUS²) below level, and that is where the sky begins.
-     Faded over 0.09 rather than cut, because a hard edge on a starfield is
-     a line and this is supposed to be the absence of one. */
-  const camY = cameraPosition.y;
-  const horizon = camY.div(sqrt(camY.mul(camY).add(RADIUS * RADIUS))).negate();
-  const above = smoothstep(horizon, horizon.add(0.09), dir.y);
+  const above = smoothstep(0, FADE, dir.y);
 
   material.opacityNode = brightness.mul(twinkle).mul(above).mul(ALPHA);
 

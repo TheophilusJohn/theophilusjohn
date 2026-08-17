@@ -17,33 +17,19 @@ for (const s of sections) byPath.set(s.dataset.path!, s);
 
 const norm = (p: string) => p.replace(/\/+$/, '') || '/';
 
-/* Which range the reader is in is already computed here, once, to keep the
-   address bar honest. §4.7's render layer needs the same answer, so it
-   subscribes rather than measuring the page a second time — one authority
-   for position, the way there is one for scroll.
-
-   `active` is separate from `current` below, which the click handler
-   clears to force a rewrite. A subscriber wants the section, not the state
-   of the address bar, and it is handed the standing answer on subscribe:
-   the field arrives on a dynamic import, long after the observer's first
-   callback, and it must not sit at the default state until the next scroll. */
-let activePath: string | null = null;
-const watchers = new Set<(path: string) => void>();
-
-export function onSection(fn: (path: string) => void) {
-  watchers.add(fn);
-  if (activePath !== null) fn(activePath);
-}
-
+/* The subscriber list this used to keep is gone with §21. It existed so
+   the render layer could ask which range of the page the reader was in
+   without measuring the document a second time; the world is not driven by
+   scroll position any more (§0.3), so there is nobody to tell. */
 let current: string | null = null;
 function setPath(path: string) {
-  if (path !== activePath) {
-    activePath = path;
-    for (const fn of watchers) fn(path);
-  }
   if (path === current) return;
   current = path;
-  history.replaceState(history.state, '', path);
+  /* The query survives. `?doc` is §0.1's own opt-out and `?world` is §21's
+     interim way in; a bare pathname here silently drops whichever one the
+     reader arrived with, on the first scroll, and the next reload lands in
+     the other mode. */
+  history.replaceState(history.state, '', path + location.search);
 }
 
 /* A 10vh band across the middle of the viewport. Sections tile the page
@@ -96,7 +82,7 @@ addEventListener('click', (event) => {
   if (url.origin !== location.origin || norm(url.pathname) !== '/') return;
 
   event.preventDefault();
-  history.pushState(null, '', url.pathname + url.hash);
+  history.pushState(null, '', url.pathname + (url.search || location.search) + url.hash);
   current = null;
   goTo(url.hash ? document.getElementById(url.hash.slice(1)) : null);
   requestAnimationFrame(() => requestAnimationFrame(sync));

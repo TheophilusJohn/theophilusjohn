@@ -76,42 +76,53 @@ html[data-intro] .site-head > *,
 html[data-intro] .hero h1,
 html[data-intro] .hero .sub { visibility: hidden; }
 
-/* ── The render layer ────────────────────────────────────
-   §4.7. One canvas, fixed and full-viewport, mounted once
-   and never removed. It is not a hero element — it is the
-   environment the whole document sits inside, so it is the
-   bottom of the stack and everything else is above it.
+/* ── The world ───────────────────────────────────────────
+   §0. One canvas, fixed and full-viewport, mounted once and
+   never removed. Until §21 it was the environment the
+   document sat *inside* — the bottom of the stack, at
+   z-index 0, pointer-events: none, with every landmark and
+   heading painting over it. The world loads first now and
+   the document is the escape hatch, so it is the other way
+   up: the canvas is over the document, it takes the
+   pointer, and it is opaque.
 
-   Both selectors are keyed on data-field, which scene.ts
+   Both selectors are keyed on data-world, which scene.ts
    sets only once there is a frame in the canvas. Below
-   768px, without WebGPU, with JS off, or on a renderer
-   that failed to start, neither the attribute nor the node
-   exists and this whole block matches nothing.
+   1024px, without WebGPU, under reduced motion, with JS
+   off, or on a renderer that failed to start, neither the
+   attribute nor the node exists and this whole block
+   matches nothing — which is exactly §0.1's fallback, and
+   it is the document, which is the whole site.
 
-   pointer-events: none, because the canvas covers every
-   link on the page and carries nothing clickable of its
-   own. §4.4's laptop gets a real focusable DOM element over
-   it rather than a hit test against a mesh. */
-.field {
+   The document still paints first and is what LCP sees;
+   the world arrives over it a frame later. */
+.world {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
-  pointer-events: none;
+  z-index: 50;
   opacity: 0;
-  transition: opacity 600ms linear;   /* motion off: the block below zeroes this */
+  transition: opacity 600ms linear;
+  cursor: grab;
 }
-.field[data-ready] { opacity: 1; }
+.world[data-ready] { opacity: 1; }
+.world[data-dragging] { cursor: grabbing; }
 
-/* The canvas is positioned and the content is not, so without
-   this the content paints under it however low its z-index.
-   z-index 1 is §4.7's number; .skip at 99 and .cursor at 100
-   are already above both. */
-html[data-field] :is(.site-head, main, .site-foot) {
-  position: relative;
-  z-index: 1;
+/* Hidden rather than removed. The document is what the
+   browser painted and what a crawler reads, and §25 opens
+   the writeup panel out of this same HTML — so it stays in
+   the DOM. `visibility: hidden` is what takes it out of the
+   tab order and the accessibility tree at the same time, so
+   Tab cannot land on a link behind an opaque canvas.
+
+   The scroll lock is on the root: Lenis drives the real
+   window scroll, so a page that can still scroll under the
+   world moves the pins and the log bands for nothing. */
+html[data-world] :is(.site-head, main, .site-foot, .skip) {
+  visibility: hidden;
 }
+html[data-world] { overflow: hidden; }
 
 /* ── The cursor ──────────────────────────────────────────
    §4.5. cursor.ts builds the element and puts data-cursor

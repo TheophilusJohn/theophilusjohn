@@ -27,20 +27,20 @@ const lines =
 
     Beat 1 is the headline alone. Beat 2 is the same words as a mono label
     over the summary, the numbers and the links. Beat 3 is the writeup in a
-    45ch column behind a scrim. Two of the three leave most of the viewport
-    to the world, which is the whole reason the stage stopped being one
-    composition. */}
+    45ch column.
+
+    §21 took the scrim out. It was a gradient of --void at 92% that darkened
+    the scene behind beat 3 so the column kept its contrast bound while the
+    rest of the frame ran bright — and there is no scene behind this
+    document any more (§0). Over a page that is already --void it was
+    invisible ink over its own colour. In world mode the writeup opens in a
+    panel that brings its own backing (§0.4). */}
 <section
   id={project.id}
   class="wrap project"
   data-path={`/projects/${project.id}`}
   aria-labelledby={`${project.id}-h`}
 >
-  {/* First, so every positioned sibling after it paints on top. It is the
-      only thing on the page allowed to darken the scene, and it does it
-      for one beat. */}
-  <div class="scrim" aria-hidden="true"></div>
-
   <div class="top">
     <span class="id">{d.machineId}</span>
     <span class="period">{d.period} · {d.role}</span>
@@ -107,7 +107,7 @@ const lines =
     margin-top: var(--s-3); font-variation-settings: 'wdth' 120;
   }
 
-  .label, .scrim, .rail { display: none; }
+  .label, .rail { display: none; }
 
   .b2 { padding-bottom: var(--s-8); border-bottom: 1px solid var(--rule); }
   .summary { margin-top: var(--s-4); max-width: 48ch; color: var(--muted); font-size: var(--t-lg); }
@@ -179,8 +179,7 @@ const lines =
 
     .project[data-beats] .label,
     .project[data-beats] .b2,
-    .project[data-beats] .b3,
-    .project[data-beats] .scrim { opacity: 0; }
+    .project[data-beats] .b3 { opacity: 0; }
 
     .project[data-beats] .label {
       display: block;
@@ -192,18 +191,6 @@ const lines =
     .project[data-beats] .b3 { max-width: 45ch; }
     .project[data-beats] .prose { max-width: none; padding-block: 0; }
 
-    /* §4.3: a gradient, not a panel. The moment it has an edge it reads as
-       content pasted onto a background rather than content inside a
-       world, so it fades out inside its own 60% and never reaches the
-       right of the frame. */
-    .project[data-beats] .scrim {
-      display: block; position: absolute; inset: 0; width: 60%;
-      /* Solid to 60% of its own width, which is 539px against the 524px
-         the 45ch column ends at — the bound applies where the text is, so
-         the whole column has to sit on the flat part and not in the fade.
-         The fade then still finishes at 898px of a 1497px frame. */
-      background: linear-gradient(to right, var(--scrim) 0 60%, transparent 100%);
-    }
 
     /* --rule is the track, --leader the part of the section already behind
        you: the accent marking current position, which is the one thing it

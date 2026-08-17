@@ -6,9 +6,12 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–20 are done. The site is live. **Update this line at the end of
+Steps 1–21 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
+
+`/` is the document and carries no Three. The world is at `?world` until
+§25 builds world-first entry, and it is currently stars and a camera.
 
 **The architecture turned at 21.** SPEC §0 makes the world the site and the
 document the escape hatch; the divider above step 21 records what that
@@ -1204,6 +1207,119 @@ reachable and flyable; `npm run build` passes; nothing on the document side
 regresses — axe clean in all four states, deep links land, both toggles hold.
 **Report:** bundle sizes both sides of the gate, draw calls, ms/frame, what
 was deleted, and what `/` serves.
+
+*Done.* **1,532 lines of measured work deleted, and the site is two things
+now instead of one.** `/` serves the document — finished, and for the first
+time since §15 carrying no Three at all. The world is at `?world`.
+
+**What `/` serves, which is the question this step had to answer.** §25 owns
+world-first entry and it is four steps away, so the alternative was leaving
+a free-flight camera behind a scrolling document on a live site for four
+commits. Instead the gate inverts *later*: `?world` opts in, everything else
+gets the document, and §25 flips one condition in `world.ts` and adds the
+loader, the visible control and the mode memory around it. `?doc` already
+works today by being anything other than `?world`, and it is checked
+explicitly so the flip is a line rather than a re-reading of a comment.
+
+Two things had to change for a query parameter to survive at all, and both
+were latent bugs against §0.1's own `?doc`: `url-sync` rewrote the address
+bar to a bare pathname on the first scroll, and the project stubs redirected
+to `'/#' + slug`. Either one dropped the reader into the other mode without
+saying so. Measured: `/?doc` scrolled to 4,000px reads `/projects/homonoia?doc`.
+
+**Deleted.** `curve.ts` (145 lines — ten keyframes, the smoothstep, the
+exposure channel) and `terrain.ts` (632 — the radial mesh, the analytic
+`h(p)` and its closed-form gradient, `shares()`, the mist, the horizon arc,
+the leader light and the fill). Out of `scene.ts`: the compute simulation,
+the six section presets, the election, `onSection`, `onLayout`,
+`gsap.ticker`, the motion-off frozen frame. Out of the document:
+`ProjectSection`'s scrim, its token, `ranges()`, and the layout-watcher list
+that existed only to tell a camera curve the pins had moved. The three beats
+stay, and the page is **11,559px** at 1512×804 — the same height as §17,
+because the scrim was a gradient and never occupied space.
+
+`fog.ts` is kept and nothing imports it. §0.5 keeps it by name, its one real
+finding (the squashed vertical axis) is what makes a fog tuning hold at more
+than one altitude, and §22 makes altitude unbounded where §18 had 22 units
+of it. An unimported module is not in the graph and costs nothing.
+
+**The strip is worth 5.1 KiB, and that is the honest surprise.** Deleting a
+compute pass, a lit surface, 66,048 vertices of mesh and five lights moved
+the world chunk from 199.6 to **194.6 KiB**, because the chunk is almost
+entirely `three/webgpu` and this project's own code in it is a few KiB of
+TSL. The document is what actually got smaller in the way that matters: it
+went from *fetching 194.6 KiB of scene on every desktop load* to fetching
+none.
+
+| | gzipped | budget |
+|---|---|---|
+| Document mode (all of it) | **56,338** (55.0 KiB) | 120 KiB |
+| World chunk | **199,303** (194.6 KiB) | 400 KiB |
+| A world load, both | 255,641 (249.6 KiB) | |
+| CSS 2,013 (−1,012, the scrim's) · document 6,772 | | |
+
+**2 draw calls** — the sky and the renderer's blit — **16,001 triangles**,
+and **0.108 ms/frame** at 1512×804 DPR 1 against §20's 2.26. Batches of 400
+between two `queue.onSubmittedWorkDone()` with the site's loop stopped, five
+runs agreeing to ±0.002. Two things it says about the baseline §22 inherits:
+the same frame with the sky removed entirely is **0.103 ms**, so 8,000 stars
+are 0.003 ms and the frame *is* the clear and the blit; and DPR 1.5 costs
+**0.185 ms**, which is 1.71× for 2.25× the pixels. An empty world is fill
+bound on its own background. There is 16.6 ms of a 60fps frame unspent.
+
+**The camera flies, and the pose is the only instrument that can say so.**
+An empty world with stars at effective infinity cannot show translation by
+construction — the frame is identical before and after a hundred units of
+travel — so this is read off `view.pose()` rather than off pixels, which is
+the honest way round and not a workaround. W held for 1s from (0, 24, 0) at
+pitch −10°: **11.07 units travelled, speed 13.85 of 14** (an exponential
+approach at τ 0.22 reaches 0.989 in 1s). Released, it **coasts 3.04 units
+and decays to 0.147** in the next second. A 400px drag is **100.0° of yaw**
+at 0.25°/px; a 2,600px drag down clamps at **−85.0°** rather than passing
+through the gimbal. Diagonal input is normalised, so two keys is not 1.41×
+one.
+
+**Nothing scrolls under the world, and `overflow: hidden` was not enough.**
+Lenis reads the wheel itself and moves the window programmatically, which is
+not a scroll the root can refuse — measured at **2,978px on one flick**
+before `holdScroll()` existed. It is Lenis's own `stop()`, so the instance,
+the ticker wiring and every ScrollTrigger stay exactly where they are for
+§25 to hand back. After: 0 → 0.
+
+**The document is hidden, not removed**, so it is still what the browser
+paints, what a crawler reads, and what §27 opens the writeup panel out of.
+`visibility: hidden` is what takes it out of the tab order and the
+accessibility tree together: **0 focusables** behind the canvas, so Tab
+cannot land on a link nobody can see. `Esc` leaves — it strips `?world` and
+replaces the entry, landing on `/` with the document visible and no canvas.
+That is a placeholder and it is here at all because §0.1 is explicit that
+nobody is trapped; §25 owns the visible, persistent control.
+
+**Gates, all four measured by whether the scene chunk is requested at all:**
+`?world` at 1000px wide — no. `/` bare — no. `?world&doc` — no. `?world`
+under `prefers-reduced-motion: reduce` — no, and `data-motion` is `off`.
+Only `?world` at ≥1024px with an adapter and motion on fetches it. The gate
+is decided once at load rather than re-asked on resize, which §15 did:
+dragging a window past a breakpoint must not teleport a reader into a
+landscape they did not ask for.
+
+**The document side did not regress.** axe-core **0 violations across eight
+states** — 1512×804 and 360×640, each in both contrast modes and both motion
+modes. LCP **48ms** desktop and mobile, CLS 0 (one shift entry at 2.6e-5
+desktop, zero mobile). `/projects/homonoia` still lands at **y 3,354**,
+which is its pin start and beat 1. Four sections pin at 1512×804. In world
+mode the document still paints first and the world arrives over it: **LCP
+68ms, `data-world` set at 91ms**, on localhost — §25 owns the number that
+matters, which is over a real connection with a cold cache.
+
+**Left for §22, deliberately.** There is nothing in the world to fly *to*.
+The starfield's horizon fade was a function of camera altitude and the
+ground disc's radius; with no ground there is no angle to derive, so it
+fades from level and the lower half of the frame is `--void`. §23 replaces
+the sky wholesale. The DPR 1.5 cap is still in `scene.ts` and its
+justification is not — it was there because the layer was out of focus
+behind text, and it is the whole frame now; it stays until §30 has a
+measurement to keep or drop it on.
 
 ### 22. Terrain
 **The step that decides whether any of this works.** SPEC §0.2.

@@ -3,13 +3,21 @@
    Two behaviours, and the first one is the whole of it on a phone: the
    section reveals as it arrives, stacked. Above 900px the section is a
    stage of three beats — the headline alone, then a mono label over the
-   summary and the numbers, then the writeup in a 45ch column behind a
-   scrim — and it pins while a scrubbed timeline moves through them.
+   summary and the numbers, then the writeup in a 45ch column — and it pins
+   while a scrubbed timeline moves through them.
 
-   Two of the three beats are a line and four numbers. That is deliberate
-   and it is the point of the revision: the world underneath needs screens
-   with nothing on them, and it was never going to get one from a layout
-   that put a headline, a lead column and 62ch of prose on every viewport.
+   Two of the three beats are a line and four numbers. That was built to
+   leave room for a world underneath, and **§21 took the world out from
+   under it** (§0): the beats are document mode's structure now and nothing
+   is behind them. The scrim went with the scene it was darkening, and so
+   did `ranges()` and `onLayout`, which existed only to hang a camera curve
+   on where the pins put the beats.
+
+   The stage stays exactly as it is, and not out of sentiment. Fewer words
+   per screen is a better read at 45ch than at 62, the cross-faded handover
+   is the section's one piece of motion, and none of that was ever an
+   argument about the world — it was the argument §17 used to buy room for
+   one. What it bought is spent; what it built stands.
 
    The width breakpoint is not the whole test. Content taller than the
    viewport cannot be held still — the part below the fold is unreachable
@@ -54,7 +62,6 @@ const sections = Array.from(document.querySelectorAll<HTMLElement>('.project'))
     label: el.querySelector<HTMLElement>('.label')!,
     b2: el.querySelector<HTMLElement>('.b2')!,
     b3: el.querySelector<HTMLElement>('.b3')!,
-    scrim: el.querySelector<HTMLElement>('.scrim')!,
     fill: el.querySelector<HTMLElement>('.rail > span')!,
   }))
   .filter((s) => s.stage && s.b3 && s.fill);
@@ -174,7 +181,6 @@ function pin() {
     // Beat 2 → 3. The label stays; it is the headline now.
     out(s.b2, HAND_OVER[1]);
     enter(s.b3, HAND_OVER[1]);
-    tl.fromTo(s.scrim, { opacity: 0 }, { opacity: 1, ease: 'power2.out' }, HAND_OVER[1]);
 
     tl.fromTo(s.fill, { scaleY: 0 }, { scaleY: 1, duration: 1, ease: 'none' }, 0);
 
@@ -228,7 +234,7 @@ function unpin() {
      and the entrance tween still owns `y`. Dropping data-beats with it is
      what puts the beats back in document order. */
   gsap.set(
-    sections.flatMap((s) => [s.headline, s.label, s.b2, s.b3, s.scrim, s.fill]),
+    sections.flatMap((s) => [s.headline, s.label, s.b2, s.b3, s.fill]),
     { clearProps: 'transform,opacity' },
   );
   for (const s of sections) delete s.el.dataset.beats;
@@ -252,37 +258,6 @@ function unpin() {
    error is the whole of the pin. It was under a screen when a pin was
    +60%; at +220% it measured as an 825px jump on the motion toggle. */
 const anchors = Array.from(document.querySelectorAll<HTMLElement>('[data-path]'));
-
-/* §18. Where each project's scroll range begins and ends, in document
-   coordinates — the keyframes the camera curve is hung on. The beats are a
-   scroll range inside a pin and nothing outside this module knows where
-   that is: a pinned section's own rect reads `top: 0` throughout the pin
-   and lands at the pin's *end* once it is over, so measuring it from
-   outside gives the wrong one of the two numbers at every scroll position.
-   Ask the trigger. Without a pin the section is the range it occupies,
-   which is the same question answered by the layout. */
-export function ranges() {
-  return sections.map((s, i) => {
-    const trigger = pins[i];
-    if (trigger) return { id: s.el.id, start: trigger.start, end: trigger.end };
-    const r = s.el.getBoundingClientRect();
-    return { id: s.el.id, start: r.top + scrollY, end: r.bottom + scrollY };
-  });
-}
-
-/* Pinning is worth most of nine screens of scroll distance, so anything
-   keyed to a document position has to be told when that decision changes.
-   Same shape as url-sync's onSection and for the same reason: one
-   authority, and the subscriber does not re-derive the layout itself. */
-const layoutWatchers = new Set<() => void>();
-
-export function onLayout(fn: () => void) {
-  layoutWatchers.add(fn);
-}
-
-function relaid() {
-  for (const fn of layoutWatchers) fn();
-}
 
 /* Where a section's top is relative to the viewport's, negative once you
    are past it. `getBoundingClientRect().top` is that number — until the
@@ -353,7 +328,6 @@ function decide() {
   });
   if (pins.length) settle();
   else if (!entrances.length) reveal();
-  relaid();
 }
 
 let resizing = 0;
@@ -374,7 +348,6 @@ onMotionChange((off) => {
   } else {
     keepingPlace(pin);
   }
-  relaid();
 });
 
 decide();

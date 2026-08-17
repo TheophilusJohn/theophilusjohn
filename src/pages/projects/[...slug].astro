@@ -17,7 +17,10 @@ const d = project.data;
       the one page, at this section — url-sync there restores the path.
       replace(), not assign(): the stub must not sit in the back stack. */}
   <script slot="head" is:inline define:vars={{ slug: project.id }}>
-    location.replace('/#' + slug);
+    // The query rides along. `?doc` is §0.1's opt-out and `?world` is §21's
+    // way in, and a deep link that drops either one lands the reader in the
+    // other mode without saying so.
+    location.replace('/' + location.search + '#' + slug);
   </script>
 
   <article>

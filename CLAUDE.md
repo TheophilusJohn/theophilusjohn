@@ -318,6 +318,29 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   axis and the ground under the subject. At 11–18° below the axis a
   landform is in the bottom third of the frame and cropped by the fold,
   whatever the altitude says. Standing further back closes it.
+- `overflow: hidden` on the root does not stop Lenis. It reads the wheel
+  itself and moves the window programmatically, which is not a scroll the
+  root can refuse — measured at 2,978px on one flick with the document
+  behind an opaque canvas. `lenis.stop()` is the pause, and it leaves the
+  instance, the ticker wiring and every ScrollTrigger in place.
+- A query parameter that carries a *mode* has to survive everything that
+  rewrites the URL. `url-sync`'s `replaceState` wrote a bare pathname on
+  the first scroll and the project stubs redirected to `'/#' + slug`;
+  either one silently drops `?doc` or `?world` and lands the reader in the
+  other mode.
+- Deleting a whole layer barely moves the world chunk. It is almost
+  entirely `three/webgpu` — a compute pass, a lit surface, 66k vertices and
+  five lights came to 5.1 KiB gzipped. The size that moves is *whether the
+  chunk is fetched at all*.
+- An empty world with stars at effective infinity cannot show translation:
+  the frame is identical before and after a hundred units of travel. Read
+  the pose, not the pixels. That is the honest instrument there, not a
+  workaround for one.
+- `renderer.info` has no frame counter, so a batch of N renders reports the
+  sum. Reset, render exactly one, read — then time a separate batch.
+- Sub-millisecond frames need a warm-up batch before the timed one, or the
+  first measurement is submit overhead and DPR 1.5 comes back *faster* than
+  DPR 1.
 
 ---
 
@@ -339,7 +362,7 @@ budgeted apart and a reader never pays both.
   own merits
 - LCP under 2.5s on throttled 4G. Measured at §20: 104ms desktop, 72ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §20: 6, at 2.26ms/frame
+- Under 100 draw calls. Measured at §21: 2, at 0.108ms/frame (§20: 6 at 2.26)
 - 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
