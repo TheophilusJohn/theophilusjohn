@@ -209,7 +209,7 @@ Accessibility: canvas text is invisible to screen readers. The same log lines mu
 
 **Revised: scroll no longer moves the laptop at all.** The camera altitude curve in §4.7 is what changes the view of it, driven by the same Lenis instance as everything else — there is no ScrollTrigger on this object and nothing to tie to the hero reveal.
 
-What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 20 with the thing on screen; do not build both by inference from this paragraph.
+What is left is a slow idle float and a subtle rotation tracking pointer position, clamped to a few degrees. **Both are an open question (§8)**, because the camera already carries its own pointer parallax and a second one on the object may cancel or double it. Decide it in step 21 with the thing on screen; do not build both by inference from this paragraph.
 
 #### Constraints
 
@@ -307,6 +307,10 @@ h(p) = Σ_nodes  A_i · exp(-|p - n_i|² / σ²)
 **The hero's peak, and a correction (§17).** §16 reported the hero as "five hills between 0.13 and 0.28", the flattest landscape `h(p)` can draw, and that was the wrong preset: those are Enargeia's numbers. `shares(5, 0.35, 0)` is **0.41 / 0.20 / 0.13 / 0.13 / 0.13** — the hero has had a dominant peak since §15 and the first screen was never the flat one. Enargeia is, deliberately: almost nothing routes to a leader there because a spreading activation is not a vote.
 
 What stands from the observation is smaller. The hero's peak moves to **0.47** (`leaderMix` 0.45) so that dominance is not a thing you have to measure to see, and the hero gets a **slow term** where it had none — `elect` 0 meant the cluster at rest never elected anything, and a Raft cluster at rest has a leader precisely because it elected one. Slow enough that it drifts rather than switches, and far enough from Homonoia's 3.4s that it never competes with the set piece.
+
+**The shape of `h(p)`, checked at last (§20).** `σ` and `τ` were set at §16 and never verified, because for three steps nothing on screen could resolve a summit from a ridge. The requirement is that **five nodes read as five distinct summits**, and at the old values nothing did: at half the cluster's spacing two peaks still contributed 0.55 of each other, and a route carried a ridge as tall as the nodes it joined, so the deepest point of every adjacent route measured *above* the lower of its two summits. One plateau, not a cluster.
+
+**`σ` 3.4 → 2.0, `τ` 1.3 → 0.9, `RIDGE` 8.0 → 5.0.** The third is the one this section did not name and it has to move, because `τ` cannot do its job: a ridge lies *on* the segment between two summits, so narrowing it thins the ridge without lowering the saddle. Only its height does that. What does not separate at any usable `σ` is nodes 3 and 4, which stand **2.84 units apart** in xz where the other four sides run 4.6 to 6.5 — they are a twin summit, and that is the cluster's geometry rather than the heightfield's. Left as it is: the pentagon is what the simulation is tuned against everywhere else.
 
 **Texture — accumulated, optional, and the second thing to build.** A 512×512 `r32uint` storage texture, into which the particle compute pass `atomicAdd`s one per particle per frame, decayed 2% per frame. Sampled and added to `h` at a low amplitude. This is what makes the ground feel *alive* rather than *computed* — it lags the simulation, so a leader change leaves the old mountain visibly subsiding for a few seconds after the traffic has left it.
 
@@ -450,6 +454,12 @@ Smoothstep between keyframes, not a straight line: the segments run 781px at the
 
 Under reduced motion the loop is stopped, so the camera is set from the scroll position at mount and then frozen with the rest of the scene — a deep link lands at its own pose and holds it. That is the constraint below, not an oversight.
 
+**Re-tuned against the surface (§20).** §18 chose `alt` and `dist` when the ground was haze that never resolved, so there was nothing to compose against; §19 gave it a landform and the curve was found to be standing too close to it. The low stops gain `dist` — 2 to 4 units at every project — and §19's occlusion figure (0.1% at the lowest stop) is the room to do it without hiding the field. The descent survives it: monotone to y 10,269 and monotone up after, checked out of `curve.ts` in Node.
+
+**The instrument is the angle between the view axis and the ground under the cluster**, not an opinion about the frame. At §18's distances it ran 11° to 18° *below* the axis at every stop but the hero, which is the bottom third of the frame — so the landform was cropped by the fold and its near flank filled what was left. Standing further back closes that angle. Measured after, by projecting the five node positions: the ring spans **17% of the frame width at the hero to 33% at the lowest stop**, centred **69–72% down** — consistently under the beats' text rather than behind it.
+
+**The hero moves up, and the reason contradicts the instruction that asked for it.** The premise was that the ring might not fit at alt 26; it fits with room to spare, so its problem was never size but that it sat directly behind the name. Alt 26 → **30** with `dist` 13 → **12** puts it clear of the display type and is still a pull back where it counts — 24.0 units from the cluster against 21.4, because at the top of the flight the altitude is the longer leg. The pitch stays at 58°, so §4.7's own row is unchanged.
+
 #### Fog
 
 Not optional, and not atmosphere for its own sake.
@@ -496,7 +506,17 @@ This is the honest resolution of "make it brilliant" against "text must be reada
 
 **Solved (§19), and the predicted binding case is the real one — but it moves.** Surface exposure 0.185, mist ink 5,570 over 150,000 points against §18's 31,150 over 300,000. Over **196 elements at fourteen stops, four layers each: 0 failing, worst measured 4.66:1, the scene at 0.779 of the 4.55:1 ceiling.** High contrast puts it at 0.038 of the same ceiling — down by 20× — with nothing failing. What binds is a lit slope behind a `--dim` 10px metric label at Homonoia beat 2, and Homonoia's term ends every 3.4s, so the massif *walks* under that column and out again: a measurement that samples less than a term never sees the worst frame.
 
-**And §17's local headroom is back, larger than it has ever been.** Per stop the surface could take 1.72× at Homonoia beat 2 and 596× at Enargeia beat 3. §18 spent that gap by descending; an opaque surface re-opens it, because one exposure has to serve the tightest text on the page while most of the page has no text over the world at all. The hero and the lowest stop are dark landforms that could be three to a hundred times brighter without touching a contrast ratio. The mechanism — an exposure that varies with scroll — is still the one §17 named and is still unbuilt.
+**And §17's local headroom is back, larger than it has ever been.** Per stop the surface could take 1.72× at Homonoia beat 2 and 596× at Enargeia beat 3. §18 spent that gap by descending; an opaque surface re-opens it, because one exposure has to serve the tightest text on the page while most of the page has no text over the world at all. The hero and the lowest stop are dark landforms that could be three to a hundred times brighter without touching a contrast ratio.
+
+**§20: exposure is a channel on the camera pose.** The mechanism §17 named is built, and it is not a new one. `camera.ts` already evaluates altitude, pitch and distance from scroll position with a smoothstep between keyframes; exposure is one more number interpolated along the same curve, so there is no second authority for where on the page the reader is. The values are measured rather than chosen: the harness computes a headroom per stop and each keyframe takes **0.85 of its own stop's ceiling** rather than the minimum over all of them.
+
+Built and measured: **0.700 at the hero and at Enargeia, 0.215 at Homonoia, 0.195 at Philoi, 0.700 at Basis, 0.290 at the bottom, 0.180 at about** — a range of 3.8× where §19 shipped 0.185 everywhere. Ten of the fourteen stops are solved from a measurement; the other four have no ground behind any of their text at all and are capped by taste at 0.70.
+
+**The margin was not enough on its own, and the path is where it showed.** A first solve cleared all fourteen stops and then failed *between* two of them, at 4.34:1 on a 10px `--dim` label. The midpoints are constraints now. Verify the interpolated path, not the keyframes — this section means it literally.
+
+**And a stop whose landscape moves at random cannot be bounded by a timed sample.** Homonoia's term ends every 3.4s and the next leader is drawn from the four that are not the incumbent, so the worst frame is the worst over five massif placements and the tweens between them. Two runs of the same length disagreed by 1.7× on that stop's ceiling, and one of them passed a stop the other failed. Force the sequence — each leader, each transition — and take the worst over all of it.
+
+The failure mode to watch for is a brightness that visibly pumps under a slow scroll. Measured every 100px with the document peeled: the exposure varies ×3.78 and the frame's own mean varies **×1.74**, at most ×1.12 per 100px, because the exposure is largely cancelling the distance rather than adding a variation of its own. A Homonoia election at a standstill moves the frame ×1.05. If a pump ever does appear, the fix is fewer keyframes with wider spacing, not a faster tween.
 
 #### Performance
 
@@ -514,6 +534,8 @@ Measure `renderer.info` with `autoReset = false` (§15 trap), and report millise
 §18: **2.71ms** at 1512×804, and the same 2.71ms at DPR 1.5, which is the vertex bound saying so again. 428k quads now; the stars are 0.07ms of the total and the fog is the rest.
 
 §19: **2.00ms** at 1512×804 and **6 draw calls**. The surface is cheaper than the 150,000 points it replaced. It is also the first layer here that is *fill* bound rather than vertex bound: at DPR 1.5 the frame goes to 2.38ms and the surface alone from 0.470 to 0.945, while the field moves 0.810 → 0.930 and the mist 0.715 → 0.745. The DPR cap in the constraints below is doing more work than it was.
+
+§20: **2.26ms** at DPR 1 and **2.77ms** at DPR 1.5, still 6 draw calls and the same geometry — the exposure is a uniform and the shape constants are folded into the shader, so nothing here was bought with frame time. The surface is 0.73ms of it and still the layer the DPR cap is protecting.
 
 #### Constraints
 
@@ -630,6 +652,8 @@ Hard limits. Check before launch, not after.
 
 **It blew at §15, and what gave was the renderer's WebGL 2 fallback** — not the laptop, and never the accessibility work. Three tiers did not fit in 260KB and two do, so a browser without WebGPU gets the document, which is the whole site. Measured: mobile 54.6 KiB, desktop 249.5 KiB.
 
+**§20 spent nothing:** mobile 55.2 KiB, desktop 254.8 KiB, 0.1 KiB under §19 — a fourth number on a pose and three constants.
+
 **It bound again at §19, and what gave was the mesh material.** A lit surface needs a lighting model in the bundle, and `MeshStandardNodeMaterial` is 4.42 KiB of one against `MeshPhongNodeMaterial`'s 0.86. Nothing in this world is shiny, so the difference on screen is a GGX sheen worth 4% of the mean frame; the difference in the bundle is between 1.5 KiB spare and 5.1 KiB. Measured after: mobile 55.3 KiB, desktop 254.9 KiB.
 
 ---
@@ -644,7 +668,7 @@ with it.
 ## 8. Open decisions
 
 - **Display typeface.** Archivo is shipped and self-hosted (§5), picked for having a real `wdth` axis. It was never set against Anybody or Roboto Flex at 180px the way this line asked — open only in the sense that it was decided by elimination rather than by looking.
-- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 20, with the thing on screen.
+- **The laptop's idle motion.** §4.4 was written when the laptop drifted in front of a flat field and the hero's ScrollTrigger drove it. It is landmark one standing on terrain now, and the camera already carries its own pointer parallax (§4.7) — a per-object idle float and a second pointer rotation on top may double up, or may be exactly the life the object needs. Decide it in step 21, with the thing on screen.
 
 ---
 

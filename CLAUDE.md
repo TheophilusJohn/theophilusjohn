@@ -18,7 +18,7 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
   Additive. Never the only way to reach anything.
 
 Build order is strict: document mode is finished and shipped before world
-mode begins. Steps 1–14, then 15–25. See `docs/STEPS.md`.
+mode begins. Steps 1–14, then 15–26. See `docs/STEPS.md`.
 
 ---
 
@@ -280,6 +280,36 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   peak rises toward the node that earned it, so the light ends up 2.6 units
   off its own summit and 40 off the rim. At an inverse square that is 64×
   across one frame and no single exposure serves it.
+- A scene whose landscape moves on a **random** schedule cannot be bounded
+  by a timed sample. Homonoia's term ends every 3.4s and the next leader is
+  drawn from the four that are not the incumbent, so the worst frame is the
+  worst over five massif placements and the tweens between them: two runs
+  of the same length disagreed by 1.7× on one stop's ceiling, and one
+  passed a stop the other failed at 4.22:1. More frames is not the fix —
+  force the sequence, hold each leader, walk each transition, take the
+  worst of all of it.
+- An exposure that is measured at the stops is not measured on the path.
+  A solve that cleared all fourteen camera stops failed **between** two of
+  them at 4.34:1, because the binding element changes with the beat and a
+  midpoint inherits neither end's. Constrain the midpoints too; a margin
+  on the keyframes does not cover it.
+- A lit surface's contribution is **not** proportional to its exposure.
+  Fog mixes it toward `--void`, so the pixel is `void + fog·(lit·g − void)`
+  and doubling `g` does not double the contribution over the page. Fit the
+  line through two measured exposures rather than scaling one.
+- The same mix means a lit surface can be *darker* than the page: at
+  `--void-lift` base colour, any irradiance under ~0.6 puts it below
+  `--void`, so a mean-brightness probe over the ground reports a negative
+  contribution and is right to.
+- Narrowing a ridge cannot lower a saddle. `τ` is a perpendicular falloff
+  and a ridge lies *on* the segment between two summits, so thinning it
+  leaves the height between them exactly where it was — the ridge's own
+  amplitude is the only knob for that. Tell: every adjacent route's deepest
+  point measures *above* the lower of its two summits.
+- "Does the composition work" has an instrument: the angle between the view
+  axis and the ground under the subject. At 11–18° below the axis a
+  landform is in the bottom third of the frame and cropped by the fold,
+  whatever the altitude says. Standing further back closes it.
 
 ---
 
@@ -288,12 +318,12 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 Check before claiming a step is done.
 
 - Homepage JS, mobile: **under 120KB gzipped** (no Three below 768px).
-  Measured at §19: 55.3 KiB
-- Homepage JS, desktop: **under 260KB gzipped**. Measured at §19: 254.9 KiB,
-  5.1 KiB spare, and it binds — it is why the WebGL 2 tier does not ship and
+  Measured at §20: 55.2 KiB
+- Homepage JS, desktop: **under 260KB gzipped**. Measured at §20: 254.8 KiB,
+  5.2 KiB spare, and it binds — it is why the WebGL 2 tier does not ship and
   why the terrain is a Phong material rather than a standard one
-- LCP under 2.5s on throttled 4G. Measured at §18: 116ms desktop, 100ms mobile
-- Under 100 draw calls. Measured at §19: 6
+- LCP under 2.5s on throttled 4G. Measured at §20: 104ms desktop, 72ms mobile
+- Under 100 draw calls. Measured at §20: 6, at 2.26ms/frame
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
 

@@ -24,7 +24,7 @@
 import { PerspectiveCamera } from 'three/webgpu';
 import { motionOff } from '../motion';
 import { ranges } from '../projects';
-import { keyframes, poseAt, type Key } from './curve';
+import { HERO, keyframes, poseAt, type Key } from './curve';
 
 const DEG = Math.PI / 180;
 
@@ -52,9 +52,16 @@ export function buildCamera(aspect: number) {
 
   let at = 0;
   let px = 0, py = 0, tx = 0, ty = 0;
+  /* The pose's fourth channel (§20). It is not a property of the camera
+     object, so it is read back rather than written to one — and it is read
+     from the same evaluation the position came from, so the exposure a
+     frame is lit at is the exposure of the pose that frame was rendered
+     from and cannot lag it by a frame. */
+  let exposure = HERO.exposure;
 
   function apply() {
     const pose = poseAt(keys, at);
+    exposure = pose.exposure;
     camera.position.set(0, pose.alt, pose.dist);
     // YXZ, so the yaw is around world up and the tilt is around the
     // camera's own right — the order a look-down camera needs, and the
@@ -106,5 +113,5 @@ export function buildCamera(aspect: number) {
 
   remeasure();
 
-  return { camera, update, snap, remeasure };
+  return { camera, update, snap, remeasure, exposure: () => exposure };
 }

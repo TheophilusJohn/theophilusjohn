@@ -461,6 +461,11 @@ export async function mount() {
   const draw = () => {
     // The mist is a disc carried with the camera and the arc is its edge.
     terrain.follow(camera);
+    // §20. Exposure is the pose's fourth channel, so it arrives from the
+    // curve with the position rather than from anything here — and it is
+    // read after view.update/snap has run, so a frozen frame and a moving
+    // one are lit by the same number.
+    terrain.expose(view.exposure());
     renderer!.render(scene, camera);
   };
 

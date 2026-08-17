@@ -76,16 +76,34 @@ import gsap from 'gsap';
 import { fog } from './fog';
 
 /* ── Shape ───────────────────────────────────────────────────────────────
-   World units, and all of them are relative to the cluster: the pentagon
-   is about 5 units in radius and 5.3 to a side, so a peak two thirds of
-   that across merges with its neighbours into a massif rather than
-   standing as five separate cones. The summit at a full share of the
-   traffic stops just under the cluster's own altitude — the mountain grows
-   toward the node that earned it and never through it. */
+   World units, and all of them are relative to the cluster. The summit at
+   a full share of the traffic stops just under the cluster's own altitude
+   — the mountain grows toward the node that earned it and never through
+   it.
+
+   **Re-tuned at §20, which is the first time anyone could see it.** These
+   were set at §16 against a floor made of points and never verified,
+   because for three steps nothing on screen could resolve a summit from a
+   ridge. On a lit surface σ 3.4 and RIDGE 8 turned out to be a plateau
+   rather than a cluster: at half the 5.3-unit spacing two peaks still
+   contributed 0.55 of each other, and a route carried a ridge as tall as
+   the nodes it joined, so the five stood in one continuous rim with no
+   saddle anywhere on it — measured, the deepest point of every adjacent
+   route was *above* the lower of its two summits.
+
+   σ 2.0 puts that overlap at 0.17 and TAU 0.9 makes a route a line rather
+   than a wall. RIDGE is the third number and the reason it had to move is
+   that τ cannot fix it: a ridge lies exactly on the segment between two
+   summits, so narrowing it thins the ridge without lowering the saddle.
+
+   What does not separate, and it is the cluster's geometry rather than
+   these constants: nodes 3 and 4 stand **2.84 units apart** in xz where
+   the other four sides run 4.6 to 6.5, so they read as one twin summit at
+   any σ wide enough to be a hill. */
 const PEAK = 8.0;    // summit height at a full share of the traffic
-const SIGMA = 3.4;   // peak radius, 1/e
-const RIDGE = 8.0;   // ridge height per unit of route share
-const TAU = 1.3;     // ridge half-width, 1/e
+const SIGMA = 2.0;   // peak radius, 1/e
+const RIDGE = 5.0;   // ridge height per unit of route share
+const TAU = 0.9;     // ridge half-width, 1/e
 
 /* The disc of ground carried with the camera, and where the horizon sits.
    Measured rather than chosen at §16, when the disc was points and the
@@ -266,22 +284,38 @@ type Palette = {
   contrast: UniformNode<'float', number>;
 };
 
-/* How bright the surface is allowed to be, and the one knob the §19 solve
-   moves. A lit opaque surface is a different luminance profile from
-   additive points — it does not accumulate, and its maximum is wherever the
-   leader light hits a slope face-on — so §18's figures do not scale and
-   this was measured from scratch against the same local bound (§4.7). It
-   multiplies the shaded result, so the ratio between key and fill and the
-   falloff are all preserved by it; only the exposure moves.
+/* How bright the surface is allowed to be. It multiplies the shaded result,
+   so the ratio between key and fill and the falloff are all preserved by
+   it; only the exposure moves.
 
-   The binding case is the one §4.7 predicted: a lit slope directly behind a
-   --muted 20px summary at Homonoia's beat 2. It is worth knowing *why* that
-   is the worst frame and not a fixed property of the layout — Homonoia's
-   term ends every 3.4s, so the massif walks under that column and back out
-   of it, and a measurement that samples less than a term does not see it.
-   The harness takes the worst of sixteen frames over 4.8s for that reason. */
-const GAIN = 0.185;
-const uGain = uniform(GAIN);
+   **§20 made it a channel on the camera pose.** §19 solved one number for
+   the whole page and measured what that cost: the tightest text anywhere —
+   a 10px --dim metric label at Homonoia's beat 2 — set a ceiling every
+   other stop then inherited, and Enargeia's beat 3 could have taken 596x of
+   it. The values live in curve.ts with the altitude and the pitch, because
+   the reader's position on the page already has exactly one authority and
+   an exposure that varied on its own would be a second one. This uniform is
+   written once per frame from that curve; `contrast` is the only thing this
+   file still multiplies into it.
+
+   It is worth knowing why Homonoia binds and that it is not a fixed
+   property of the layout: the term ends every 3.4s and the next leader is
+   drawn at random, so the massif walks under that column and out of it
+   again and the worst frame is the worst over five placements. §20 found
+   that no timed sample bounds that — two runs of the same length disagreed
+   by 1.7x — so the number below comes from forcing the sequence, each
+   leader held and each transition walked. */
+const uGain = uniform(0.185);
+let exposure = 0.185;
+let contrastScale = 1;
+
+/* Interpolation between keyframes is convex, so no scroll position can be
+   brighter than the brightest keyframe and there is nothing here to clamp.
+   What the path still has to be checked for is the other direction — a
+   position between two keyframes that both clear their own ceiling can
+   exceed the ceiling *there*, because the binding element changes with the
+   beat. That is a measurement, not an assertion, and it is in the report. */
+const applyGain = () => { uGain.value = exposure * contrastScale; };
 const uVoid = uniform(new Color());
 const uBase = uniform(new Color());
 
@@ -578,12 +612,21 @@ export function buildTerrain(nodes: Vector3[], palette: Palette) {
     // High contrast has to move the busiest frame down and only down, and
     // the tokens themselves get *brighter* when it is on (§16) — --rule
     // 2.6x, --leader with it. The exposure carries both.
-    uGain.value = GAIN * contrast;
+    contrastScale = contrast;
+    applyGain();
+  }
+
+  /* The curve's fourth channel, arriving once a frame (§20). Held here
+     rather than written straight to the uniform, so the contrast toggle can
+     re-apply it without knowing where on the page the reader is. */
+  function expose(value: number) {
+    exposure = value;
+    applyGain();
   }
 
   return {
     terrain, mist, horizon, lights: [key, fill] as const,
-    follow, retarget, paint,
+    follow, retarget, paint, expose,
     count, radius: RADIUS,
   };
 }
