@@ -26,8 +26,9 @@ const DEG = Math.PI / 180;
 /* Wider than the 50° the fixed curve used. That number was chosen to hold a
    ten-unit cluster in frame from a fixed distance; a camera that goes where
    it likes wants peripheral vision instead, and 60° is the usual answer for
-   a flight view. §23 may want it back once there is a horizon to compose
-   against. */
+   a flight view. §23 left it there: with a horizon band and a cloud deck to
+   compose against, 60° is what puts a range and the sky over it in the same
+   frame. */
 const FOV = 60;
 
 /* The far plane is past the star sphere, which is past the last chunk of

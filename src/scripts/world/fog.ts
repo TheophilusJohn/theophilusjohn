@@ -35,14 +35,35 @@
    stays lit under a high camera and the far ground still goes.
 
    Stars are exempt. They are at effective infinity and behind the fog by
-   construction; running this on them would delete the sky. */
+   construction; running this on them would delete the sky.
+
+   **§23 adds the height term, and it only ever adds.** §0.2 asks for fog in
+   the valleys so distance reads even in flat light, and the tempting way to
+   write that is a density that *falls* with altitude — which quietly
+   un-fogs the far ground, and the far ground is the only thing hiding the
+   edge of the world. At 1,536 units the last chunk stops; the tuning above
+   puts it at 0.005 of its light and it cannot be lifted without the ground
+   visibly ending. So the peaks keep exactly the fade they had and the low
+   ground gets more, which is the same picture from the other side and
+   leaves the horizon where §22 measured it.
+
+   Referenced to FLOOR rather than to zero: the field's mean is 15.6 and its
+   valley floors run to −22, so 20 is the height above which ground is
+   standing out of the layer rather than lying in it. */
 
 import { cameraPosition, exp, vec3 } from 'three/tsl';
 
-export const FOG = 0.0015;
+export const FOG = 0.0011;
 export const LAYER = 0.35;
+
+const FLOOR = 20;
+const VALLEY = 60;
+const EXTRA = 0.35;
+const DEEPEST = 2.5;
 
 export const fog = (world: any) => {
   const d = world.sub(cameraPosition);
-  return exp(vec3(d.x, d.y.mul(LAYER), d.z).length().mul(FOG).pow(2).negate());
+  const dist = vec3(d.x, d.y.mul(LAYER), d.z).length();
+  const thick = exp(world.y.sub(FLOOR).div(VALLEY).negate()).clamp(0, DEEPEST).mul(EXTRA).add(1);
+  return exp(dist.mul(FOG).mul(thick).pow(2).negate());
 };

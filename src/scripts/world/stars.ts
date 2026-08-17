@@ -1,4 +1,4 @@
-/* §4.7 / §18 — the sky.
+/* §4.7 / §18 — the stars. The rest of the sky is `sky.ts` (§23).
 
    Stars are the only thing in this world that does not mean anything, and
    that is deliberate: everything else is a measurement, and a world where
@@ -29,7 +29,7 @@ import {
   vec3,
 } from 'three/tsl';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
-import type { Color } from 'three/webgpu';
+import type { Palette } from './palette';
 
 /* Inside the far plane, and **beyond every chunk of ground** — §22 moved it
    from 200, where it sat while the world was empty. Stars are transparent
@@ -39,20 +39,15 @@ import type { Color } from 'three/webgpu';
    it should have been measuring all along. */
 const SPHERE = 2500;
 
-/* Where the sky starts, and **§21 had to change what that means.** It was
-   the angle the horizon arc was drawn at — a function of camera altitude,
-   because the ground was a disc of a known radius carried with the camera,
-   so what lay past its edge was sky by construction and the two met with
-   no band of nothing between them.
-
-   There is no ground and no arc now (§0.5), so there is no measured angle
-   to fade from and nothing below the horizon at all. Level is the honest
-   answer in the meantime: stars in the upper half (§0.2), fading in over a
-   tenth of a unit rather than cut, because a hard edge on a starfield is a
-   line and this is supposed to be the absence of one. §23 replaces the
-   whole of it with a sky gradient that has a horizon in it. */
+/* Where the sky starts. §18 took this from the angle the horizon arc was
+   drawn at, §21 had nothing to take it from at all and left it at level,
+   and §23 gives it the thing it was always standing in for: there is a
+   horizon band in `sky.ts` now, and this is the height at which the stars
+   come out of it. FADE is deliberately wider than the band's own span —
+   stars *inside* a lit horizon are a pinboard behind a glow, and the last
+   of them should appear a little above it rather than at its edge. */
 const DIP = -0.1;
-const FADE = 0.09;
+const FADE = 0.2;
 
 /* Per-star, not total ink (§15's convention, and the one place it does not
    apply). Halving the count on a small viewport has to mean fewer stars
@@ -75,8 +70,9 @@ const FADE = 0.09;
    **All of which is now a record of a constraint that has gone (§21).**
    There is no text over the world any more — it lives in a panel (§0.4) —
    so the ceiling this number was solved under does not apply to it. Left
-   exactly where §18 put it, because §23 replaces the sky wholesale and
-   re-solving a value against nothing, twice, is worse than carrying it. */
+   exactly where §18 put it through §23, which put a lit gradient under the
+   stars rather than changing what a star is: the sky, the ground and this
+   are three separate measurements and §30 re-solves all three together. */
 const ALPHA = 0.30;
 
 /* **The contrast multiplier is gone (§21).** It was a legibility measure:
@@ -87,11 +83,6 @@ const ALPHA = 0.30;
    still does here is what it does everywhere — it moves the tokens, and
    both of these are read from the tokens on every change. §30 decides
    whether a world needs more than that. */
-type Palette = {
-  paper: UniformNode<'color', Color>;
-  lead: UniformNode<'color', Color>;
-};
-
 export function buildStars(palette: Palette, time: UniformNode<'float', number>) {
   // One tier (§0.1): the world does not load below 1024px at all, so the
   // halved count §18 carried for the 768-1024 band has nothing to serve.
@@ -147,8 +138,9 @@ export function buildStars(palette: Palette, time: UniformNode<'float', number>)
   // Same as the field and the ground (§15): the bounding sphere an
   // instanced sprite computes is the unit quad at the origin.
   stars.frustumCulled = false;
-  // Behind everything. Nothing in this world writes depth, so the order is
-  // the only thing saying the sky is at the back.
+  /* Transparent, so they are drawn after both opaque layers whatever this
+     says — and they depth-test against both, which is what puts a star
+     behind a mountain (§22) and in front of the dome at 2,550 (§23). */
   stars.renderOrder = 0;
 
   return { stars, count };

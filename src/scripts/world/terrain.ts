@@ -29,11 +29,12 @@
    opening pose: 160 chunks alive, 154 of them the current leaf set, 43
    actually drawn.
 
-   ── What is deliberately not here ──────────────────────────────────────
-   §23 replaces the material outright with banded light, a rim in --leader
-   and a sky that has a horizon in it. What is below is a two-stop ramp and
-   a fog mix — enough to read the shape of the ground, which is what §22 has
-   to be judged on, and not a look. §24 owns the altitude clamp, which will
+   ── The light, since §23 ───────────────────────────────────────────────
+   §22 left a two-stop ramp here as a stand-in — enough to read the shape of
+   the ground and not a look. What replaces it is the whole of §0.2's
+   shading model: three bands with a hard terminator, a rim in --leader, a
+   shadow the worker marched against the field, and a fog that arrives at
+   the sky rather than at --void. §24 owns the altitude clamp, which will
    read `height()` on the main thread exactly as the LOD criterion below
    already does. */
 
@@ -46,14 +47,15 @@ import {
   Sphere,
   Vector3,
   type Camera,
-  type Color,
 } from 'three/webgpu';
-import { mix, normalWorld, positionWorld, vec3 } from 'three/tsl';
-import type UniformNode from 'three/src/nodes/core/UniformNode.js';
+import { attribute, cameraPosition, float, fwidth, mix, normalWorld, positionWorld, smoothstep, vec3 } from 'three/tsl';
 import { fog } from './fog';
 import { height } from './height';
 import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
 import type { ChunkData } from './chunk';
+import type { Palette } from './palette';
+import { gradient } from './sky';
+import { SUN } from './sun';
 
 /* ── The LOD, in five numbers ───────────────────────────────────────────
    Chunk sizes are 96, 192, 384 and 768 units, each with SEG quads a side,
@@ -86,24 +88,70 @@ const SKIRT_MAX = 24;
    where the camera is heading. */
 const RETIRE = 4000;
 
-/* One key light, and §0.2 is explicit that it matters more than any light
-   in the project so far because it is the thing that will make the bands at
-   §23. Low and off to one side so ridges catch it along their length; from
-   behind the camera's opening heading, so the first thing anybody sees is
-   lit rather than in silhouette. */
-const SUN = new Vector3(-0.62, 0.24, 0.75).normalize();
+/* ── The bands ──────────────────────────────────────────────────────────
+   §0.2: "a slope lit at 0.6 and one lit at 0.45 land in the same band, so
+   terrain reads as broad shapes with hard edges rather than as gradients."
+   Two edges, three bands: --rule below TERMINATOR, --dim between, --paper
+   above LIT. **Both are above flat ground**, which is the placement three
+   others were measured against. At the sun's 32° a level surface is at
+   `N·L` 0.52, so open country is --rule and it takes 14° of tilt toward the
+   light to reach --dim and 38° to reach --paper: the landscape is night,
+   and what the light finds is the slopes that face it. An edge *at* 0.52
+   turns the detail layer into two-tone camouflage, and putting flat ground
+   in the middle band instead paints the whole foreground --dim and leaves
+   no relief in it at all.
 
-/* Where --dim sits on the ramp. High, because most of a landscape is not
-   facing the key light and the half of the range below this is where nearly
-   all of the frame lives. */
-const MID = 0.62;
+   Nothing here is smoothstepped over a fixed width. The edges are one
+   *pixel* wide, taken from `fwidth` of the lighting term, which is the only
+   way a hard edge stays hard at the far ridge and stays un-aliased at the
+   near one: a fixed width in lighting units is a fat gradient on a slope
+   facing the camera and a stair-stepped line on one at a grazing angle. */
+const TERMINATOR = 0.64;
+const LIT = 0.90;
+const EDGE = 0.8;
+const RAMP = 0.30;
 
-export type TerrainPalette = {
-  shadow: UniformNode<'color', Color>;
-  mid: UniformNode<'color', Color>;
-  lit: UniformNode<'color', Color>;
-  void: UniformNode<'color', Color>;
-};
+/* A quarter-band under the terminator for ground the marched shadow says is
+   occluded, so a shadowed slope that would have been lit is not merely the
+   same colour as one that faces away — it is darker than either. --void is
+   the floor of the world and the shadow band leans toward it. */
+const CAST = 0.45;
+
+/* ── The rim ────────────────────────────────────────────────────────────
+   §0.2 calls this the single most important part of the look, and it is the
+   part that is not a lighting model: a rim in --leader on every crest, so a
+   banded landscape is a set of shapes with edges rather than a set of flat
+   regions. Two terms multiplied.
+
+   **Grazing**, because a crest seen from anywhere is a surface turning away
+   from the eye — the fresnel term is what finds ridgelines without knowing
+   where they are. RIM_IN is 0.60, which is 53° off square, so it is an
+   edge rather than a sheen on every slope.
+
+   **Backlit**, because a rim is light coming past the far side. It peaks at
+   the terminator and fades into the lit band, which is what puts the line
+   exactly where the shape turns over rather than everywhere it is dark. */
+const RIM_IN = 0.60;
+const RIM_OUT = 0.96;
+const RIM_BACK = 0.64;
+const RIM = 0.85;
+
+/* What the rim keeps through fog. A rim that fogs like the surface it is on
+   is gone by 600 units and §0.2 asks for ridgelines legible *at distance*,
+   which is the one thing this whole term exists for; a rim that ignores fog
+   is a violet horizon of floating lines. A third of it survives, so a range
+   at 900 units still has its top edge drawn. */
+const RIM_FLOOR = 0.34;
+
+/* How much of the sky the ground fades into. Not all of it: a range at
+   twelve hundred units is *darker* than the sky behind it, on any night
+   anybody has stood outside on, and fading the ground the whole way to the
+   horizon band takes the last two ranges of depth out of the frame — it
+   was measured as a violet wash with a rim light in it. At 0.75 the far
+   ground still arrives at the sky's own colour rather than at --void (§22's
+   bug), and the horizon is a soft dark line under a lit band rather than a
+   hard one under nothing. */
+const HAZE = 0.75;
 
 type Chunk = {
   key: string;
@@ -118,27 +166,63 @@ type Chunk = {
 
 const keyOf = (level: number, ix: number, iz: number) => `${level}:${ix}:${iz}`;
 
-export function buildTerrain(palette: TerrainPalette) {
+export function buildTerrain(palette: Palette) {
   const group = new Group();
   const indices = buildIndices();
 
   const material = new MeshBasicNodeMaterial();
-  /* Lit by hand rather than through a lighting model. BasicNodeLibrary
-     registers no mesh node materials (§21), and a two-stop ramp needs
-     nothing a light node would give it. §23 is where that stops being
-     true. */
-  const key = normalWorld.dot(vec3(SUN.x, SUN.y, SUN.z)).max(0);
-  const sky = normalWorld.y.mul(0.5).add(0.5);
-  const lum = key.mul(1.15).add(sky.mul(0.05)).clamp(0, 1).pow(1.9);
+
+  /* Lit by hand rather than through a lighting model, and at §23 that is
+     no longer only a bundle argument. A quantised N·L with a baked cast
+     shadow is not something a light node computes and then gets banded —
+     the banding *is* the model, and every term below feeds the same scalar
+     that the two edges cut. BasicNodeLibrary stays (§21). */
+  const sun = vec3(SUN.x, SUN.y, SUN.z);
+  const facing = normalWorld.dot(sun);
+  const cast = attribute<'float'>('shadow', 'float');
+  const lum = facing.max(0).mul(mix(float(1).sub(CAST), 1, cast));
+
+  /* One pixel of edge, wherever the edge lands. */
+  const edge = fwidth(lum).mul(EDGE).max(0.001);
+  const step = (at: number) => smoothstep(float(at).sub(edge), float(at).add(edge), lum);
+  /* Each band leans a little toward the next one across its own width.
+     Bands alone make every region of open country a single flat fill, and a
+     foreground that is one colour is not reading as a broad shape — it is
+     not reading at all. RAMP is how far into the next token a band gets by
+     its own top edge: at 0.25 the terraces keep three quarters of their
+     step and the ground inside one has a gradient across it.
+
+     Confined to the band on purpose. The first attempt mixed the whole
+     smooth ramp back in under the bands, and because flat ground sits high
+     inside the shadow band that pulled the entire foreground most of the
+     way to --dim — the flat lavender wash the band placement above exists
+     to avoid. */
+  const inside = (from: number, to: number) => smoothstep(from, to, lum).mul(RAMP);
   const surface = mix(
-    mix(palette.shadow, palette.mid, lum.div(MID).clamp(0, 1)),
-    palette.lit,
-    lum.sub(MID).div(1 - MID).clamp(0, 1),
+    mix(
+      mix(palette.rule, palette.dim, inside(0, TERMINATOR)),
+      mix(palette.dim, palette.paper, inside(TERMINATOR, LIT)),
+      step(TERMINATOR),
+    ),
+    mix(palette.paper, palette.lead, inside(LIT, 1)),
+    step(LIT),
   );
-  /* Fog on an opaque surface is a mix toward --void, not the multiply the
-     additive layers use: --void is under every pixel and the ground has to
-     arrive at it rather than at nothing. */
-  material.colorNode = mix(palette.void, surface, fog(positionWorld));
+
+  const toEye = cameraPosition.sub(positionWorld).normalize();
+  const grazing = float(1).sub(normalWorld.dot(toEye).max(0));
+  const backlit = smoothstep(RIM_BACK, 0, facing);
+  const rim = smoothstep(RIM_IN, RIM_OUT, grazing).mul(backlit).mul(RIM);
+
+  /* Fog on an opaque surface is a mix toward the sky, not the multiply the
+     additive layers use — and **not toward --void**, which is what §22 did.
+     A ridge at 1,200 units has to arrive at the colour of the sky directly
+     behind it or the horizon band the sky draws is a line the ground is cut
+     out of. Same direction the sky dome shades by, so the two agree at
+     every pixel of the join. */
+  const depth = fog(positionWorld);
+  const haze = mix(palette.void, gradient(toEye.negate(), palette), HAZE);
+  const lit = mix(haze, surface, depth);
+  material.colorNode = mix(lit, palette.lead, rim.mul(depth.max(RIM_FLOOR)));
 
   const chunks = new Map<string, Chunk>();
   const wanted = new Map<string, Chunk>();
@@ -188,6 +272,7 @@ export function buildTerrain(palette: TerrainPalette) {
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(data.position, 3));
     geometry.setAttribute('normal', new BufferAttribute(data.normal, 3));
+    geometry.setAttribute('shadow', new BufferAttribute(data.shadow, 1));
     // Its own copy — see grid.ts on why this is not one shared buffer.
     geometry.setIndex(new BufferAttribute(indices.slice(), 1));
     /* Set rather than computed. computeBoundingSphere reads the whole

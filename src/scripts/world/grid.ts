@@ -31,6 +31,18 @@ export const SEG = 48;
 
 export const VERTEX_COUNT = (SEG + 1) * (SEG + 1) + 4 * (SEG + 1);
 
+/* Quads per side of the **shadow** lattice (§23), which is coarser than the
+   vertices and interpolated onto them. It is here rather than in `chunk.ts`
+   because it is the other thing the two ends have to agree on, and because
+   the number is not free: it has to divide SEG, so every fourth vertex is a
+   lattice point, and it has to keep every level's lattice a subset of the
+   coarsest one — 96/12 = 8 units at level 0 and 64 at level 3, and a
+   level-3 point falls on a level-0 point because 8 divides 64. Two chunks
+   at different levels therefore agree about the shadow at the points they
+   share, which is as close to a seamless shading boundary as anything short
+   of stitching gets. */
+export const SHADOW_SEG = 12;
+
 export type ChunkSpec = {
   /** World coordinate of the chunk's minimum corner. */
   x: number;

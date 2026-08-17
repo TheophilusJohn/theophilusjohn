@@ -35,6 +35,13 @@ runs the generator off the main thread, and `terrain.ts` is the only part
 that knows what a mesh is. Keep it that way: a worker that reaches anything
 in three is a second copy of the renderer.
 
+**Since §23 the worker also bakes light**, and `sun.ts` is why that is
+allowed: the key light is one direction in a module that imports nothing, so
+`chunk.ts` can march shadows against it and `terrain.ts` can shade against
+it without either one importing the other. `chunk.ts` runs in Node too —
+extensionless relative imports need a resolver hook, and then the generation
+numbers are the shipped file's own output the way the field's are.
+
 ---
 
 ## Hard rules
@@ -384,6 +391,37 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - Flying "forward" is along the view axis, so a harness that holds W with
   any pitch on descends. 75s at 180 units/s and −9° is 2,100 units down, and
   the whole test then happens under the terrain without failing.
+- **A band edge finds every octave the normal has.** Quantised light on a
+  procedural heightfield is not the smooth ramp with a step in it: the
+  detail layer's 0.9-unit bump every 14 units is 23° of tilt, and 23° crosses
+  any threshold, so the ground comes back as two-tone camouflage. Shade from
+  a normal mixed toward a *landform* gradient (a coarse lattice), not from
+  the surface's own — and keep the geometry untouched, it is only the light
+  that wants the smoother question.
+- The same edge is why a sun elevation tuned under a smooth ramp does not
+  survive banding. At 13.9° flat ground is at `N·L` 0.24 of a 0–0.56 range,
+  so every edge is a few degrees from flat; the placement has to be *around*
+  flat ground, with the tilt it takes to change band written down.
+- Bilinear interpolation of any per-chunk lattice is C0 across a cell, and a
+  hard threshold over that discontinuity draws axis-aligned rectangles.
+  Smoothstep the interpolant.
+- Fog on the ground must fade toward **the sky's colour in that direction**,
+  not toward `--void` — otherwise the horizon band is a line the ground is
+  cut out of. But not the whole way: a range is darker than the sky behind
+  it, and 1.0 there is a violet wash with a rim light in it.
+- "Fog in the valleys" written as a density that *falls* with altitude
+  un-fogs the far ground, and the far ground is the only thing hiding the
+  edge of the world. Add density low; never subtract it high.
+- A sky dome is drawn over every sky pixel, so anything per-pixel in it is
+  the most expensive thing in the frame — two 4-octave fractal noises were
+  1.53ms against the whole landscape's 0.19. Branch the body of it on the
+  cheap term (`If(fade > 0)`); fragment branching pays when the branch is
+  spatially coherent, which a cloud deck is.
+- A shadow marched against the height field in the worker costs **generation
+  time, not frame time** — 0.34ms of a 1.10ms chunk, and a render delta
+  inside the noise. Two conditions on it reading as light rather than
+  speckle: march the coarse field (a floor on the sample spacing) and start
+  from the coarse surface, or every detail hollow shadows itself.
 
 ---
 
@@ -397,20 +435,26 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §22: 55.1 KiB, byte-identical to §21
+  1024px). Measured at §23: 55.3 KiB, unchanged in content since §21 — the
+  one byte that moves is the hash of the scene chunk it names
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §22: 198.9 KiB, of which the terrain worker is 1.2
+  own merits. Measured at §23: 200.9 KiB, of which the terrain worker is 1.7
+  — the whole of the cel look, the sky and the shadows was 2.0 KiB
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §22: **56** at the lowest of three
-  altitudes, at **0.302ms/frame** (§21, empty: 2 at 0.108; §20: 6 at 2.26)
+- Under 100 draw calls. Measured at §23: **57** at the lowest of three
+  altitudes, at **0.548ms/frame** — 0.98 at DPR 1.5 (§22: 56 at 0.302; §21,
+  empty: 2 at 0.108; §20: 6 at 2.26). Of a cruise frame the sky dome is
+  0.18ms and the landscape 0.19
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
-  Measured at §22 over 75s of boosted flight: 2,263 chunks, 2.25ms each in
-  the worker pool, 0.3ms worst on the main thread, **zero frames over 25ms**
+  Measured at §23 over 75s of boosted flight: 1,772 chunks, 4.51ms each in
+  the worker pool (worst 9.1), 0.2ms worst on the main thread, **zero frames
+  over 25ms**. §22 was 2.25ms a chunk; the shadow march is 31% of the
+  difference and the rest is the landform lattice
 - 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off

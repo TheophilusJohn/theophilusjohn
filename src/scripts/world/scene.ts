@@ -14,13 +14,14 @@
    loads first, and a landscape that exists to be flown over is a different
    object from one that exists to be glimpsed between paragraphs.
 
-   What is here is the renderer, the sky, a camera you can fly and — since
-   §22 — a landscape under it. The landscape is four files of its own and
-   almost none of it is in this one: `height.ts` is the field, `chunk.ts`
-   samples it, `grid.ts` is the vertex layout both ends share, `terrain.ts`
-   decides which squares of ground exist. Still ahead:
+   What is here is the renderer, a camera you can fly, and — since §22 — a
+   landscape under it with — since §23 — a sky over it and a light on it.
+   Almost none of either is in this file: `height.ts` is the field,
+   `chunk.ts` samples it and bakes what it shadows, `grid.ts` is the vertex
+   layout both ends share, `terrain.ts` decides which squares of ground
+   exist and how they band, `sky.ts` is the gradient and the cloud deck and
+   `sun.ts` is the one direction all of it agrees on. Still ahead:
 
-   - §23 makes the light bands and replaces the sky wholesale
    - §24 clamps the camera above the ground it can now see
    - §29 brings the cluster back as a thing standing in a place, and with it
      the election, which is still the one thing to get right
@@ -30,25 +31,18 @@
    is a function of the camera's own state, held in camera.ts and nowhere
    else, so nothing in this file may move the view. */
 
-import { Color, Renderer, Scene, WebGPUBackend, BasicNodeLibrary } from 'three/webgpu';
+import { Renderer, Scene, WebGPUBackend, BasicNodeLibrary } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
 import { buildCamera } from './camera';
+import { buildPalette, token } from './palette';
+import { buildSky } from './sky';
 import { buildStars } from './stars';
 import { buildTerrain } from './terrain';
 
 /* Wall clock, unscaled. There is no section speed to scale it by any more —
    the sky was already exempt from that (§18), and now everything is. */
 const uTime = uniform(0);
-
-const uLead = uniform(new Color());
-const uPaper = uniform(new Color());
-const uRule = uniform(new Color());
-const uDim = uniform(new Color());
-const uVoid = uniform(new Color());
-
-const token = (name: string) =>
-  new Color(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
 
 /* documentElement.clientWidth, not innerWidth: the canvas is fixed to the
    initial containing block, which a classic scrollbar is outside of. Sized
@@ -83,9 +77,10 @@ export async function mount() {
      answer to a settled question at 23.1KB gzipped.
 
      BasicNodeLibrary rather than the standard one: it registers the lights
-     and tone mapping operators §23 will need, and none of the mesh node
-     materials. Worth 8.0KB — and worth re-checking at §23, which is the
-     first step since §19 to want a lighting model of its own. */
+     and tone mapping operators and none of the mesh node materials. Worth
+     8.0KB, and §23 was the step that would have had to give it back — it
+     does not, because the banding *is* the lighting model and a light node
+     would only have produced the scalar the bands then cut. */
   const renderer = new Renderer(new WebGPUBackend(params), params);
   renderer.library = new BasicNodeLibrary();
   renderer.setClearColor(token('--void'), 1);
@@ -109,37 +104,26 @@ export async function mount() {
   const view = buildCamera(canvas, viewport()[0] / viewport()[1]);
   const camera = view.camera;
 
-  const sky = buildStars({ paper: uPaper, lead: uLead }, uTime);
-  scene.add(sky.stars);
-
-  /* Three tones for the ground and the colour under it. --rule is the
-     shadow side, --dim the mid, --paper the faces square to the key light;
-     §0.2 asks for the palette to carry the light rather than the light to
-     carry a palette, and this is the smooth version of the three bands §23
-     will quantise it into. */
-  const terrain = buildTerrain({ shadow: uRule, mid: uDim, lit: uPaper, void: uVoid });
-  scene.add(terrain.group);
-
   /* Every palette token is a uniform, re-read on every change, never folded
-     into the shader at build. §15 read them once at mount and a page
-     *loaded* in high contrast got a different scene from one *toggled* into
-     it — only the second path was ever tested, and the bug survived two
-     steps. The scale factor that used to ride alongside them is gone: it
-     was there to move the busiest frame down under text, and the text has
-     moved off the world (§0.4). What high contrast does to the world now is
-     what it does to everything, which is move the tokens. */
-  function repaint() {
-    uLead.value = token('--leader');
-    uPaper.value = token('--paper');
-    uRule.value = token('--rule');
-    uDim.value = token('--dim');
-    uVoid.value = token('--void');
-    renderer.setClearColor(token('--void'), 1);
-  }
-  repaint();
-  new MutationObserver(repaint).observe(document.documentElement, {
-    attributeFilter: ['data-contrast'],
-  });
+     into the shader at build — the whole of that argument is in
+     `palette.ts`, along with the reason it is one object rather than a
+     subset per layer. The clear colour is the one thing outside it: it is a
+     renderer setting rather than a node. */
+  const palette = buildPalette(() => renderer.setClearColor(token('--void'), 1));
+
+  /* Three layers and one horizon between them (§0.2). The sky carries the
+     gradient and the cloud deck, the stars sit in its upper half, and the
+     ground fades into the same gradient the sky draws — which is what
+     `terrain.ts` imports from `sky.ts` and the reason the two are built
+     against one palette. */
+  const sky = buildSky(palette, uTime);
+  scene.add(sky.mesh);
+
+  const stars = buildStars(palette, uTime);
+  scene.add(stars.stars);
+
+  const terrain = buildTerrain(palette);
+  scene.add(terrain.group);
 
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
@@ -226,5 +210,5 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky, terrain };
+  return { renderer, scene, camera, view, sky, stars, terrain };
 }

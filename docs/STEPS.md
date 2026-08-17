@@ -1507,6 +1507,135 @@ still.
 **Report:** ms/frame with and without shadows, and a short capture rather
 than a screenshot.
 
+*Done.* **The terminator sweeps, and the rim is what the step said it
+would be.** Judged in motion, on a 72-frame orbit of the massif north-west
+of the opening pose (`terminator.webp`, 4.8s): the band edge crosses the
+ridge at about frame 18, the lit faces come round to --paper by 36, and the
+crests that turn away keep a lavender line on them the whole way. Two things
+surprised me and both are below: shadows cost **nothing per frame** and 31%
+of a chunk, and the *sky* turned out to be five times the cost of the
+landscape until it was branched.
+
+**The bands, and three placements were measured before this one.** `N·L`,
+quantised at two edges into --rule, --dim and --paper, with the edge one
+*pixel* wide — `fwidth` of the lighting term rather than a fixed width in
+lighting units, which is the only way an edge stays hard on a far ridge and
+un-aliased on a near one. Both edges sit **above** flat ground: at the sun's
+elevation a level surface is at 0.52, the edges are at 0.64 and 0.90, and it
+takes 14° of tilt toward the light to change band. The three that failed are
+worth as much as the one that works — an edge *at* 0.52 turns the detail
+layer into two-tone camouflage, flat ground *inside* the middle band paints
+the whole foreground --dim with no relief in it, and bands with no ramp at
+all make every stretch of open country a single flat fill. Each band now
+leans a quarter of the way toward the next across its own width, which is
+the smallest thing that puts the modelling back without softening an edge.
+
+**The sun went from 13.9° to 32°, and that is the step's least obvious
+change.** §22 set it low for the shadows, and under a smooth ramp a low sun
+is only ever flattering. Band the light and it stops working: at 13.9° flat
+ground is at 0.24 and the whole range gentle terrain can reach is 0 to 0.56,
+so *every* threshold is within a few degrees of flat and the ground changes
+band on the detail layer. The cost is shadows 1.6× the height of what casts
+them rather than 4×.
+
+**The shading normal is not the surface's own, and that is the other half of
+the same problem.** A hard threshold finds whatever the normal can wobble
+across, and the detail layer puts a 0.9-unit bump every 14 units — 23° of
+tilt. So the normal is differenced over two samples rather than one (8% more
+of the sampling loop) and then mixed a third of the way into a **landform
+gradient** taken off the coarse lattice the shadow march was already
+sampling. The geometry keeps every octave it had; only the light is asked a
+smoother question. One more thing had to change with it: a bilinear patch is
+C0 across a cell, and a hard band edge drawn over that discontinuity comes
+back as axis-aligned rectangles a few units across. Easing the interpolant
+fixes it in two lines.
+
+**Rim light, in --leader, on every crest.** Grazing × backlit: a fresnel
+term finds ridgelines without knowing where they are, and a gate on `N·L`
+puts the line where the shape turns over rather than everywhere it is dark.
+It keeps a third of itself through fog on purpose — §0.2 asks for ridgelines
+legible *at distance*, and a rim that fogs like the surface it sits on is
+gone by 600 units. Looking into the light from 1,600 units out, four ranges
+of silhouette are drawn by nothing but this.
+
+**Shadows hold, and they are not a shadow map.** The key light does not
+move, so occlusion is a property of the field and the field is already in
+the worker: march toward the sun, 14 geometric steps from 10 units out to
+743, and stop when the ray clears the highest ground the field can produce.
+Two decisions make it read. It marches the **landform** — a floor of 16
+units on the sample spacing — because a 7-unit bump under a low light throws
+a 30-unit shadow and a landscape where every pebble does that is speckled,
+not lit; and it starts from the *coarse* surface, or every detail hollow
+shadows itself. Sampled on a 13×13 lattice per chunk whose points are a
+subset of the coarsest level's, so two levels agree where they meet, and
+interpolated onto the vertices as one float attribute.
+
+**Cost, and it is the answer to the report's own question.** ms/frame with
+shadows **0.548 / 0.478 / 0.452** at the three altitudes (DPR 1, 1512×804,
+240 renders between two `queue.onSubmittedWorkDone()` after a warm batch of
+60); without them **0.518 / 0.472 / 0.454**. That is inside the run-to-run
+noise: a baked attribute costs a fetch and a `mix`. What shadows actually
+cost is **generation** — in Node, on the shipped `.ts`, a chunk is **1.10ms
+and the march is 0.34 of it**, 31%, against 0.04ms for the lattice it shares
+with the landform normal. §22's chunk was about half this.
+
+**The sky was the expensive thing, and branching it was worth 5×.** The
+cloud deck is a ray–plane intersection per pixel — no geometry, real
+parallax, and it recedes to a line at the horizon because that is what a
+plane does — but the dome covers every sky pixel in the frame, and at
+altitude that is most of them. Two four-octave fractal noises came to
+**1.53ms** with the ground hidden, five times the whole landscape. Putting
+both behind `If(fade > 0)` and the lit sample behind `If(cover > 0)`, at
+three octaves, took it to **0.31ms**. Fragment branching pays when the
+branch is spatially coherent, and a cloud deck is nothing but.
+
+| at cruise, DPR 1 | ms/frame |
+|---|---|
+| everything | **0.480** |
+| ground + stars, no sky dome | 0.300 |
+| sky dome + stars, no ground | 0.286 |
+| empty (clear + blit) | 0.106 |
+
+**Draw calls 57 / 44 / 23** at 70, 190 and 520 units of altitude, 769k /
+679k / 379k triangles allocated. At DPR 1.5 the frame is 0.98 / 0.95 /
+0.96ms. Against a budget of 100 calls and a 60fps frame of 16.6ms.
+
+**No hitch, still.** 75 seconds held at boost, level: 4,500 frames, median
+gap **16.7ms**, p99 18.1, max **18.9**, and **zero over 25ms**, with
+`document.hidden` checked false. 1,772 new chunks in 7,996ms of worker time
+(4.51ms mean, worst 9.1) — 3.6% of a three-worker pool — and the main
+thread's share of them was 58.2ms in total, **worst 0.2ms in any one
+frame**. Holes: zero at 70 of 75 one-second samples, worst 2 of ~140.
+
+**Fog is two changes and one of them is a §22 bug.** The ground now fades
+into **the sky's own colour in that direction** rather than into --void: a
+ridge at 1,200 units arriving at the zenith colour is a horizon band the
+ground is cut out of. Not all the way, though — 0.75 of it, because a range
+is *darker* than the sky behind it on any night anybody has stood outside
+on, and fading the whole way took the last two ranges of depth out of the
+frame and left a violet wash with a rim light in it. The height term only
+ever **adds**: the tempting way to write "fog in the valleys" is a density
+that falls with altitude, and that quietly un-fogs the far ground, which is
+the only thing hiding the edge of the world at 1,536 units.
+
+**Bundles.** The world chunk **203,197 → 204,022** and the worker **1,265 →
+1,694**, so a world load is **205,716 gzipped (200.9 KiB)** of a 400 KiB
+budget — 2,016 bytes for the whole of the look. The document side is
+unchanged: `motion` 49,117, `LogBand` 569 and the CSS 2,031 are
+byte-identical, and the index script differs by one byte because the name of
+the chunk it dynamically imports has a different hash in it. All four gates
+still hold on the built site — only `?world` at ≥1024px with an adapter and
+motion on fetches the scene chunk or the worker.
+
+**Left where it is.** The DPR 1.5 cap is still in `scene.ts` and §30 still
+owns whether it stays; at 0.98ms it is affordable either way now. The star
+fade is finally taken from something real — there is a horizon band in
+`sky.ts` and the stars come out of it — but stars, sky and ground are three
+separate brightness measurements and §30 is where they are re-solved
+together. And the sun is now a shared constant in `sun.ts` (the worker bakes
+against it, the material shades against it), which is what §29 will have to
+message when the cluster's ground moves.
+
 ### 24. Movement
 Free flight as the default: pointer to look, WASD or drag to move, momentum
 and damping. Altitude clamp above the terrain — a floor, not collision. Soft
