@@ -1996,6 +1996,108 @@ level everywhere rather than as a plane per basin.
 **Report:** ms/frame and draw calls, and the fraction of a cruise frame the
 surface covers.
 
+*Done.* **The whole step is one plane and a depth test, and it costs one
+draw call, 64 triangles and nothing that can be measured in a frame.** The
+terrain is opaque and drawn first, so a disc at the water level is hidden
+everywhere the ground stands above it and drawn everywhere it does not:
+nothing on the CPU knows where a lake is, no chunk carries a water flag, and
+the shoreline is the exact intersection of two surfaces rather than a curve
+anybody had to find. There is no update from the loop — the disc is centred
+on the camera in the shader the way the sky sphere is.
+
+**The level is -8 and it is a measurement, not a taste.** Over the bounded
+world (radius 3,200, a 20-unit lattice, 80,381 samples, out of the shipped
+`height.ts` in Node):
+
+| level | water | bodies | over 200u across | largest | largest's share |
+|---|---|---|---|---|---|
+| -12 | 4.4% | 63 | 7 | 0.29 km² | 21% |
+| **-8** | **11.9%** | **128** | **12** | **0.51 km²** | **13%** |
+| -4 | 26.7% | 121 | 18 | 1.28 km² | 15% |
+| 0 | 39.9% | 55 | 9 | 3.88 km² | 30% |
+
+Lakes rather than a sea with islands in it: at -8 no single body is more
+than an eighth of the water, twelve are big enough to fly along, and dry
+islands standing inside them are 1.2% of the covered area. Mean depth is
+3.67 units and the deepest point in the world is 16.6 — which §24's
+six-unit floor is what lets the camera fly under.
+
+**The fraction of a frame it covers**, measured by differencing the frame
+against the same frame with the plane hidden: **7.9%** at the opening pose,
+6.5% from 520 units up, 8.9% standing on a shore, and 43% / 53% looking down
+a lake and flying low over one. It is *darker* than what it covers — mean
+luma 48.2 against 50.8 at the opening pose, 45.7 against 67.4 on the low
+pass — so it spends brightness budget rather than costing it (§35).
+
+**Cost, on built code, against a §25 build measured by the same harness on
+the same machine:**
+
+| altitude | 70 | 190 | 520 |
+|---|---|---|---|
+| draw calls, §25 → §26 | 53 → 54 | 41 → 42 | 21 → 22 |
+| §25, DPR 1 | 0.590 | 0.497 | 0.490 |
+| §26, DPR 1 | 0.581 | 0.501 | 0.493 |
+| the layer's own delta, DPR 1 | -0.008 | +0.002 | +0.005 |
+| the layer's own delta, DPR 1.5 | +0.003 | +0.005 | +0.011 |
+
+The delta is the same build with the plane hidden, which is the only
+like-for-like there is. **At the poses where the water is half the frame it
+is negative** — -0.024 and -0.010 at DPR 1, -0.018 and -0.009 at DPR 1.5 —
+because a plane that covers a pixel takes the sky dome's two fractal noises
+off it (§23), and that is why it is drawn after the ground and before the
+sky rather than last.
+
+**Nothing under it moved.** 75 seconds of terrain-hugging boost: 4,496
+frames against 4,489, p99 18.2 against 18.3ms, 638 chunks either way at 3.67
+against 3.54ms of generation, the same end pose to the unit and clearance
+**6.000** the whole way. The worker is byte-identical — `terrain-worker` is
+the same 2,117 bytes with the same hash — because water is not a thing the
+generator knows about.
+
+**The ripple had to be slowed and the reason is arithmetic.** Four
+directional waves summed as *slope*, each faded out over its own reach the
+way `height.ts` fades an octave; what a hard band edge sees is not the speed
+but `speed / wavelength`, and the six-unit wave at 2.3 units/s was 0.38 Hz
+against the longest wave's 0.03. Held between 0.03 and 0.07 Hz, with the
+camera still and the clock stepped one frame at a time, the worst 12×12
+block of the surface moves **2.3 levels of luma a frame against 10.8**
+before — and the cloud deck, the only other thing in the frame that moves on
+its own, is 1.2. Pixels moving more than eight levels: 0.003%, which is
+exactly the control. Still, mostly.
+
+**The glance is where the arithmetic puts it.** A 5.7° cone on the reflected
+ray, so it lands where the view depression matches the light's 31° elevation
+— 320 units out from the opening pose, 100 from a low pass — and the
+ripple's 8° of deviation is what breaks it into a path rather than an arc.
+Inside about 150 units it stays one slab with bites out of its edges: a
+tighter cone breaks it there and reduces it to two specks at the cruise
+pose, which is the view the world is flown from. It is 1.0% of the frame on
+the low pass and nothing at the other four.
+
+**One token differs from the spec, on purpose.** §0.2 says the water is
+`--void` where it is not mirroring anything; it is `--void-lift`. `--void`
+is the clear colour, the fog target *and* the sky at the zenith, so a lake
+seen from above painted in it has no value of its own at exactly the angles
+where the mirror gives it none either — it reads as a hole in the terrain
+rather than as water. One step up is still the darkest thing in the frame.
+
+**What the shoreline does under LOD is worth writing down.** It is where the
+*drawn* ground crosses the plane, and §25 leaves the drawn ground 0.09 /
+0.30 / 0.48 units from the field on 96 / 192 / 384-unit chunks. The
+shoreline's own slope is a median of 0.081 (4.6°), so approaching a coast
+slides it **1.1 units at level 0, 3.7 at level 1 and 5.9 at level 2** —
+metres of shore over seconds of flight, and continuous because §25 made it
+continuous. Before the geomorph it would have been a jump of the same size.
+
+**Rivers are not here and this is the saying so.** Flow accumulation over
+the field or channels carved into the generator is a project of its own, and
+a ribbon of noise reads as a stain. §0.2 keeps the exclusion.
+
+**Bundle.** World chunk **205,430 + 2,117 worker = 207,547 gzipped (202.7
+KiB)** of 400, up 610 bytes on §25 and all of it in the scene chunk. The
+document side is byte-identical apart from the hash of the scene chunk it
+names: 55.3 KiB.
+
 ### 27. Ground cover and wind
 The two together because the first is the first thing that reads the second.
 

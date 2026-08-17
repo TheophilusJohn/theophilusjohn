@@ -227,6 +227,23 @@ export function uplift(x: number, z: number): number {
   return Math.min(sum, 1.4);
 }
 
+/* ── The water level (§26) ──────────────────────────────────────────────
+   A single number, because §0.2's water is a global level and a plane drawn
+   where the ground is under it. It lives with the field rather than with the
+   surface that draws it, for the same reason `SUN` lives on its own: the
+   worker has to be able to ask how near water is (§27's placement density)
+   without importing anything that has seen a GPU.
+
+   Chosen off the field's own distribution, measured in Node over the bounded
+   world (radius 3,200, 20-unit lattice, 80,381 samples). At -8 the water is
+   11.9% of the world in 128 separate bodies, twelve of them over 200 units
+   across, and the largest is 0.51 km² — 13% of the total, so it is lakes
+   rather than a sea with islands in it. Two units either way is a different
+   world: -12 leaves 4.4% and a scatter of ponds, -4 floods 26.7% and the
+   largest body is a quarter of it. Mean depth is 3.7 units and the deepest
+   is 16.6, which is what §24's six-unit floor lets the camera fly under. */
+export const WATER = -8;
+
 /* `spacing` is the distance between samples at the LOD asking. 0 means
    "every octave", which is what §24's clamp and any measurement want. It is
    also why the clamp keeps six units of clearance rather than one: the mesh

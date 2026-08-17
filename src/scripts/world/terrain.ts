@@ -65,7 +65,7 @@ import { height } from './height';
 import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
 import type { ChunkData } from './chunk';
 import type { Palette } from './palette';
-import { gradient } from './sky';
+import { haze } from './sky';
 import { SUN } from './sun';
 
 /* ── The LOD, in five numbers ───────────────────────────────────────────
@@ -197,16 +197,6 @@ const RIM = 0.85;
    at 900 units still has its top edge drawn. */
 const RIM_FLOOR = 0.34;
 
-/* How much of the sky the ground fades into. Not all of it: a range at
-   twelve hundred units is *darker* than the sky behind it, on any night
-   anybody has stood outside on, and fading the ground the whole way to the
-   horizon band takes the last two ranges of depth out of the frame — it
-   was measured as a violet wash with a rim light in it. At 0.75 the far
-   ground still arrives at the sky's own colour rather than at --void (§22's
-   bug), and the horizon is a soft dark line under a lit band rather than a
-   hard one under nothing. */
-const HAZE = 0.75;
-
 type Chunk = {
   key: string;
   level: number;
@@ -299,10 +289,10 @@ export function buildTerrain(palette: Palette) {
      A ridge at 1,200 units has to arrive at the colour of the sky directly
      behind it or the horizon band the sky draws is a line the ground is cut
      out of. Same direction the sky dome shades by, so the two agree at
-     every pixel of the join. */
+     every pixel of the join — and since §26 it is `sky.ts` that owns the
+     mix, so the water agrees with both. */
   const depth = fog(positionWorld);
-  const haze = mix(palette.void, gradient(toEye.negate(), palette), HAZE);
-  const lit = mix(haze, surface, depth);
+  const lit = mix(haze(toEye, palette), surface, depth);
   material.colorNode = mix(lit, palette.lead, rim.mul(depth.max(RIM_FLOOR)));
 
   const chunks = new Map<string, Chunk>();

@@ -79,6 +79,24 @@ export function gradient(dir: Node<'vec3'>, palette: Palette) {
   return mix(base, palette.lead, band.mul(toward.pow(GLOW_POW)).mul(GLOW));
 }
 
+/* ── What an opaque surface fades into ──────────────────────────────────
+   Here rather than in `terrain.ts`, where it was written at §23, because
+   §26 puts a second opaque surface in the world and the two have to arrive
+   at the same colour: a lake and the ridge behind it that fogged toward
+   different things would draw each other's outline on the horizon.
+
+   Not the whole way to the sky. A range at twelve hundred units is *darker*
+   than the sky behind it, on any night anybody has stood outside on, and
+   fading the ground the whole way to the horizon band takes the last two
+   ranges of depth out of the frame — it was measured as a violet wash with
+   a rim light in it. At 0.75 the far ground still arrives at the sky's own
+   colour rather than at --void (§22's bug), and the horizon is a soft dark
+   line under a lit band rather than a hard one under nothing. */
+const HAZE = 0.75;
+
+export const haze = (toEye: Node<'vec3'>, palette: Palette) =>
+  mix(palette.void, gradient(toEye.negate(), palette), HAZE);
+
 /* ── The clouds ────────────────────────────────────────────────────────
    High enough that the cruise pose (190) is well under the deck and the
    ridges (up to 128) never touch it, low enough that a climb goes through
@@ -177,10 +195,11 @@ export function buildSky(palette: Palette, time: UniformNode<'float', number>) {
   // Centred on the camera in the shader, so its own bounds are a lie.
   mesh.frustumCulled = false;
   mesh.matrixAutoUpdate = false;
-  /* After the ground. It is opaque and it is the furthest thing in the
-     world, so drawing it last is what keeps its per-pixel cost — two
-     fractal noises — off every pixel a mountain already covers. */
-  mesh.renderOrder = 1;
+  /* After the ground and, since §26, after the water. It is opaque and it is
+     the furthest thing in the world, so drawing it last is what keeps its
+     per-pixel cost — two fractal noises — off every pixel a mountain or a
+     lake already covers. */
+  mesh.renderOrder = 2;
 
   return { mesh, material };
 }

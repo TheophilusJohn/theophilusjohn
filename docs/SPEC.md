@@ -242,6 +242,25 @@ at night and the water is what says the valleys are the bottom.
 below; nothing changes about the fog or the light. Building a submerged
 state is a whole render path for something nobody will do twice.
 
+**Built at §26, and the level is `WATER = -8` in `height.ts`** — with the
+field rather than with the surface that draws it, so the worker can ask how
+near water is without importing anything that has seen a GPU. It is measured
+off the field's own distribution: 11.9% of the bounded world in 128 separate
+bodies, twelve of them over 200 units across, and the largest is an eighth
+of the total. Mean depth 3.67 units, deepest 16.6 — which is why §24's
+six-unit floor lets the camera under the surface at all.
+
+The whole layer is one disc of 64 triangles centred on the camera in the
+shader: one draw call, no update from the loop, and *nothing knows where a
+lake is*. The terrain is opaque and drawn first, so the depth test is what
+finds the basins. It covers 7.9% of the opening frame and costs nothing
+measurable — and where it covers half the frame it is **faster**, because a
+plane over a pixel takes the sky dome's fractal noise off it.
+
+One departure: the un-mirrored body is `--void-lift` rather than `--void`.
+`--void` is the clear colour, the fog target and the zenith at once, so a
+lake painted in it reads as a hole in the terrain rather than as water.
+
 ##### Ground cover
 
 Grass, low scrub, moss on the rock. The thing that makes the ground read as

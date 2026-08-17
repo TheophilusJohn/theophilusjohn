@@ -15,12 +15,14 @@
    object from one that exists to be glimpsed between paragraphs.
 
    What is here is the renderer, a camera you can fly, and — since §22 — a
-   landscape under it with — since §23 — a sky over it and a light on it.
-   Almost none of either is in this file: `height.ts` is the field,
-   `chunk.ts` samples it and bakes what it shadows, `grid.ts` is the vertex
-   layout both ends share, `terrain.ts` decides which squares of ground
-   exist and how they band, `sky.ts` is the gradient and the cloud deck and
-   `sun.ts` is the one direction all of it agrees on. Still ahead:
+   landscape under it with — since §23 — a sky over it and a light on it, and
+   — since §26 — water in the low ground. Almost none of any of it is in this
+   file: `height.ts` is the field, `chunk.ts` samples it and bakes what it
+   shadows, `grid.ts` is the vertex layout both ends share, `terrain.ts`
+   decides which squares of ground exist and how they band, `water.ts` is the
+   one plane at the field's water level, `sky.ts` is the gradient and the
+   cloud deck and `sun.ts` is the one direction all of it agrees on. Still
+   ahead:
 
    - §34 brings the cluster back as a thing standing in a place, and with it
      the election, which is still the one thing to get right
@@ -38,6 +40,7 @@ import { buildPalette, token } from './palette';
 import { buildSky } from './sky';
 import { buildStars } from './stars';
 import { buildTerrain } from './terrain';
+import { buildWater } from './water';
 
 /* Wall clock, unscaled. There is no section speed to scale it by any more —
    the sky was already exempt from that (§18), and now everything is. */
@@ -124,6 +127,13 @@ export async function mount() {
   const terrain = buildTerrain(palette);
   scene.add(terrain.group);
 
+  /* One plane at the world's water level, between the ground and the sky in
+     draw order (§26). It has no update: the disc follows the camera in the
+     shader and where a lake *is* is decided by the depth test against the
+     ground, not by anything on the CPU. */
+  const water = buildWater(palette, uTime);
+  scene.add(water.mesh);
+
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
      ticker was the right clock while the scene had to stay in step with
@@ -209,5 +219,5 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky, stars, terrain };
+  return { renderer, scene, camera, view, sky, stars, terrain, water };
 }

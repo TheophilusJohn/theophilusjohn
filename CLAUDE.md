@@ -59,6 +59,15 @@ once. `chunk.ts` builds a block of any level's grid, so a chunk's morph
 target is that same function over the quarter of its parent it covers —
 never an approximation of it.
 
+**Since §26 the world has water, and it is one plane and a depth test.**
+`WATER = -8` lives in `height.ts` — with the field, so the worker can ask
+how near water is (§27) without importing anything that has seen a GPU — and
+`water.ts` draws a 64-triangle disc at that level, centred on the camera in
+the shader. Nothing knows where a lake is: the terrain is opaque and drawn
+first, so the depth test finds the basins and the shoreline is the exact
+intersection of two surfaces. It draws **after the ground and before the
+sky**, which is what keeps the deck's fractal noise off the pixels it owns.
+
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
 rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
 geomorph, water, ground cover and wind, rocks and conifers, motes and cloud
@@ -489,6 +498,27 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   seconds and there is nothing left to draw. Time the function directly
   (`height()` is 0.354µs; the clamp takes five) and use the control only for
   the depth it reaches.
+- A full-frame plane is **cheaper than what it hides**. The sky dome runs two
+  fractal noises per sky pixel, so a water surface drawn before it is a
+  negative cost where it covers half the frame — and drawn *before* the
+  terrain it would be the same pixels shaded twice. Draw order is the whole
+  performance story of an opaque layer that covers a lot of screen.
+- `--void` is the clear colour, the fog target and the sky at the zenith all
+  at once. A surface painted in it has no value of its own at exactly the
+  angles where its own shading gives it none either, and it reads as a hole
+  cut in the terrain rather than as a thing. `--void-lift` is the darkest a
+  surface can be and still be one.
+- What makes an animated surface read as *fast* is not its speed but
+  `speed / wavelength`. Four ripple waves at one speed put the shortest at
+  0.38 Hz against the longest's 0.03, and the short one alone moved a 12×12
+  block by 10.8 levels of luma a frame. Hold every scale to the same
+  frequency band and measure it against the one thing already moving (the
+  cloud deck, 1.2).
+- A shoreline is where the **drawn** ground crosses the water plane, so the
+  LOD moves it: §25 leaves the surface 0.09–0.48 units from the field, and at
+  the shore's median slope of 0.081 that is 1 to 6 units of coast sliding as
+  you approach. Continuous because the geomorph is; it would have been a jump
+  of the same size before it.
 
 ---
 
@@ -508,21 +538,25 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §25: 202.1 KiB, of which the terrain worker is 2.1
-  — the geomorph was 666 bytes (§24: 201.4)
+  own merits. Measured at §26: 202.7 KiB, of which the terrain worker is 2.1
+  — water was 610 bytes and all of it in the scene chunk (§25: 202.1, §24:
+  201.4)
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–29), against 0.51 today. The geomorph took
+  landscape shares (steps 25–29), against 0.50 today. The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
-  more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Report
-  per layer
+  more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
+  took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the
+  same build with the plane hidden) and *gives* 0.02 back where it covers
+  half the frame. Report per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §25 on one harness against both builds:
-  **53 / 41 / 21** at 70, 190 and 520 units of altitude — unchanged by the
-  geomorph — at **0.64 / 0.54 / 0.50 ms/frame** against §24's 0.56 / 0.49 /
-  0.49 on the same machine, and ~1.05 at DPR 1.5 either way. Counts and
-  timings are a function of the window the harness opens, so compare within
-  a run: §24's own figures were 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
+- Under 100 draw calls. Measured at §26 on built code against a §25 build,
+  same harness, same machine: **54 / 42 / 22** at 70, 190 and 520 units of
+  altitude — one of them the water — at **0.581 / 0.501 / 0.493 ms/frame**
+  against §25's 0.590 / 0.497 / 0.490, and ~1.03 at DPR 1.5 either way.
+  Counts and timings are a function of the window the harness opens, so
+  compare within a run: §25's own figures on the dev server were 53 / 41 / 21
+  at 0.64 / 0.54 / 0.50 and §24's 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
   57 at 0.548; §22: 56 at 0.302; §21, empty: 2 at 0.108; §20: 6 at 2.26).
   Of a cruise frame the sky dome is 0.18ms and the landscape 0.19
 - Chunk generation is tracked apart from render cost, because at this scale
@@ -534,7 +568,9 @@ budgeted apart and a reader never pays both.
   (1.21 → 1.52ms in Node; a root chunk, which never morphs, is 1.14), and
   geometry per chunk from 109.7 to 160.4 KB — 28.2 MB alive at the opening
   pose. Nothing under it moved: same draw calls, same triangles, same end
-  pose, same 6.000 clearance.
+  pose, same 6.000 clearance. §26 changed none of it — the worker is
+  byte-identical and 75s of the same flight came back 638 chunks either way,
+  3.67 against 3.54ms, p99 18.2 against 18.3.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every
