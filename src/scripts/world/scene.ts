@@ -40,6 +40,8 @@ import { buildCamera } from './camera';
 import { buildClouds } from './clouds';
 import { buildMotes } from './motes';
 import { buildPalette, token } from './palette';
+import { poseAt, nearest } from './route';
+import { buildScroll } from './scroll';
 import { buildSky } from './sky';
 import { buildStands } from './stands';
 import { buildStars } from './stars';
@@ -173,6 +175,16 @@ export async function mount() {
   const motes = buildMotes(palette, uTime);
   scene.add(motes.mesh);
 
+  /* ── The route (§31) ─────────────────────────────────────────────────
+     Scroll is the site. `scroll.ts` turns the gesture into a position along
+     the route and `route.ts` turns that into a pose, and neither of them can
+     see this file: one reads events and the other is arithmetic over the
+     height field. What arrives here is a pose, and it goes into the camera
+     the same way the reader's own flying does — through camera.ts, which is
+     still the only thing that may move the view. */
+  const ride = buildScroll(canvas);
+  ride.jump(0);
+
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
      ticker was the right clock while the scene had to stay in step with
@@ -190,7 +202,15 @@ export async function mount() {
     const dt = Math.min((now - last) / 1000, 1 / 30);
     last = now;
     uTime.value += dt;
-    view.update(dt);
+    /* Three things can be holding the camera and only one of them at a
+       time: an eased move between the two (rejoining the route), the reader
+       with the stick, or — by default, and this is the reversal §31 is —
+       the route. */
+    if (view.easing() || view.flying()) view.update(dt);
+    else {
+      const on = ride.update(dt);
+      view.drive(poseAt(on.y, on.arrive), dt);
+    }
     // After the camera and before the render: which squares of ground exist
     // is a function of where the camera is *this* frame, and asking a frame
     // late is a hole in the ground on every LOD boundary crossed at speed.
@@ -233,20 +253,45 @@ export async function mount() {
      and the attribute that covers the page is set here — after there is a
      frame in the canvas — rather than in the head script.
 
-     `Esc` leaves. **This is a placeholder for §31**, which owns the visible,
+     `Esc` leaves. **This is a placeholder for §33**, which owns the visible,
      persistent, keyboard-reachable control and the mode memory. It is here
      at all because §0.1 is explicit that nobody is trapped, and a world
      with no way out is not a smaller version of that promise. */
   addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    const url = new URL(location.href);
-    url.searchParams.delete('world');
-    location.replace(url.pathname + url.search + url.hash);
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key === 'Escape') {
+      const url = new URL(location.href);
+      url.searchParams.delete('world');
+      location.replace(url.pathname + url.search + url.hash);
+      return;
+    }
+
+    /* **Interim, and §35 replaces it with the unlock.** The route is the
+       default now (§0.3) and free flight is what the last station offers —
+       a visible control, not a hidden key. Until that exists the stick is
+       on `F`, which is where §29's probe left it.
+
+       Coming back is the shape §35 needs: the route is picked up at the
+       station nearest to wherever the reader flew to, and the camera eases
+       to that pose rather than cutting to it. */
+    if (event.code !== 'KeyF') return;
+    const flying = !view.flying();
+    view.stick(flying);
+    ride.hold(flying);
+    canvas.toggleAttribute('data-flying', flying);
+    if (!flying) {
+      const pose = view.pose();
+      ride.jump(nearest(pose.x, pose.z));
+      view.flyTo(poseAt(ride.at(), 0));
+    }
+    event.preventDefault();
   });
 
   /* One pass over the quadtree before the first frame, so the opening pose
      asks for its ground at load rather than a frame after the canvas is
-     already over the document. */
+     already over the document. The route is what puts the camera there —
+     the same call the loop makes, at scroll zero. */
+  view.drive(poseAt(0, 0), 0);
   terrain.update(camera, 0);
   // The whole grid at once rather than a frame's worth of it: this is before
   // the first frame, where fifteen milliseconds are free and cover fading in
@@ -271,7 +316,7 @@ export async function mount() {
   run();
 
   return {
-    renderer, scene, camera, view,
+    renderer, scene, camera, view, ride,
     sky, stars, terrain, water, blades, stands, clouds, motes,
   };
 }

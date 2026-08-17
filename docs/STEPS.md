@@ -3091,6 +3091,170 @@ settle reads as arriving somewhere.
 **Report:** the four station poses, what the residual motion is and why,
 ms/frame along the route.
 
+*Done.* **The route is `route.ts` and it is arithmetic** — no three, no DOM,
+`height.ts` its only import — so Node runs the shipped `.ts` and every number
+below is that file's own output. `scroll.ts` is the other half: the gesture,
+damped, plus the one clock that is not scroll. The camera is untouched
+underneath except for the flag that decides who is holding it.
+
+**The four stations, searched against the field** the way §22 found the
+opening pose and §29 sited its slab. Level ground a scene can stand on, proud
+of what is around it, the next one visible from the last one's climb-away, no
+leg doubling back, and Enargeia in the opening frame — because §0.3's 0% row
+says *stations visible in the distance* and a station you cannot see is a
+claim rather than a place.
+
+| | site | ground | settle pose | stand-off | level to | proud by |
+|---|---|---|---|---|---|---|
+| **Enargeia** | (12, −967) | 46.0 | (3, 62, −835) yaw 13.1 pitch 1.0 | 133 | 10.0 over a 55 pad | +7.4 |
+| **Homonoia** | (−520, −900) | 57.2 | (−327, 109, −1359) yaw 174.2 pitch −2.7 | 497 | the massif | −18.3 |
+| **Philoi** | (−1040, 280) | 42.5 | (−991, 57, 169) yaw 173.2 pitch 0.7 | 122 | 13.8 over a 50 pad | +28.9 |
+| **Basis** | (−1640, 1300) | 19.7 | (−1508, 35, 1243) yaw 130.4 pitch 0.9 | 144 | 8.5 over a 50 pad | +15.2 |
+
+Legs 1,030 / 536 / 1,289 / 1,183 units, every sightline clear of the ground by
+34 to 44 units from the previous station's climb-away, radii 968 / 1,039 /
+1,077 / 2,093 inside a bound of 2,600, and 4,039 units of ground end to end.
+Philoi is 210 units from open water and Basis is the quietest ground of the
+four, which is what §0.4 asks of it.
+
+**Homonoia is where the field already puts it, and that was a decision.** The
+chain was first searched on a copy of `height.ts` with the cluster term moved
+out of the world, which gave a better-spaced route — and then a screenshot of
+the opening frame settled it: **the massif at (−520, −900) is the biggest
+thing in that frame**, 4.4° off the view axis at 1,064 units. §22's pose was
+composed against a range at 380–900 and the massif came out behind it by
+coincidence, but the coincidence is now the composition. Moving it to suit the
+route would have cost the world its front door, so the route bends around it
+and Enargeia stands in front of it at 492 — where the uplift is worth 1.7
+units, so the knoll is its own landform rather than the massif's skirt.
+
+**The framing is a rule, not four poses.** Stand off far enough that the scene
+is a quarter of the frame's width, aim at 0.4 of its height, turn 17° off the
+bearing to it. That reproduces §29's numbers exactly — a subject 21 units
+across at 118 — and it puts the subject at **67% of the frame's width and 50%
+of its height at all four stations**, with its base at 55–63%: §29's slot, and
+the reading half clear. The two numbers §34 gets to change per station are the
+scene's radius and its height; everything else follows.
+
+**The route is 21 keyframes over 12,067 scroll units**, with the settles at
+19%, 43%, 71% and 95%. Travel is paced at one scroll unit per world unit with
+a floor of 1,100, because the leg to the massif is 536 units and at pace alone
+it was flown in a fifth of the scroll the leg after it took. The opening pose
+owns the first 500 so that "arrival" is a beat rather than the first wheel
+notch — and it *drifts* through them rather than holding, twelve units along
+the view axis, because a mouse wheel is a hundred pixels a notch and five
+notches into a held opening the only honest reading is that scrolling is
+broken. Between keyframes it is smoothstepped, as §18 did it. The route
+never uses §24's floor: the least clearance over the ground anywhere on it is
+**13.0 units** against a clamp at 6.
+
+### The residual, which is §29's fourth constraint
+
+**A last few units of travel, on a clock rather than on scroll.** The camera
+creeps 14.3 units toward the subject and 3 down after the settle is reached —
+an exponential with τ = 4.5s, so it leaves the settle at **3.15 units a
+second** (7% of cruise), has covered 2.85 units after one second, 9.60 by five
+and 13.32 by twelve. The aim is re-derived from the moving position, so the
+subject holds its place at 67% while the near ground slides across the frame:
+the parallax and the travel are the same term rather than two.
+
+It is on a clock because the alternative does not answer the constraint. A
+residual that is a pure function of scroll stops exactly when the scroll
+stops, which is the failure §29 named. This one outlives the gesture by about
+ten seconds — which is the reading, which is what §32 puts there.
+
+Both ends are continuous. The creep is scaled by the arrival clock *and* by a
+band weight that is 1 across the dwell and ramps to 0 at the keyframes either
+side, so scrolling off a settle does not snap the pose back: with the creep
+fully out, the worst step anywhere on the route is **1.130 units per scroll
+unit**, the same as with it fully in.
+
+### The route has a top speed, and finding that out took two wrong caps
+
+Scroll is not paced by the hand the way a document is. Flown with a
+continuous 1,500px/s scrub, the first build put the camera at **4,512 units a
+second** against a cruise of 45 and a boost of 180 — 75 units of travel in one
+16.7ms frame. That is not fast travel, it is a smear.
+
+So the damped step is measured *as a pose* and scaled back to **420 units a
+second**, which is §24's soft-bound construction again: nothing is stopped and
+nothing is refused, the world simply has a speed. Two caps failed first and
+both are worth writing down.
+
+**A chord across the step is not a speed.** The first cap compared
+`poseAt(at)` with `poseAt(at + step)` and divided — and a step that spans a
+keyframe has the route arriving at rest and leaving in another direction, so
+the two ends can be close together with sixty units of flight between them. It
+measured as capped and flew at 4,512.
+
+**The local rate is not one either**, for the mirror-image reason: *at* a
+keyframe the rate is zero by construction, so a cap taken there permits any
+step at all — the second build reached **15,410 units a second** in the frame
+that crossed one. What works is the maximum rate sampled over the whole
+candidate step, five probes, which can only be conservative and which
+converges because a smaller step is sampled over a shorter span. Cost:
+**0.48µs a frame** while it is binding, against the camera clamp's 1.8.
+
+**A bound on how far the gesture may run ahead of the flight was built and
+taken out.** It holds the catch-up to a few seconds and it does that by
+throwing away scroll the reader made — measured, a full-route scrub ended
+5,957 units short of where it had been scrolled to. A reader who scrolls a
+page and is not where they scrolled to has been lied to, and that is worse
+than a long fly-past. So the target is always where the gesture put it, and
+the cost is the tail below.
+
+### Flown
+
+Two ways of reading, on the built site, the site's own loop running and the
+pose read off the camera rather than off the pixels (§21).
+
+| | frames | speed median | p95 | worst | over 25ms | least clearance | tail |
+|---|---|---|---|---|---|---|---|
+| a reader (600px, then 700ms) | 1,500 | 283 | 463 | 632 | 6 | 12.6 | **0.0s** |
+| a scrub (1,500px/s, continuous) | 1,442 | 272 | 459 | 669 | 5 | 12.8 | **14.0s** |
+
+Speeds in units per second over frames of 8ms or more — a shorter interval is
+two rAF callbacks inside one presented frame and its speed is an artefact of
+the sample. rAF median 16.4ms either way, worst 26.9. Never more than **3
+chunks pending** in a frame, and the altitude clamp never fires.
+
+**At reading pace the cap costs nothing** — the camera is where the scroll
+says by the time the reader stops. The 14 seconds is what a top speed costs
+when someone throws the whole route past in eight: the flight is 22 seconds of
+world and the gesture asked for it in a third of that.
+
+### ms/frame along the route
+
+41 poses — every keyframe and the midpoint of every segment — on the same
+batch-between-two-`onSubmittedWorkDone` instrument as §24–§30:
+
+| | draws | triangles | ms DPR 1 | ms DPR 1.5 |
+|---|---|---|---|---|
+| median of 41 | — | — | **0.865** | 1.341 |
+| worst of 41 | 61 | 783,744 | **0.984** | 1.458 |
+| Enargeia's settle | 59 | 783,744 | 0.984 | 1.414 |
+| Homonoia's settle | 55 | 738,816 | 0.846 | 1.413 |
+| Philoi's settle | 58 | 738,816 | 0.962 | 1.430 |
+| Basis's settle | 58 | 753,792 | 0.950 | 1.363 |
+
+Draws 45–61 over the whole route against §30's 58 / 45 / 24 at three
+altitudes; the settles are low enough that the blade disc and the motes are
+drawn, which is where the extra draws and the extra tenth of a millisecond
+are. Of a budget of 8.
+
+**Free flight is on `F` until §35**, and the round trip is what §35 needs:
+handing the stick over zeroes the velocity (the route's own delta is a
+thousand units a second on a flick and inheriting it would fling the reader
+across the world), the wheel moves the route by **0.0 units** while the stick
+is out, and pressing it again picks the route up at the station nearest to
+wherever the reader flew to and *eases* there rather than cutting. The cursor
+names the mode: `grab` only while flying.
+
+**Bundle.** World chunk **214,426 + 3,223 worker = 217,649 gzipped (212.5
+KiB)** of 400, up **2,205** on §30 in the same session, of which the worker is
+0 — the route bakes nothing. The document side is **56,338 (55.0 KiB)** of
+120, unchanged to the byte.
+
 ### 32. Content at a station
 The writeup arrives, in document mode's own register, over the scene — the
 same HTML the document serves, cloned rather than retyped (§29 proved that

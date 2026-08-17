@@ -610,6 +610,51 @@ curve. `curve.ts`'s discipline applies and it is why that module was written
 the way it was: the pose is a pure function of its input and lives in one
 module with no three and no DOM in it (§4.7's camera).
 
+**Built at §31, and the route is 21 keyframes over 12,067 scroll units**,
+with the settles at 19%, 43%, 71% and 95%. Travel is paced at one scroll unit
+per world unit, so a long leg takes longer to fly than a short one, and the
+opening pose owns the first 500 so that arrival is a beat rather than the
+first wheel notch — drifting twelve units through them rather than holding,
+because a held opening reads as scrolling being broken. `route.ts` is the arithmetic and `scroll.ts` is the
+gesture: in world mode there is no document to scroll — the canvas is opaque
+over it and Lenis is stopped — so the wheel, the keys and touch are read
+directly and turned into one number, which is the same thing as a scrollbar
+without a second source of truth.
+
+**The route has a top speed and it is 420 units a second.** Scroll is not
+paced by the hand the way a document is: a 1,500px/s scrub put the camera at
+4,512 units a second against a cruise of 45, which is a smear rather than
+travel. The damped step is measured as a pose and scaled back, which is the
+soft-bound construction again — nothing is stopped, the world has a speed.
+The gesture may still run ahead of the flight and always arrives where it was
+put: a bound on the lag was built and removed, because it buys a short
+catch-up by discarding scroll the reader made.
+
+#### The four stations, sited
+
+Searched against `height.ts` in Node — level ground a scene can stand on,
+proud of what is around it, the next visible from the last one's climb-away,
+no leg doubling back, and the first of them in the opening frame.
+
+| | site | ground | settle pose |
+|---|---|---|---|
+| **Enargeia** | (12, −967) | 46.0 | (3, 62, −835) yaw 13.1 pitch 1.0 |
+| **Homonoia** | (−520, −900) | 57.2 | (−327, 109, −1359) yaw 174.2 pitch −2.7 |
+| **Philoi** | (−1040, 280) | 42.5 | (−991, 57, 169) yaw 173.2 pitch 0.7 |
+| **Basis** | (−1640, 1300) | 19.7 | (−1508, 35, 1243) yaw 130.4 pitch 0.9 |
+
+Legs of 1,030 / 536 / 1,289 / 1,183 units and 4,039 end to end, all inside
+the 2,600 bound. **Homonoia is where `height.ts` already puts the cluster**
+and the route bends around it rather than the other way about: the massif is
+the biggest thing in the opening frame, so moving it to space the route
+better would have cost the world its front door.
+
+The framing is a rule rather than four poses — stand off far enough that the
+scene is a quarter of the frame's width, aim at 0.4 of its height, turn 17°
+off the bearing — and it reproduces §29's numbers and puts the subject at
+**67% of the width and 50% of the height at all four**. §34 tunes two numbers
+per station, the scene's radius and its height, and the poses follow.
+
 #### The settle, and §29's four constraints
 
 §29 flew this arrival and it works — display type over the landscape reads
@@ -630,6 +675,14 @@ rather than notes:
    arriving. A slow drift, a parallax, or a few last units of travel after
    the type is up. **This is the beat the whole route is judged on** — get
    it wrong and four stations are a slideshow.
+   **Answered at §31: the last few units of travel, on a clock.** The camera
+   creeps 14.3 units toward the subject over an exponential with τ = 4.5s,
+   leaving the settle at 3.15 units a second and still moving ten seconds
+   after the reader has stopped scrolling — which is what a residual keyed to
+   *scroll* cannot do, because it stops exactly when the scroll does. The aim
+   is re-derived as it moves, so the subject holds its place at 67% of the
+   frame while the near ground slides: the parallax and the travel are one
+   term rather than two.
 
 The reference framing is §29's report: two poses, and the 17° yaw offset
 that puts the subject at 65% of frame width with the column clear of it.

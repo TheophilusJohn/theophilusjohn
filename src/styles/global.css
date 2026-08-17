@@ -104,10 +104,13 @@ html[data-intro] .hero .sub { visibility: hidden; }
   z-index: 50;
   opacity: 0;
   transition: opacity 600ms linear;
-  cursor: grab;
 }
 .world[data-ready] { opacity: 1; }
-.world[data-dragging] { cursor: grabbing; }
+/* Grab is a promise that dragging does something, and on the route
+   it does not (§31): the camera is scroll's until the stick is
+   handed over. So the cursor names the mode. */
+.world[data-flying] { cursor: grab; }
+.world[data-flying][data-dragging] { cursor: grabbing; }
 
 /* Hidden rather than removed. The document is what the
    browser painted and what a crawler reads, and §33 opens

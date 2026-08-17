@@ -1,16 +1,20 @@
-/* §0.3 — free flight, and it is the default rather than an unlock.
+/* §0.3 — the camera: driven by the route, and flown when the stick is out.
 
-   **This replaces the scroll-driven curve.** Until §21 the camera was a
-   pure function of scroll position: ten keyframes, smoothstepped, keyed to
-   where four pins put twelve beats, with a fourth channel carrying the
-   exposure. That whole construction belongs to a world sitting *behind* a
-   document, and §0 puts the world in front of it. The path between the four
-   projects comes back at §34 as one thing the camera can be driven by, not
-   as the only place it can be.
+   **Reversed at §31, and the reversal is one flag.** §21–§24 built this as
+   free flight, the default, with a guided path as the alternative; §0.3 says
+   that is backwards, because scroll is what everybody does to a website
+   without being told and free flight is a mode nobody discovers by accident.
+   So the route drives the camera through `drive()` and every input below is
+   dead until `stick(true)` — which §35's unlock is, and which is a key here
+   in the meantime.
 
-   What survives from `curve.ts` is its discipline rather than its numbers:
-   the pose is a function of state that is written down here and nowhere
-   else, and no other module may move the camera.
+   What survives from §18's `curve.ts` is its discipline rather than its
+   numbers: the pose is a function of state that is written down here and
+   nowhere else, and no other module may move the camera. `route.ts` is that
+   discipline taken further — the pose it hands over is a pure function of a
+   scroll position — and the floor, the bounds and the recall below still
+   apply to it, because a route that flew into a ridge would be a second
+   answer to a question §24 settled.
 
    **§24 closes the three things §21 left open**, and all three are the same
    shape: a term that reshapes the *wanted* velocity before it is damped,
@@ -151,9 +155,10 @@ const RETURN = SPEED;
 
 /* ── The recall ─────────────────────────────────────────────────────────
    The one thing here that is not a force. §4.8 asks for a *return to path*
-   control that is always visible in free flight; there is no path until
-   §34 and no chrome until §31, so what exists now is the pose the world
-   opens at and a key that flies back to it.
+   control that is always visible in free flight, and since §31 there is a
+   path: `flyTo` takes any pose, so the same ease that comes home is what
+   rejoins the route at the station nearest to wherever the reader flew to.
+   `R` and `Home` are still the opening pose.
 
    Eased over a duration that grows with the distance and caps, so a recall
    from the far edge is a fast pass over the landscape rather than a cut and
@@ -183,7 +188,11 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
 
   const held = new Set<string>();
   let boosting = false;
-  let recall: { t: number; dur: number; from: Vector3; yaw: number; pitch: number } | null = null;
+  let recall: { t: number; dur: number; from: Vector3; yaw: number; pitch: number; to: Vector3; toYaw: number; toPitch: number } | null = null;
+
+  /* Who is flying. False is the route (§31) and every input below is
+     inert; §35's unlock is what turns it on for good. */
+  let flying = false;
 
   const forward = new Vector3();
   const right = new Vector3();
@@ -214,6 +223,26 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     // lookAt(): a target point would have to be invented for a pose that is
     // already two angles.
     camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  }
+
+  /* ── Driven (§31) ────────────────────────────────────────────────────
+     The route hands over a pose and this is where it lands, so the one
+     rule §21 wrote down still holds: the camera's position is written in
+     this file and nowhere else.
+
+     The floor applies to it. A route keyframe is composed against the
+     field and clears it by 13 units at the worst point, so the clamp never
+     fires — but a *guarantee* that fires only when someone is flying is not
+     one, and the velocity below is what makes it the same guarantee: it is
+     the pose's own delta, so `floorAt`'s look-ahead reads where the route is
+     going rather than where it has been. */
+  function drive(pose: { x: number; y: number; z: number; yaw: number; pitch: number }, dt: number) {
+    if (dt > 0) velocity.set((pose.x - position.x) / dt, (pose.y - position.y) / dt, (pose.z - position.z) / dt);
+    position.set(pose.x, pose.y, pose.z);
+    yaw = pose.yaw * DEG;
+    pitch = pose.pitch * DEG;
+    floor();
+    apply();
   }
 
   function update(dt: number) {
@@ -316,26 +345,35 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
      Eased on a smoothstep so it leaves and arrives at rest, and the yaw
      takes the short way round — a recall that unwinds 350° is a spin. The
      floor still applies while it runs, so the way home is a pass over the
-     landscape rather than a line through it. */
-  function home() {
-    const dist = position.distanceTo(START);
+     landscape rather than a line through it.
+
+     §31 generalises it to any pose, because rejoining the route is the same
+     movement as coming home: the reader is somewhere they flew to and the
+     camera has to arrive at a composed pose without cutting. */
+  function flyTo(to: { x: number; y: number; z: number; yaw: number; pitch: number }) {
+    const target = new Vector3(to.x, to.y, to.z);
     recall = {
       t: 0,
-      dur: Math.min(Math.max(dist / RECALL_RATE, RECALL_MIN), RECALL_MAX),
+      dur: Math.min(Math.max(position.distanceTo(target) / RECALL_RATE, RECALL_MIN), RECALL_MAX),
       from: position.clone(),
       yaw,
       pitch,
+      to: target,
+      toYaw: to.yaw * DEG,
+      toPitch: to.pitch * DEG,
     };
   }
+
+  const home = () => flyTo({ x: START.x, y: START.y, z: START.z, yaw: START_YAW, pitch: START_PITCH });
 
   function flyHome(dt: number) {
     const r = recall!;
     r.t = Math.min(r.t + dt / r.dur, 1);
     const s = r.t * r.t * (3 - 2 * r.t);
-    position.lerpVectors(r.from, START, s);
-    const turn = ((START_YAW * DEG - r.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    position.lerpVectors(r.from, r.to, s);
+    const turn = ((r.toYaw - r.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     yaw = r.yaw + turn * s;
-    pitch = r.pitch + (START_PITCH * DEG - r.pitch) * s;
+    pitch = r.pitch + (r.toPitch - r.pitch) * s;
     velocity.set(0, 0, 0);
     if (r.t >= 1) recall = null;
   }
@@ -355,7 +393,7 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   let lastX = 0, lastY = 0;
 
   canvas.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return;
+    if (!flying || event.button !== 0) return;
     recall = null;
     dragging = event.pointerId;
     lastX = event.clientX;
@@ -392,7 +430,7 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
      to use (§0.6: the world is escapable, not navigable). A modifier means
      the reader is talking to the browser, so nothing is captured then. */
   addEventListener('keydown', (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!flying || event.metaKey || event.ctrlKey || event.altKey) return;
     boosting = event.shiftKey;
     if (RECALL.includes(event.code)) {
       // Not on the OS repeat: each one would restart the ease from wherever
@@ -433,7 +471,24 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   return {
     camera,
     update,
+    drive,
     home,
+    flyTo,
+    /** True while an eased move is running, which is the one time neither
+        the route nor the reader is holding the camera. */
+    easing: () => recall !== null,
+    /** §35's unlock, on a key until then. Handing the stick over zeroes the
+        velocity: the route's own delta can be a thousand units a second on a
+        flick, and inheriting that would fling the reader across the world on
+        the frame they took control. */
+    stick(on: boolean) {
+      flying = on;
+      velocity.set(0, 0, 0);
+      held.clear();
+      boosting = false;
+      if (!on) recall = null;
+    },
+    flying: () => flying,
     /** Nothing in the site reads this — it is what a harness measures a
         flight with, and `ground` is what makes the clamp checkable. */
     pose: () => ({

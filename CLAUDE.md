@@ -33,6 +33,18 @@ visitable cities stand off the route; and everything **built** is solid —
 §4.7's "no collision" is true of terrain only. Everything after step 30 was
 renumbered for it; the divider above step 31 carries the mapping.
 
+**Since §31 the route is the site and free flight is a flag.** `route.ts` is
+the fourth module with no three and no DOM in it — it imports `height.ts` and
+nothing else — and it is the whole of what "scroll is the site" means: four
+searched station sites, a framing *rule* (stand off until the scene is a
+quarter of the frame, aim at 0.4 of its height, turn 17° off the bearing) and
+a pose that is a pure function of a scroll position and one arrival clock.
+`scroll.ts` is the gesture — wheel, keys, touch, damped at 0.22s, capped at
+420 units a second — because in world mode there is no document to scroll.
+`camera.ts` still owns the pose: the route hands one to `drive()`, the floor
+and the bounds still apply to it, and every input in that file is dead until
+`stick(true)`, which is `F` until §35 builds the unlock.
+
 **The landscape is a set of files that cannot see a GPU and a few that can**
 (§22). `height.ts` is the field and imports nothing — no three, no DOM — so
 Node runs the `.ts` directly and every number about the terrain is that
@@ -686,6 +698,22 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   visible and before the first screenshot**, or frame 0 is the previous
   configuration's frame and every reading is the difference between two
   scenes. Tell: readings of 90–115 levels where the layer alone gives 1.
+- **A speed limit on a scroll-driven camera cannot be measured as a chord,
+  and cannot be measured locally either.** Across a keyframe the route arrives
+  at rest and leaves in another direction, so the two ends of a step sit close
+  together with sixty units of flight between them — it measures as capped and
+  flies at 4,512 units a second. *At* a keyframe the local rate is zero by
+  construction, so a cap taken there permits any step at all: 15,410. What
+  works is the maximum rate sampled across the whole candidate step, which is
+  conservative and converges, at 0.48µs a frame.
+- A bound on how far the gesture may run ahead of a rate-limited flight buys a
+  short catch-up by **discarding scroll the reader made** — measured, a
+  full-route scrub ended 5,957 units short of where it had been scrolled to.
+  A reader who is not where they scrolled to has been lied to; a long fly-past
+  is the better failure.
+- A residual motion that is a pure function of scroll **stops exactly when the
+  scroll stops**, which is the thing it exists to prevent. The clock is the
+  second input, and it is the only one a pose module may not hold itself.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -705,14 +733,16 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §30: 55.0 KiB (56,338 gzipped), unchanged in content
+  1024px). Measured at §31: 55.0 KiB (56,338 gzipped), unchanged in content
   since §21 — the one byte that moves is the hash of the scene chunk it
   names. §28 measured 55.2 with a `__world` hook still in the entry script
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §30 with every hook removed: **210.4 KiB** (212,221
+  own merits. Measured at §31 with every hook removed: **212.5 KiB** (214,426
+  + 3,223 worker), of which the route and its driver are 2,205 bytes and none
+  of them the worker. §30: **210.4 KiB** (212,221
   + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
   **none of them the worker** — neither layer has anything to bake, so it is
   byte-identical to §28's. §28 in the same session: 208.2 (its own report said
@@ -761,6 +791,12 @@ budgeted apart and a reader never pays both.
   adds one draw call and 86,400 triangles *only below 58 units over the
   ground*: same 54 / 42 / 22 at those three stops, at 0.652 / 0.535 / 0.510
   against a §26 control's 0.575 / 0.498 / 0.496 in the same session.
+  **§31 measures the route rather than three altitudes**, because the route is
+  where a reader is: 41 poses (every keyframe and the midpoint of every
+  segment) on built code came back **0.865ms median and 0.984 worst at DPR 1**,
+  1.341 / 1.458 at DPR 1.5, **45–61 draw calls**. The settles are the
+  expensive end — they are low enough for the blade disc and the motes to be
+  drawn. The driver itself is 0.48µs a frame while its speed cap is binding.
   Counts and timings are a function of the window the harness opens, so
   compare within a run: §25's own figures on the dev server were 53 / 41 / 21
   at 0.64 / 0.54 / 0.50 and §24's 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
@@ -791,7 +827,16 @@ budgeted apart and a reader never pays both.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every
-  flight that tries to break it, and the clamp costs 1.8µs a frame
+  flight that tries to break it, and the clamp costs 1.8µs a frame. The route
+  never reaches it: its least clearance is **13.0 units** by construction and
+  12.6 as flown
+- **The route is flown two ways** (§31), because they measure different
+  things. A reader (a 600px burst, then 700ms) never sees the speed cap bind
+  at the end of a gesture — 283 units/s median, and the camera is where the
+  scroll says the moment they stop. A 1,500px/s continuous scrub is what the
+  cap is for, and it costs a **14-second fly-past** after the last wheel
+  event. rAF median 16.4ms either way, 5 or 6 frames over 25ms in ~1,450,
+  never more than 3 chunks pending
 - 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off
