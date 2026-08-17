@@ -48,6 +48,7 @@ import type Node from 'three/src/nodes/core/Node.js';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import type { Palette } from './palette';
 import { SUN } from './sun';
+import { DECK_DRIFT, WIND } from './wind';
 
 /* Inside the far plane (2,600) and outside the last chunk of ground
    (1,536), so the depth test between sky and terrain is the honest one at
@@ -107,7 +108,13 @@ const DECK = 620;
    is about 155 — a cloud is a thing you fly past rather than a texture. */
 const SCALE = 620;
 const OCTAVES = 3;
-const DRIFT = 0.005;
+
+/* **Since §27 the deck advects along the wind**, which is what §0.2 asks of
+   it: "the cloud deck advects along it. One field so they agree." The rate is
+   unchanged — §23's 0.005 noise units a second on each axis of (1, 0.4) is
+   3.34 world units a second at this scale, and it was set against the deck's
+   own feature size — so what moved is the direction only, onto `wind.ts`'s. */
+const DRIFT = DECK_DRIFT / SCALE;
 
 /* Coverage, and the pair is what "banded volume" means here: the noise is
    thresholded into a shape rather than faded into one, and then quantised
@@ -162,7 +169,7 @@ function clouded(dir: Node<'vec3'>, palette: Palette, time: UniformNode<'float',
     const q = vec2(
       cameraPosition.x.add(dir.x.mul(tc)),
       cameraPosition.z.add(dir.z.mul(tc)),
-    ).div(SCALE).add(vec2(time.mul(DRIFT), time.mul(DRIFT * 0.4)));
+    ).div(SCALE).add(vec2(WIND.x, WIND.z).mul(time.mul(DRIFT)));
 
     const n = mx_fractal_noise_float(q, OCTAVES, 2, 0.5, 1);
     const cover = smoothstep(COVER_LO, COVER_HI, n);

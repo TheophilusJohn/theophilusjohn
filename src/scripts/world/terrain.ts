@@ -52,7 +52,6 @@ import {
   attribute,
   cameraPosition,
   float,
-  fwidth,
   mix,
   positionLocal,
   positionWorld,
@@ -60,6 +59,7 @@ import {
   uniform,
   vec3,
 } from 'three/tsl';
+import { bands, litness } from './band';
 import { fog } from './fog';
 import { height } from './height';
 import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
@@ -142,34 +142,19 @@ const RETIRE = 4000;
    have to have no velocity in them. */
 const MORPH = 0.55;
 
-/* ── The bands ──────────────────────────────────────────────────────────
-   §0.2: "a slope lit at 0.6 and one lit at 0.45 land in the same band, so
-   terrain reads as broad shapes with hard edges rather than as gradients."
-   Two edges, three bands: --rule below TERMINATOR, --dim between, --paper
-   above LIT. **Both are above flat ground**, which is the placement three
-   others were measured against. At the sun's 32° a level surface is at
-   `N·L` 0.52, so open country is --rule and it takes 14° of tilt toward the
-   light to reach --dim and 38° to reach --paper: the landscape is night,
-   and what the light finds is the slopes that face it. An edge *at* 0.52
-   turns the detail layer into two-tone camouflage, and putting flat ground
-   in the middle band instead paints the whole foreground --dim and leaves
-   no relief in it at all.
+/* **The bands moved to `band.ts` at §27** — the edges, the ramp inside a
+   band and the shadow's depth, unchanged in value and now shared with the
+   ground cover standing in them. What is left here is what the ground brings
+   to them: its normal, its baked shadow and, since §27, its density.
 
-   Nothing here is smoothstepped over a fixed width. The edges are one
-   *pixel* wide, taken from `fwidth` of the lighting term, which is the only
-   way a hard edge stays hard at the far ridge and stays un-aliased at the
-   near one: a fixed width in lighting units is a fat gradient on a slope
-   facing the camera and a stair-stepped line on one at a grazing angle. */
-const TERMINATOR = 0.64;
-const LIT = 0.90;
-const EDGE = 0.8;
-const RAMP = 0.30;
-
-/* A quarter-band under the terminator for ground the marched shadow says is
-   occluded, so a shadowed slope that would have been lit is not merely the
-   same colour as one that faces away — it is darker than either. --void is
-   the floor of the world and the shadow band leans toward it. */
-const CAST = 0.45;
+   How far toward the shifted palette full cover takes the ground. `--rule`
+   to `--dim` is the largest step in the palette (0.15 to 0.53 of luma) and
+   flat open country sits inside that band, so taking the most common surface
+   in the world all the way there at full cover is a different landscape
+   rather than a landscape with growth on it. At 0.25 the ground under the
+   blade disc is measurably lighter, the frame's mean luma moves about a
+   percent, and the blades themselves carry the rest. */
+const TINT = 0.25;
 
 /* ── The rim ────────────────────────────────────────────────────────────
    §0.2 calls this the single most important part of the look, and it is the
@@ -248,32 +233,27 @@ export function buildTerrain(palette: Palette) {
   const facing = normal.dot(sun);
   const cast = attribute<'float'>('shadow', 'float')
     .add(attribute<'float'>('morphShadow', 'float').mul(morph));
-  const lum = facing.max(0).mul(mix(float(1).sub(CAST), 1, cast));
+  const lum = litness(facing, cast);
 
-  /* One pixel of edge, wherever the edge lands. */
-  const edge = fwidth(lum).mul(EDGE).max(0.001);
-  const step = (at: number) => smoothstep(float(at).sub(edge), float(at).add(edge), lum);
-  /* Each band leans a little toward the next one across its own width.
-     Bands alone make every region of open country a single flat fill, and a
-     foreground that is one colour is not reading as a broad shape — it is
-     not reading at all. RAMP is how far into the next token a band gets by
-     its own top edge: at 0.25 the terraces keep three quarters of their
-     step and the ground inside one has a gradient across it.
+  /* ── Growth on the surface (§27) ──────────────────────────────────────
+     §0.2: "colour from the same three bands as the terrain, one step
+     lighter, so cover reads as growth on the surface rather than as a
+     texture applied to it." So it is literally `band.ts` twice over the same
+     lighting term, mixed by the baked density — the edges are in the same
+     places in both, which is what keeps the terminator exactly where it was:
+     this can lighten a band but it cannot move one.
 
-     Confined to the band on purpose. The first attempt mixed the whole
-     smooth ramp back in under the bands, and because flat ground sits high
-     inside the shadow band that pulled the entire foreground most of the
-     way to --dim — the flat lavender wash the band placement above exists
-     to avoid. */
-  const inside = (from: number, to: number) => smoothstep(from, to, lum).mul(RAMP);
+     It is what carries the cover past the blade disc's 120 units, and it is
+     therefore most of why the edge of that disc is not an edge in the frame:
+     the near ground has blades standing on tinted ground and the far ground
+     has the tint alone, and the fade between them is over 26 units of a
+     surface that is already the same colour on both sides. */
+  const growth = attribute<'float'>('cover', 'float')
+    .add(attribute<'float'>('morphCover', 'float').mul(morph));
   const surface = mix(
-    mix(
-      mix(palette.rule, palette.dim, inside(0, TERMINATOR)),
-      mix(palette.dim, palette.paper, inside(TERMINATOR, LIT)),
-      step(TERMINATOR),
-    ),
-    mix(palette.paper, palette.lead, inside(LIT, 1)),
-    step(LIT),
+    bands(lum, palette, 0),
+    bands(lum, palette, 1),
+    growth.clamp(0, 1).mul(TINT),
   );
 
   /* The blended attribute stands in for `normalWorld` in both terms. A
@@ -344,9 +324,11 @@ export function buildTerrain(palette: Palette) {
     geometry.setAttribute('position', new BufferAttribute(data.position, 3));
     geometry.setAttribute('normal', new BufferAttribute(data.normal, 3));
     geometry.setAttribute('shadow', new BufferAttribute(data.shadow, 1));
+    geometry.setAttribute('cover', new BufferAttribute(data.cover, 1));
     geometry.setAttribute('morphY', new BufferAttribute(data.morphY, 1));
     geometry.setAttribute('morphNormal', new BufferAttribute(data.morphNormal, 3));
     geometry.setAttribute('morphShadow', new BufferAttribute(data.morphShadow, 1));
+    geometry.setAttribute('morphCover', new BufferAttribute(data.morphCover, 1));
     // Its own copy — see grid.ts on why this is not one shared buffer.
     geometry.setIndex(new BufferAttribute(indices.slice(), 1));
     /* Set rather than computed. computeBoundingSphere reads the whole

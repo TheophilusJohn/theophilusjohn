@@ -39,9 +39,11 @@ scope.onmessage = (event: MessageEvent<Request>) => {
       data.position.buffer,
       data.normal.buffer,
       data.shadow.buffer,
+      data.cover.buffer,
       data.morphY.buffer,
       data.morphNormal.buffer,
       data.morphShadow.buffer,
+      data.morphCover.buffer,
     ],
   );
 };

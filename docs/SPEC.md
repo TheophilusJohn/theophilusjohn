@@ -278,6 +278,29 @@ colour carries it.
 Colour from the same three bands as the terrain, one step lighter, so cover
 reads as growth on the surface rather than as a texture applied to it.
 
+**Built at §27, and it is two things rather than one.** The density is
+`cover.ts` — a pure function of `(x, z)` off the field, its gradient, the
+range mask and the water level — and *both* ends read it: the worker bakes it
+onto every vertex, so the ground is tinted where growth is out to the last
+chunk, and the disc stands blades in it near the camera. That is what makes
+the disc's edge invisible, and it is why the disc is **60 units rather than
+120**: at 120 the same instances put 113 tufts inside the nearest 25 units
+and two thousand past 100, where a blade is four pixels tall. The number in
+this section was written for a layer with no tint under it.
+
+Two more things the build found. An instance is a **tuft of three blades**,
+because single blades at this size read as rain rather than as grass — what
+is drawn has to be about four times as long as it is wide. And a blade is lit
+by **the ground it stands on** (the same `N·L` and the same marched shadow,
+its own facing modulating that between 0.72 and 1.28) rather than by its own
+near-vertical face, which at one pixel wide is noise rather than shading.
+
+Measured: 55% of dry ground carries cover, mean 0.24, nothing above 90 or
+under the water line, half again as much within nine units above it, clumps
+with a median run of 60 units. One draw call and 28,800 blades when it is
+drawn, and it is not drawn at all above 58 units over the ground — so the
+cruise pose does not pay for it.
+
 ##### Trees and rocks
 
 **Instanced meshes, three or four variants each, one draw call per variant
@@ -323,6 +346,22 @@ kind of wrongness nobody can name and everybody feels.
 
 Vertex animation, not simulation. A sine of position and time, amplitude by
 height above the ground so a trunk is still and a canopy is not.
+
+**Built at §27, and what is shared is numbers rather than a function.**
+`wind.ts` imports nothing and states a prevailing direction, a gust wave
+travelling along it and a slow wander of the direction itself; each layer's
+use of those constants is one line, because the four readers do not want the
+same quantity — the blades want a bend vector, the deck wants the
+displacement it integrates to, the water wants a bearing per wave at the
+speeds §26 tuned. Measured out of the shipped module: everything that moves
+is within **22° of one direction**, the gust is 0.075 Hz, the deck keeps
+§23's rate to the digit and only its direction moved, and the water's four
+waves are now bearings off the wind.
+
+The blade's own flutter is the one rate that had to be solved rather than
+chosen. At 0.4 Hz the grass was the fastest thing in the frame — 4.24 levels
+of luma in a 12×12 block against the cloud deck's 1.06 — in a world whose
+water had already been slowed to belong in it. At 0.28 Hz it is 1.53.
 
 ##### Clouds you can fly through
 

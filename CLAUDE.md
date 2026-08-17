@@ -26,14 +26,16 @@ cost. Document mode was finished and shipped first (steps 1–14) and stays
 finished — that is what makes the reversal survivable. Steps 21–35 build the
 world. See `docs/STEPS.md`.
 
-**The landscape is five files and only one of them can see a GPU** (§22).
-`height.ts` is the field and imports nothing — no three, no DOM — so Node
-runs the `.ts` directly and every number about the terrain is that
+**The landscape is a set of files that cannot see a GPU and a few that can**
+(§22). `height.ts` is the field and imports nothing — no three, no DOM — so
+Node runs the `.ts` directly and every number about the terrain is that
 function's own output. `chunk.ts` samples it into arrays, `grid.ts` is the
-vertex layout the worker and the main thread both index, `terrain-worker.ts`
-runs the generator off the main thread, and `terrain.ts` is the only part
-that knows what a mesh is. Keep it that way: a worker that reaches anything
-in three is a second copy of the renderer.
+vertex layout the worker and the main thread both index, `cover.ts` (§27) is
+where anything grows, `sun.ts` and `wind.ts` are the two directions the world
+agrees on, `terrain-worker.ts` runs the generator off the main thread, and
+`terrain.ts`, `water.ts`, `blades.ts` and `sky.ts` are the parts that know
+what a mesh is. Keep it that way: a worker that reaches anything in three is
+a second copy of the renderer.
 
 **Since §23 the worker also bakes light**, and `sun.ts` is why that is
 allowed: the key light is one direction in a module that imports nothing, so
@@ -67,6 +69,27 @@ the shader. Nothing knows where a lake is: the terrain is opaque and drawn
 first, so the depth test finds the basins and the shoreline is the exact
 intersection of two surfaces. It draws **after the ground and before the
 sky**, which is what keeps the deck's fractal noise off the pixels it owns.
+
+**Since §27 things grow on it, and the density is baked as well as
+instanced.** `cover.ts` is the one answer to "does anything grow at (x, z)" —
+a pure function of the field, its landform gradient, the range mask and
+`WATER` — and both ends call it: the worker bakes it per vertex (so the
+ground is *tinted* to the last chunk and the tint morphs like the other three
+attributes), and `blades.ts` stands 28,800 blades in it on a camera-relative
+disc of 60 units. The disc is filled on the main thread because a blade has
+to stand on ground only `height()` knows about; it is a world-anchored grid
+of cells mapped toroidally into one buffer, so a slot is refilled only when
+the cell it holds changes, under a per-frame budget. **The band model is
+`band.ts`** now — the edges, the ramp and the shadow depth in one place —
+because §27 puts a second surface in those bands and §28 adds two more, and a
+blade whose terminator sat a hundredth off the ground's would draw a line
+along every slope.
+
+**`wind.ts` is numbers, not a function** (§27), for the same reason `sun.ts`
+is: the blades want a bend vector, the cloud deck wants the displacement it
+integrates to, the water wants a bearing per wave. One direction, one gust
+wave, one wander, and each layer's use is one line — everything that moves is
+within 22° of one direction and inside the frequency band §26 measured.
 
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
 rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
@@ -519,6 +542,32 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   the shore's median slope of 0.081 that is 1 to 6 units of coast sliding as
   you approach. Continuous because the geomorph is; it would have been a jump
   of the same size before it.
+- **Grass reads as rain** when what is drawn is thinner than it is long with
+  space around it, and no amount of density fixes it: the shape has to be
+  about four times as long as it is wide, and clustered into tufts rather
+  than scattered as single blades. The other half of the same failure is
+  lighting it absolutely — at one or two pixels wide a blade's own `N·L` is
+  noise, not shading, and anything more than a step away from the ground it
+  stands on reads as weather rather than as cover. Light it by the ground's
+  own term and let its facing modulate that.
+- A camera-relative layer gated on "how far is the ground under the camera"
+  is wrong beside a cliff: ground at the camera's own altitude fifty units
+  away is inside the layer's reach while the sample under it says 130. Probe
+  the diagonals as well, or ten thousand instances leave the frame in one
+  frame — the pop the distance fade exists to prevent, arriving by the back
+  door.
+- A lattice that is both marched and read has to be sized for what is
+  *read*: §23 marched a ring of 196 shadow points of which the interpolation
+  only ever touched 169, so §27's per-vertex density came out free. Check
+  which ring an interpolation actually reaches before adding one.
+- Storing a coarse height in a `Float32Array` and marching from *that* rather
+  than from the double it was computed as moves the shadow by 4e-7. Harmless
+  here and worth knowing before claiming a surface is unchanged in every byte.
+- **A stale `astro preview` binds `[::1]:4321` and shadows a harness server
+  bound to `*:4321`**, so every measurement silently hits the project's own
+  `dist` instead of the build the harness was pointed at. It survives across
+  sessions. Resolve the served asset chain (`/?world` → entry → scene chunk →
+  md5) before trusting an A/B, or check `lsof -nP -iTCP:4321 -sTCP:LISTEN`.
 
 ---
 
@@ -538,22 +587,31 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §26: 202.7 KiB, of which the terrain worker is 2.1
-  — water was 610 bytes and all of it in the scene chunk (§25: 202.1, §24:
-  201.4)
+  own merits. Measured at §27: 204.6 KiB, of which the terrain worker is 2.4
+  — ground cover and wind were 2,727 bytes, 295 of them the worker, which is
+  where the density is baked (§26: 202.7, §25: 202.1, §24: 201.4)
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
   landscape shares (steps 25–29), against 0.50 today. The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
   took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the
   same build with the plane hidden) and *gives* 0.02 back where it covers
-  half the frame. Report per layer
+  half the frame. Ground cover is two costs and both are small: the *tint*
+  is +0.077 / +0.037 / +0.014ms at 70 / 190 / 520 (two more floats a vertex
+  and the band expression evaluated twice, and it is paid at every altitude),
+  and the *disc* is +0.052 / +0.034 / +0.014 at three low poses and nothing
+  at all above 58 units over the ground, where it is not drawn. Its fill is
+  main-thread work rather than frame cost: 0.070ms a frame over a 75s boost
+  flight, worst frame 2.70ms at its 96-cell budget. Report per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
 - Under 100 draw calls. Measured at §26 on built code against a §25 build,
   same harness, same machine: **54 / 42 / 22** at 70, 190 and 520 units of
   altitude — one of them the water — at **0.581 / 0.501 / 0.493 ms/frame**
-  against §25's 0.590 / 0.497 / 0.490, and ~1.03 at DPR 1.5 either way.
+  against §25's 0.590 / 0.497 / 0.490, and ~1.03 at DPR 1.5 either way. §27
+  adds one draw call and 86,400 triangles *only below 58 units over the
+  ground*: same 54 / 42 / 22 at those three stops, at 0.652 / 0.535 / 0.510
+  against a §26 control's 0.575 / 0.498 / 0.496 in the same session.
   Counts and timings are a function of the window the harness opens, so
   compare within a run: §25's own figures on the dev server were 53 / 41 / 21
   at 0.64 / 0.54 / 0.50 and §24's 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
@@ -570,7 +628,12 @@ budgeted apart and a reader never pays both.
   pose. Nothing under it moved: same draw calls, same triangles, same end
   pose, same 6.000 clearance. §26 changed none of it — the worker is
   byte-identical and 75s of the same flight came back 638 chunks either way,
-  3.67 against 3.54ms, p99 18.2 against 18.3.
+  3.67 against 3.54ms, p99 18.2 against 18.3. §27 bakes a density on the same
+  lattice and costs 0% to +2% in Node — it narrowed the shadow march to the
+  ring the interpolation reads (196 → 169 points), which paid for it — and
+  the flight came back 638 chunks at 3.34 against the control's 3.67, p99
+  18.2 against 18.3. Geometry per chunk 160.4 → 180.7 KB, 31.8 MB alive at
+  the opening pose.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every

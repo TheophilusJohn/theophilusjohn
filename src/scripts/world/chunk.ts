@@ -6,7 +6,8 @@
    is — `terrain.ts` wraps the arrays it gets back, and `grid.ts` is the
    layout both ends read. */
 
-import { height } from './height';
+import { coverAt } from './cover';
+import { height, landform, rangeMask, uplift } from './height';
 import { SEG, SHADOW_SEG, VERTEX_COUNT, type ChunkSpec } from './grid';
 import { SUN } from './sun';
 
@@ -15,6 +16,12 @@ export type ChunkData = {
   normal: Float32Array;
   /** How much of the key light reaches each vertex, 0..1. */
   shadow: Float32Array;
+  /* §27 — how much ground cover this ground supports, 0..1, off the same
+     lattice as the shadow. It is here rather than only under the blade disc
+     because the disc reaches 60 units and the ground reaches 1,536: the
+     tint is what carries growth past the blades, and it is the reason the
+     edge of the disc is not an edge in the frame. */
+  cover: Float32Array;
   /* §25 — where this vertex would be, and what it would be lit by, on the
      parent's surface. Stored as the difference from its own value, so a
      root chunk with no parent is the zeroed array these are allocated as
@@ -25,6 +32,7 @@ export type ChunkData = {
   morphY: Float32Array;
   morphNormal: Float32Array;
   morphShadow: Float32Array;
+  morphCover: Float32Array;
   /** Height bounds, so `terrain.ts` can set a bounding sphere without
       reading the buffer back on the main thread. */
   min: number;
@@ -69,7 +77,10 @@ const CEILING = 170;
 const STEP0 = 10;
 const GROWTH = 1.35;
 const STEPS = 14;
-const COARSE = 16;
+/* Exported since §27: the blade disc marches this same function on the main
+   thread and has to start from the same surface, or the grass in a valley is
+   lit while the ground it stands in is not. */
+export const COARSE = 16;
 
 /* ── How wide a normal is ──────────────────────────────────────────────
    §22 differenced the height over one sample either side, which is the
@@ -145,6 +156,7 @@ type Surface = {
   y: Float32Array;
   normal: Float32Array;
   shadow: Float32Array;
+  cover: Float32Array;
   min: number;
   max: number;
 };
@@ -193,36 +205,58 @@ function buildSurface(ox: number, oz: number, size: number, i0: number, j0: numb
   const per = SHADOW_SEG / SEG;
   const cell = (index: number) => Math.min(Math.floor(index * per), SHADOW_SEG - 1);
 
-  /* One ring of padding around the cells the block touches, because the
-     landform gradient below differences across a whole cell either side. */
+  /* Padding around the cells the block touches: one ring because the
+     landform gradient differences across a whole cell either side, and — since
+     §27 — a second on the high side, because the *cover* at an interpolated
+     lattice point needs that gradient at the point above it as well. The
+     extra ring is heights only. Nothing marches or grows there, which is why
+     the loop below has an interior test on it rather than filling
+     everything: only [1, l-2] is ever read by the interpolation, and the
+     shadow march is the most expensive thing in this file. */
   const lx = cell(i0) - 1;
   const lz = cell(j0) - 1;
-  const lw = cell(i0 + n) + 2 - lx;
-  const lh = cell(j0 + n) + 2 - lz;
+  const lw = cell(i0 + n) + 3 - lx;
+  const lh = cell(j0 + n) + 3 - lz;
   const S = new Float32Array(lw * lh);
   const C = new Float32Array(lw * lh);
+  const V = new Float32Array(lw * lh);
   for (let j = 0; j < lh; j++) {
     const wz = oz + (lz + j) * ss;
     for (let i = 0; i < lw; i++) {
       const wx = ox + (lx + i) * ss;
-      // The landform height at this lattice point, which two things read.
-      const c = height(wx, wz, cs);
-      C[j * lw + i] = c;
+      // The landform height at this lattice point, which three things read.
+      C[j * lw + i] = height(wx, wz, cs);
+    }
+  }
+  const cinv = 1 / (2 * ss);
+  for (let j = 1; j < lh - 1; j++) {
+    const wz = oz + (lz + j) * ss;
+    for (let i = 1; i < lw - 1; i++) {
+      const wx = ox + (lx + i) * ss;
+      const at = j * lw + i;
+      const c = C[at]!;
       /* From that coarse surface, which is also the one being marched: a
          vertex sitting in a detail dip is *below* the field the ray travels
          over, and starting there would shadow every hollow in the world. */
-      S[j * lw + i] = sunlight(wx, wz, c);
+      S[at] = sunlight(wx, wz, c);
+      /* §27 — the density, off the *landform* gradient rather than the
+         surface's own, for the same reason the shading normal is (LANDFORM
+         above): a 14-unit detail bump is 23° of tilt and would strip the
+         cover off half of a meadow in stripes. `cover.ts` owns what the
+         number means; this is only where the field is sampled. */
+      const slope = Math.hypot(C[at + 1]! - C[at - 1]!, C[at + lw]! - C[at - lw]!) * cinv;
+      V[at] = coverAt(c, slope, rangeMask(landform(wx, wz, cs), uplift(wx, wz)), wx, wz);
     }
   }
 
   const y = new Float32Array(w * w);
   const normal = new Float32Array(w * w * 3);
   const shadow = new Float32Array(w * w);
+  const cover = new Float32Array(w * w);
 
   let min = Infinity;
   let max = -Infinity;
   const inv = 1 / (2 * SPAN * spacing);
-  const cinv = 1 / (2 * ss);
 
   for (let j = 0; j <= n; j++) {
     const gj = cell(j0 + j);
@@ -246,6 +280,7 @@ function buildSurface(ox: number, oz: number, size: number, i0: number, j0: numb
         return (a + (b - a) * ti) * (1 - tj) + (c + (d - c) * ti) * tj;
       };
       shadow[j * w + i] = at(S);
+      cover[j * w + i] = at(V);
 
       /* The shading normal, and it is **not** the surface's own. See LANDFORM
          above: the fine gradient is differenced over SPAN samples and then
@@ -268,7 +303,7 @@ function buildSurface(ox: number, oz: number, size: number, i0: number, j0: numb
     }
   }
 
-  return { y, normal, shadow, min, max };
+  return { y, normal, shadow, cover, min, max };
 }
 
 export function buildChunk(spec: ChunkSpec): ChunkData {
@@ -281,12 +316,15 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
   const position = new Float32Array(VERTEX_COUNT * 3);
   const normal = new Float32Array(VERTEX_COUNT * 3);
   const shadow = new Float32Array(VERTEX_COUNT);
+  const cover = new Float32Array(VERTEX_COUNT);
   const morphY = new Float32Array(VERTEX_COUNT);
   const morphNormal = new Float32Array(VERTEX_COUNT * 3);
   const morphShadow = new Float32Array(VERTEX_COUNT);
+  const morphCover = new Float32Array(VERTEX_COUNT);
 
   normal.set(base.normal);
   shadow.set(base.shadow);
+  cover.set(base.cover);
   for (let j = 0; j <= SEG; j++) {
     for (let i = 0; i <= SEG; i++) {
       const v = (j * w + i) * 3;
@@ -352,6 +390,7 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
         morphY[s] = dy;
         if (Math.abs(dy) > swing) swing = Math.abs(dy);
         morphShadow[s] = (parent.shadow[a]! + parent.shadow[b]!) * 0.5 - base.shadow[s]!;
+        morphCover[s] = (parent.cover[a]! + parent.cover[b]!) * 0.5 - base.cover[s]!;
         for (let k = 0; k < 3; k++) {
           morphNormal[s * 3 + k] =
             (parent.normal[a * 3 + k]! + parent.normal[b * 3 + k]!) * 0.5 - base.normal[s * 3 + k]!;
@@ -376,6 +415,7 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
     normal[d + 1] = normal[s + 1]!;
     normal[d + 2] = normal[s + 2]!;
     shadow[o] = shadow[surface]!;
+    cover[o] = cover[surface]!;
     // The apron's morph is its edge's, so it hangs from the edge wherever
     // the morph has put it rather than from where it started.
     morphY[o] = morphY[surface]!;
@@ -383,6 +423,7 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
     morphNormal[d + 1] = morphNormal[s + 1]!;
     morphNormal[d + 2] = morphNormal[s + 2]!;
     morphShadow[o] = morphShadow[surface]!;
+    morphCover[o] = morphCover[surface]!;
     o++;
   };
   for (let k = 0; k <= SEG; k++) hang(k);
@@ -396,9 +437,11 @@ export function buildChunk(spec: ChunkSpec): ChunkData {
     position,
     normal,
     shadow,
+    cover,
     morphY,
     morphNormal,
     morphShadow,
+    morphCover,
     min: base.min - drop - swing,
     max: base.max + swing,
   };

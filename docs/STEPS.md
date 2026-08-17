@@ -2121,6 +2121,205 @@ the frame leans against anything else in it.
 **Report:** ms/frame with and without the disc, blade count, and the
 generation cost the placement sampling adds per chunk.
 
+*Done.* **The cover is two things, and the one that is not instanced is the
+one that carries it.** The disc is 28,800 blades within sixty units of the
+camera and it is one draw call; the *density* is baked onto the terrain
+itself and tints the ground to the last chunk. That split is what the step's
+"past that the terrain's own colour carries it" turns into once there is a
+number for it: the same `cover(x, z)` decides both, so the edge of the disc
+is a fade between grass on tinted ground and tinted ground, over 12 units of
+a surface that is already the same colour on both sides.
+
+**Placement is `cover.ts`, and it imports nothing that has seen a GPU.** Two
+callers reach one density function — `chunk.ts` in the worker, off the
+coarse lattice it already builds for the shadow march, and `blades.ts` on the
+main thread, off its own five samples — so a blade and the ground under it
+never disagree about whether anything grows there. Out of the shipped module
+in Node, over §26's own lattice (radius 3,200, 20-unit spacing, 80,381
+samples):
+
+| height band | share of the world | mean cover | with cover at all |
+|---|---|---|---|
+| under the water (−8) | 11.9% | 0.000 | 0% |
+| −8 to 0 | 27.9% | **0.331** | 57% |
+| 0 to 20 | 32.2% | 0.244 | 57% |
+| 20 to 40 | 17.0% | 0.185 | 55% |
+| 40 to 60 | 8.3% | 0.114 | 49% |
+| 60 to 90 | 2.3% | 0.030 | 23% |
+| over 90 | 0.4% | 0.000 | 0% |
+
+**55% of dry ground has cover on it and the mean is 0.24** — meadows and
+bare rock rather than a lawn. The four inputs §0.2 names are all there and
+all measurable: nothing above 90 or under the water line, half again as much
+within nine units above it (0.326 against 0.197 higher up), thinner on the
+range mask, and gone on anything steeper than 44°. Clumping is a 76-unit
+noise thresholded rather than faded, so cover has edges: crossing the world
+at five-unit steps, a run of cover has a **median length of 60 units**, p90
+155, longest 470.
+
+**What it costs the generator is nothing, and that is arithmetic rather than
+luck.** The cover lattice is 169 evaluations on the same grid the shadow
+march uses — and the old ring marched 196 points of which the interpolation
+only ever read 169. Narrowing the march to what is read pays for the density.
+Both `buildChunk`s run in Node out of the shipped files:
+
+| chunk | §26 | §27 | |
+|---|---|---|---|
+| level 0, in the cluster | 1.42ms | 1.45ms | +2% |
+| level 0, open country | 1.48ms | 1.48ms | 0% |
+| level 1 | 1.44ms | 1.40ms | −3% |
+| level 2 | 1.35ms | 1.33ms | −1% |
+| level 3, a root | 0.94ms | 0.94ms | 0% |
+
+**And the surface it generates is the same surface.** Over five specs,
+position and normal are identical in every byte; the shadow differs by
+**4.2e-7**, because the march now starts from the coarse height as it was
+stored in a `Float32Array` rather than from the double it was computed as.
+The new attribute morphs like the other three (§25) and its target is exact
+to **1.9e-9** against the parent's own chunk.
+
+**The tint is `band.ts` twice.** The band model — two edges, the ramp inside
+a band, the shadow's depth — moved out of `terrain.ts` into a module of its
+own, because §27 puts a second surface in those bands and §28 adds two more.
+Growth is the same expression over a palette shifted one token up
+(`--rule → --dim`, `--dim → --muted`, and `--paper` staying put, because
+growth is not a reason to put more `--leader` in the frame), mixed by the
+baked density at 0.25. **Checked: with the tint at zero and the water
+hidden, this build is bit-identical to §26** — zero difference in any
+channel of any pixel, at the opening pose and at a crest. The refactor
+changed nothing about how the ground is lit.
+
+A quarter of a step rather than a step, because `--rule` to `--dim` is the
+largest jump in the palette and flat open country sits inside that band: at
+a full step the most common surface in the world is a different colour, which
+is a different landscape rather than a landscape with growth on it.
+
+**The disc is 60 units and the step says 120.** That is a measurement. At
+120 the same instance budget put **113 tufts inside the nearest 25 units and
+2,069 past 100**, where a blade is four pixels tall and a dozen fall inside
+one — a tint that costs a draw call. At 60 the near ground gets 516 tufts
+inside 25 units, six times the cover where the reader is actually looking,
+and what was given up is carried by the ground tint that did not exist when
+the step was written.
+
+**An instance is a tuft of three blades, and that is also a measurement.**
+Single blades at this size came back as a field of white one-pixel streaks —
+grass reads as *rain* when what is drawn is thinner than it is long with
+space around it. Three blades from one root, four times as long as they are
+wide, at 0.30 to 0.62 units: a stand of scrub from six units up. It is also
+a third of the CPU cost per blade, because the expensive part of placing one
+is the field sample under its root and a tuft has one root.
+
+**A blade is lit by the ground it stands on.** The first build banded a
+blade by `N·L` of its own near-vertical face, and at one or two pixels wide
+that is not shading, it is noise: what the eye reads is whether the ground
+has texture on it, and texture four bands away from what it sits on is
+weather. So the cell carries the *ground's* own lighting term — the same
+`N·L`, the same marched shadow, out of `chunk.ts`'s own `sunlight` — and the
+blade's facing modulates it between 0.72 and 1.28 of that. The sparkle in a
+stand of grass is then the ground's own terminator moving through it.
+
+**Cost, on built code, against a §26 build measured by the same harness on
+the same machine.** At the three altitudes §25 and §26 report on, the disc is
+**not drawn at all** — the camera is more than 58 units over the ground, so
+`mesh.visible` is false and the draw calls and triangles are identical to
+§26's. What those rows measure is the tint alone:
+
+| altitude | 70 | 190 | 520 |
+|---|---|---|---|
+| draw calls, §26 → §27 | 54 → 54 | 42 → 42 | 22 → 22 |
+| §26, DPR 1 | 0.575 | 0.498 | 0.496 |
+| §27, DPR 1 | 0.652 | 0.535 | 0.510 |
+| §26 → §27, DPR 1.5 | 1.042 → 1.128 | 1.018 → 1.087 | 1.040 → 1.081 |
+
+**+0.077ms at the densest stop for two more floats a vertex and a band
+expression evaluated twice**, and about the same at DPR 1.5, which is the
+shape to expect from a change that is half vertex and half fragment.
+
+The disc's own cost is the same drained frame with the blades hidden, at
+three poses low enough to draw them:
+
+| pose | draw calls | triangles | DPR 1 | DPR 1.5 |
+|---|---|---|---|---|
+| a meadow, 6 units up | 50 → 51 | +86,400 | +0.052ms | +0.017ms |
+| a shore, 11 units up | 54 → 55 | +86,400 | +0.034ms | +0.018ms |
+| looking down, 12 up | 47 → 48 | +86,400 | +0.014ms | +0.019ms |
+
+**One draw call and under a tenth of a millisecond**, against a budget of 8ms
+for everything §0.2 puts on the landscape. 6,099 of the 9,600 tufts stand at
+the meadow pose — 18,297 blades — and the rest are rejected by the density
+and drawn as degenerate triangles rather than branched around.
+
+**The fill is the part that is not free, and it is bounded rather than
+low.** Placing a cell is 7.2µs: five field samples for the height and its
+gradient, then — only where something grows — a shadow march and one sample
+per blade. Over 75 seconds of terrain-hugging boost it filled 38,742 cells
+with 19,211 marches for **0.070ms a frame**, and the worst single frame was
+**2.70ms at the 96-cell budget**. The budget is what makes that a number: a
+diagonal crossing at boost is 80 cells, so it is not a rate limit in flight;
+it is the cap on the frame after a jump, where the whole grid is stale and
+fills over seventeen frames.
+
+| 75s at boost, terrain-hugging | frames | median | p99 | max | >25ms | chunks | gen mean |
+|---|---|---|---|---|---|---|---|
+| §26 | 4,491 | 16.7 | 18.3 | 25.2 | 4 | 638 | 3.67ms |
+| §27 | 4,495 | 16.7 | 18.2 | 25.3 | 4 | 638 | 3.34ms |
+
+Both end the flight at the same pose to the unit and hold clearance
+**6.000** the whole way.
+
+**Memory is where the tint is expensive.** Two more floats a vertex is
+**160.4 → 180.7 KB a chunk** and **28.2 → 31.8 MB** of geometry alive at the
+opening pose. The disc adds 0.8MB of instance data, uploaded as one merged
+range per frame that touches it.
+
+**The wind is numbers rather than code**, for the reason `sun.ts` is: the
+four things that read it do not want the same quantity. The blades want a
+bend vector, the deck wants the displacement that integrates to, the water
+wants a bearing per wave at the speeds §26 tuned. So `wind.ts` imports
+nothing and states the field — direction, gust, wander — and each layer's use
+is one line off those constants. `windAt` is the canonical statement of it in
+JS, which is what lets Node report on the shipped file:
+
+| | direction | rate a band edge sees |
+|---|---|---|
+| the wind itself | bearing 150.1°, **90° off the opening view axis**, 21° off the key light | — |
+| gust wave | along it | 9 units/s over 120 = **0.075 Hz**, one gust every 13.3s |
+| direction wander | ±9° across it | 0.038 Hz |
+| blade flutter | per blade | 0.28 Hz at 0.3 of the strength |
+| cloud deck | along it, 3.34 units/s (§23's rate, to the digit) | 0.022 Hz |
+| water, four waves | 8, −14, 22, −19° off it | 0.032 / 0.043 / 0.054 / 0.067 Hz |
+
+**Everything in the frame is within 22° of one direction**, and every rate is
+inside the 0.02–0.075 Hz band §26 established except the blade's own flutter.
+That one is measured rather than argued, on §26's instrument — the worst
+12×12 block of luma between two frames a sixtieth of a second apart, over a
+shore where the deck alone is 1.06 and §26's water took the frame to 1.80.
+At 0.4 Hz the grass measured **4.24**, which made it the fastest thing in a
+world whose water had to be slowed down to belong in it. At 0.28 Hz it is
+**1.53** with the deck and 1.93 for the whole frame: the grass adds half a
+level to what was already moving.
+
+**What it costs the brightness budget**, which §35 owns and this step only
+has to report:
+
+| pose | mean luma §26 → §27 | lower half of the frame | brightest 12×12 |
+|---|---|---|---|
+| the opening pose | 48.2 → 49.6 (+3.0%) | 61.0 → 63.8 (+4.7%) | 192.0 → 192.0 |
+| a meadow | 69.2 → 75.9 (+9.6%) | 80.1 → 91.8 (+14.6%) | 197.4 → 197.4 |
+| six units over it | 69.4 → 75.3 (+8.6%) | 82.1 → 92.4 (+12.6%) | 198.1 → 198.1 |
+| a shore | 59.4 → 66.4 (+11.7%) | 64.9 → 76.6 (+17.9%) | 199.7 → 199.7 |
+
+The ground where cover is heavy gets up to an eighth brighter and **the
+brightest local average in the frame does not move at all** — it is a cloud,
+and nothing here touches the deck.
+
+**Bundle.** World chunk **207,103 + 2,407 worker = 209,510 gzipped (204.6
+KiB)** of 400, up 2,727 on a like-for-like §26 build (204,691 + 2,112, both
+carrying the same 20-byte measurement hook this build was measured with and
+ships without). The document side is byte-identical apart from the hash of
+the scene chunk it names.
+
 ### 28. Rocks and trees
 Instanced meshes, three or four variants each, one draw call per variant per
 chunk, placed per the same pure function. Built from primitives like

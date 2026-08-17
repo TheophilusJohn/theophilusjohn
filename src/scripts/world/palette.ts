@@ -21,7 +21,7 @@ import type Node from 'three/src/nodes/core/Node.js';
    other is a type error at every second call site — every colour in this
    world is a term in an expression rather than a material's `color`, so
    converting once here is what keeps the shading code readable. */
-type Token = Node<'vec3'>;
+export type Token = Node<'vec3'>;
 
 export type Palette = {
   /** The deep sky, the clear colour, and what fog takes everything to. */

@@ -35,6 +35,7 @@
 import { Renderer, Scene, WebGPUBackend, BasicNodeLibrary } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
+import { buildBlades } from './blades';
 import { buildCamera } from './camera';
 import { buildPalette, token } from './palette';
 import { buildSky } from './sky';
@@ -134,6 +135,15 @@ export async function mount() {
   const water = buildWater(palette, uTime);
   scene.add(water.mesh);
 
+  /* Ground cover, on a disc that follows the camera (§27). Unlike the water
+     it has an update, and it is the only thing in the world that samples the
+     height field on the main thread for a reason other than the camera:
+     blades stand *on* the ground, so their bases come out of the same field
+     the workers generate from. It is drawn before the water, which is what
+     puts a blade on a shore behind the surface it is standing next to. */
+  const blades = buildBlades(palette, uTime);
+  scene.add(blades.mesh);
+
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
      ticker was the right clock while the scene had to stay in step with
@@ -156,6 +166,7 @@ export async function mount() {
     // is a function of where the camera is *this* frame, and asking a frame
     // late is a hole in the ground on every LOD boundary crossed at speed.
     terrain.update(camera, dt);
+    blades.update(camera);
     renderer.render(scene, camera);
   };
 
@@ -205,6 +216,11 @@ export async function mount() {
      asks for its ground at load rather than a frame after the canvas is
      already over the document. */
   terrain.update(camera, 0);
+  // The whole grid at once rather than a frame's worth of it: this is before
+  // the first frame, where fifteen milliseconds are free and cover fading in
+  // over the opening half second is not. It returns immediately at any pose
+  // the disc is invisible from, which the opening pose is.
+  blades.settle(camera);
   renderer.render(scene, camera);
 
   /* The document is behind an opaque canvas from the next line, so it must
@@ -219,5 +235,5 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky, stars, terrain, water };
+  return { renderer, scene, camera, view, sky, stars, terrain, water, blades };
 }

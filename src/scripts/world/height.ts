@@ -248,11 +248,25 @@ export const WATER = -8;
    "every octave", which is what §24's clamp and any measurement want. It is
    also why the clamp keeps six units of clearance rather than one: the mesh
    under the camera is a level-0 chunk sampling at 2, so it is not this. */
+/* The continental layer on its own, and the mask taken off it. Both are
+   exported for §27: where there are mountains at all is one of the four
+   things ground cover's density is a function of (§0.2), and a second
+   implementation of the mask would be a second answer to "is this sheltered
+   country". `height` calls them itself, so there is one expression and no
+   sample is taken twice. */
+export function landform(x: number, z: number, spacing = 0): number {
+  return fbm(x, z, 1 / CONTINENT_WAVELENGTH, CONTINENT_OCTAVES, spacing);
+}
+
+export function rangeMask(land: number, u: number): number {
+  return smoothstep(RANGE_MASK_LOW, RANGE_MASK_HIGH, land) * (1 - u) + u;
+}
+
 export function height(x: number, z: number, spacing = 0): number {
-  const land = fbm(x, z, 1 / CONTINENT_WAVELENGTH, CONTINENT_OCTAVES, spacing);
+  const land = landform(x, z, spacing);
   const relief = ridged(x, z, 1 / RANGE_WAVELENGTH, RANGE_OCTAVES, spacing);
   const detail = fbm(x, z, 1 / DETAIL_WAVELENGTH, DETAIL_OCTAVES, spacing);
   const u = uplift(x, z);
-  const mask = smoothstep(RANGE_MASK_LOW, RANGE_MASK_HIGH, land) * (1 - u) + u;
+  const mask = rangeMask(land, u);
   return land * CONTINENT_AMP + relief * mask * RANGE_AMP + detail * DETAIL_AMP + u * CLUSTER_AMP;
 }

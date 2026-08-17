@@ -47,6 +47,7 @@ import { WATER } from './height';
 import type { Palette } from './palette';
 import { gradient, haze } from './sky';
 import { SUN } from './sun';
+import { windDir } from './wind';
 
 /* Inside the camera's far plane (2,600) at every altitude the ceiling
    allows, and outside the last chunk of ground. The rim is 2,500 units out
@@ -65,8 +66,16 @@ const SIDES = 64;
    a bite in the edge of the glance.
 
    Wavelengths are not harmonics of each other, or the four would line up
-   into one wave every 34 units. Drift is a fixed direction until §27, which
-   builds the one wind field everything that moves is supposed to read.
+   into one wave every 34 units.
+
+   **Since §27 the four bearings are the wind's**, which is what §26 left
+   open: each wave is now stated as an offset in degrees off `wind.ts`'s
+   prevailing direction rather than as an arbitrary unit vector, so the
+   ripple, the grass and the cloud deck all run the same way. The spread is
+   ±22° because a fetch that is exactly one direction is a corrugation — and
+   the speeds and wavelengths are untouched, which is what keeps §26's
+   measurement (every scale between 0.03 and 0.07 Hz, worst 12×12 block
+   moving 2.3 levels of luma a frame) standing.
 
    **Each wave has its own reach**, which is `height.ts`'s Nyquist argument
    at a different scale: a ripple whose wavelength is under a couple of
@@ -86,10 +95,10 @@ const SIDES = 64;
    frame, which is under twice the sky. Water that changes faster than the
    sky is not still. */
 const WAVES = [
-  { length: 34, slope: 0.018, dir: [0.94, 0.34], speed: 1.1, reach: 900 },
-  { length: 21, slope: 0.014, dir: [-0.42, 0.91], speed: 0.9, reach: 620 },
-  { length: 13, slope: 0.010, dir: [0.65, -0.76], speed: 0.7, reach: 400 },
-  { length: 6, slope: 0.032, dir: [-0.87, -0.49], speed: 0.4, reach: 180 },
+  { length: 34, slope: 0.018, bearing: 8, speed: 1.1, reach: 900 },
+  { length: 21, slope: 0.014, bearing: -14, speed: 0.9, reach: 620 },
+  { length: 13, slope: 0.010, bearing: 22, speed: 0.7, reach: 400 },
+  { length: 6, slope: 0.032, bearing: -19, speed: 0.4, reach: 180 },
 ] as const;
 
 /* ── The mirror ─────────────────────────────────────────────────────────
@@ -159,7 +168,8 @@ export function buildWater(palette: Palette, time: UniformNode<'float', number>)
   let slope: Node<'vec2'> = vec2(0, 0);
   for (const wave of WAVES) {
     const k = (Math.PI * 2) / wave.length;
-    const dir = vec2(wave.dir[0], wave.dir[1]);
+    const d = windDir(wave.bearing);
+    const dir = vec2(d.x, d.z);
     const phase = p.dot(dir).sub(time.mul(wave.speed)).mul(k);
     const damp = smoothstep(wave.reach, wave.reach * 0.4, dist);
     slope = slope.add(dir.mul(cos(phase).mul(wave.slope).mul(damp)));
