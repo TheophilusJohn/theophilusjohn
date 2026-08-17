@@ -83,10 +83,24 @@ export function holdScroll() {
   lenis?.stop();
 }
 
+/* Lenis clamps a target to its own cached limit, and every caller below is
+   a jump made *because* the document just changed height — a pin created,
+   a pin released, a deep link corrected. Its ResizeObserver has not fired
+   yet at that point, so the limit is the height of the page before the
+   change and the jump silently lands short.
+   Measured at §32 on `/#philoi`: a jump to 5,927 clamped to 4,105, which
+   is Homonoia, one project early, and every deep link past the first has
+   had it. Re-measure first; it is three reads on a handful of deliberate
+   jumps, against a correction that never arrives. */
+function remeasure() {
+  lenis?.resize();
+}
+
 /* One authority means programmatic jumps go through it too. A native
    scrollIntoView() moves the document under Lenis, which then eases back
    from its own stale position and undoes the jump. */
 export function jumpTo(el: Element) {
+  remeasure();
   if (lenis) lenis.scrollTo(el as HTMLElement, { immediate: true });
   else el.scrollIntoView();
 }
@@ -95,11 +109,13 @@ export function jumpTo(el: Element) {
    beneath them — §11 adds and removes pin distance mid-page. */
 export function jumpBy(delta: number) {
   if (!delta) return;
+  remeasure();
   if (lenis) lenis.scrollTo(scrollY + delta, { immediate: true });
   else scrollBy(0, delta);
 }
 
 export function jumpToTop() {
+  remeasure();
   if (lenis) lenis.scrollTo(0, { immediate: true });
   else scrollTo(0, 0);
 }

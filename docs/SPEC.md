@@ -793,17 +793,48 @@ units a second and the nearest visible ground at cruise is 315 units out
 **Three states**, as §4.8 already had them: distant silhouette, approaching
 (name and machine ID resolve), arrived (the writeup opens).
 
-**The writeup opens in the world.** In DOM, over the scene — the same HTML
-the document serves. Its backing is **§17's scrim rather than a panel**,
-which §29 measured and §0.3's third constraint records: a gradient with no
-edge holds the reading half of the frame still, and the moment it has an
-edge it reads as content pasted onto a background. Close it and you are back
-where you were, still on the route.
+**Built at §32, and the three states are one number** — `bandAt()`'s own
+weight, which §31 already computes for the route. The name resolves over
+0.10–0.55 of it and the writeup opens over 0.62–1.0, reaching 1 exactly at
+the settle keyframe. "Distant" is the absence of the panel: nothing stands
+at a station until §34, so the silhouette arrives with the scene.
 
-**The URL follows.** Arriving at Enargeia pushes `/projects/enargeia`;
-loading that URL in world mode drops you at Enargeia. Deep links work in
+**The writeup opens in the world.** In DOM, over the scene — the same HTML
+the document serves, cloned node for node rather than retyped, classes and
+Astro's scope attributes and all. Its backing is **§17's scrim rather than a
+panel**, which §29 measured and §0.3's third constraint records: a gradient
+with no edge holds the reading half of the frame still, and the moment it
+has an edge it reads as content pasted onto a background. Close it and you
+are back where you were, still on the route.
+
+**The dwell is the reading.** A station's column is 715 to 1,150px tall
+against a frame of about 700 — the writeup is longer than the screen it is
+read on, and that is a fact about writeups, not a layout to solve. So the
+600 scroll units in which the camera holds its settle pose move the column
+instead, one unit to one pixel. There is no second scroll position and no
+wheel to intercept.
+
+**The metric strip takes its own width** — `min(64ch, 50vw)`, two even
+tracks, gaps in from `--s-8` — which is §0.3's first constraint answered
+without dropping a metric. So does the headline, at `max-content` up to
+52vw, because a 45ch column re-breaks the `<br>` the frontmatter authored.
+Both stop short of the subject at 67% of the frame.
+
+**The URL follows, by `replaceState` and never by push.** §4.6's rule
+binds here too: the route crosses four stations and pushing on arrival
+would put sixteen entries behind a reader who scrolled it twice. Arriving at
+Enargeia writes `/projects/enargeia`; loading that URL in world mode drops
+you at Enargeia; and a popstate resolves to a station and jumps the route to
+it, which is what makes the back button mean something. Deep links work in
 both modes and mean the same thing (§4.6 is unchanged — the History API
 carries them, and `getStaticPaths` still emits real pages).
+
+**The address has to be read early**, and that is the load-bearing detail:
+`url-sync` rewrites the path from the *hidden* document's own scroll on the
+first frame, and its `replaceState` drops the fragment. Read at mount — the
+world is behind an adapter request and a dynamic import — a deep link to
+Philoi lands at Homonoia, and document mode's own re-jump finds no hash
+left to act on. Both capture it at import now.
 
 **And every station is solid** (§0.3), like everything else built.
 

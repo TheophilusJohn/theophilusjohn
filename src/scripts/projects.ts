@@ -294,6 +294,16 @@ function keepingPlace(change: () => void) {
   }
 }
 
+/* Captured at import, and that is the fix rather than a convenience.
+   `url-sync`'s observer fires on the first frame and its `replaceState`
+   writes a bare path, which **drops the fragment** — so by the time the
+   re-jump below can finally be right (on `fonts.ready`, when the pins are
+   measured in the face the page renders with) `location.hash` is empty and
+   the correction returns early. Measured at §32: `/?doc#philoi` landing at
+   Homonoia, one project short, because the import-time pass had not
+   pinned yet and the fonts-ready pass had no hash left to act on. */
+const landed = location.hash;
+
 /* Every pin adds its own scroll distance above the sections after it, so a
    #hash the browser resolved before this ran points somewhere else now.
    §4.6's deep links land at the right section only if we go back to it once
@@ -301,8 +311,8 @@ function keepingPlace(change: () => void) {
    which is beat 1. Nothing to correct when the beats are not running:
    the page is the height the browser already resolved against. */
 function rejump() {
-  if (!pins.length || !location.hash) return;
-  const el = document.getElementById(location.hash.slice(1));
+  if (!pins.length || !landed) return;
+  const el = document.getElementById(landed.slice(1));
   if (!el) return;
   /* Not jumpTo: if the reader is already somewhere inside this section's
      pin, the element is fixed at top 0 and both scrollIntoView and Lenis

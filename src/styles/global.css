@@ -127,6 +127,149 @@ html[data-world] :is(.site-head, main, .site-foot, .skip) {
 }
 html[data-world] { overflow: hidden; }
 
+/* ── Content at a station ────────────────────────────────
+   §0.4 / §32. The column is built by station.ts out of the
+   document's own elements, so almost everything here is
+   layout and nothing here is type: the headline is still
+   `.headline`, the numbers are still `.stats`, and both
+   carry Astro's scope attribute from the section they were
+   cloned out of. Every selector below therefore has to
+   *outrank* a component's scoped rule, which is why they
+   all start from `.station` and go one class deeper than
+   the rule they override — a scoped `.stats` is (0,2,0)
+   with its attribute, and so is a bare `.station .stats`.
+
+   Above the canvas (50) and below the skip link (99) and
+   the cursor (100). It takes no pointer: the wheel reaches
+   the window either way, and a layer that swallowed clicks
+   would take the stick away from §35 without saying so. */
+.stations {
+  position: fixed; inset: 0; z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms linear;
+}
+.stations[data-ready] { opacity: 1; }
+
+/* Solid over the column and gone by 60vw, with no edge
+   anywhere — §17's construction, unchanged, and §29
+   measured that it stays invisible as an object over a lit
+   landscape rather than reading as a panel. */
+.stations > .scrim {
+  position: absolute; inset-block: 0; left: 0; width: 60vw;
+  background: linear-gradient(to right, var(--scrim) 0 60%, transparent 100%);
+  opacity: 0;
+}
+
+.station { display: none; }
+.station[data-here] { display: block; }
+
+/* The frame, not the content: inset to the viewport, so the
+   column centres in it when the writeup fits and starts at
+   the top when it does not. --up is the reading, in pixels,
+   and station.ts spends the dwell's 600 scroll units on it. */
+.station .col {
+  position: absolute; inset-block: 0; left: var(--s-16);
+  width: 45ch; max-width: calc(100% - 2 * var(--s-16));
+  padding-block: var(--s-16) var(--s-12);
+  display: grid; align-content: center;
+  transform: translateY(calc(var(--up, 0) * 1px));
+  will-change: transform;
+}
+.station[data-tall] .col { align-content: start; }
+/* minmax(0, 1fr), not the implicit `auto`: the metric strip below takes
+   its own width outside the column, and an auto track would size itself to
+   that instead — which silently widens the measure of every paragraph and
+   pushes the meta row's far end 160px past the column it belongs to. */
+.station .col .stack { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
+
+/* The two blocks, and between them they are §4.8's three
+   landmark states: nothing, the name resolved, the writeup
+   open. The travel is small for the same reason §17's beats
+   keep theirs small — a long one under a scrub turns a
+   cross-fade into two things sliding past each other. */
+.station .col .name,
+.station .col .body {
+  opacity: var(--in, 0);
+  transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
+}
+.station .col .body { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
+
+/* Hidden rather than undisplayed, and the layout is the
+   reason: the column's height must not change when the
+   writeup opens or the headline jumps under the reader at
+   the exact moment they arrive. visibility is also what
+   takes it out of the tab order and the accessibility tree,
+   so Tab cannot reach a link that is not on screen. */
+.station .col .body[data-out],
+.station .act[data-out] { visibility: hidden; }
+
+/* Selectable and clickable, unlike the layer around it. */
+.station .col .body { pointer-events: auto; }
+
+/* The meta line: the machine ID and the period at their own width rather
+   than pushed to the ends of a 45ch column, and the way out at the far
+   end of it. */
+.station .col .name .row {
+  display: flex; justify-content: space-between;
+  align-items: baseline; gap: var(--s-6);
+}
+.station .col .name .row > .top { padding-top: 0; justify-content: flex-start; gap: var(--s-4); }
+
+/* Display type gets its own width, like the strip below it and for the
+   same reason: the break in a headline is content's decision (it is a
+   `<br>` in the frontmatter) and a 45ch column re-breaks it. "Raft, made
+   visible" came back as three lines instead of two and took the column
+   236px past the frame for it. Bounded well short of where the scene
+   stands, at 67% of the width. */
+.station .col .name .headline { width: max-content; max-width: 52vw; }
+
+/* §29's first constraint, and the only thing in that frame
+   that was visibly laid out *wrong*: four metrics at --t-xl
+   in a 45ch column wrap to two ragged rows with a stranded
+   fourth. The document gives the strip a full-width row and
+   the world gives it a column, so here it takes its own
+   width outside the column and an even two tracks — three
+   metrics leave one cell empty instead of stranding one,
+   and the gap comes in from --s-8 to match. It stops short
+   of the subject, which stands at 67% of the frame. */
+.station .col .body .stats {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(64ch, 50vw); column-gap: var(--s-6); row-gap: var(--s-4);
+  margin-top: 0;
+}
+.station .col .body .summary,
+.station .col .body .links { margin-top: 0; }
+.station .col .body .prose { max-width: none; padding-block: 0; }
+
+/* The close control. §0.4 asks that closing the writeup
+   leave you where you were, still on the route, and `Esc`
+   reaches the same thing — but a key nobody is told about
+   is not an affordance, so there is a control.
+
+   In the meta row rather than fixed to the frame, and that
+   is a correction: fixed, it was the one thing on screen
+   the column could slide *under*, and 200 units into
+   Homonoia's reading the word CLOSE was sitting inside an
+   88px headline. It travels with the heading it belongs to,
+   which is also where a reader who wants to dismiss the
+   panel is looking. `Esc` is what covers the scrolled
+   case. */
+.station .act {
+  appearance: none; background: none; border: 0;
+  padding: var(--s-1) 0; min-height: 24px;
+  font-family: var(--font-mono); font-size: var(--t-meta);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--dim);
+  opacity: var(--in, 0);
+  pointer-events: auto;
+  /* For the pointers cursor.ts leaves alone — it does not initialise on a
+     touch device, and a touchscreen laptop is inside §0.1's tier. Under
+     the custom cursor the !important rule above wins, as it should. */
+  cursor: pointer;
+}
+.station .act:hover { color: var(--leader); }
+
 /* ── The cursor ──────────────────────────────────────────
    §4.5. cursor.ts builds the element and puts data-cursor
    on the root, and it does neither on a touch device, under

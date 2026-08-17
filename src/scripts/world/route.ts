@@ -91,7 +91,9 @@ const PACE = 1.0;
 const MIN_TRAVEL = 1100; // a short leg still gets a flight
 const LEAD_IN = 500;     // the opening pose holds before the route leaves it
 const SETTLE_IN = 700;   // approach → settle
-const DWELL = 600;       // the settle holds
+/** The settle holds. Exported because §32 spends it: the camera is still
+    for these units and the reading moves instead. */
+export const DWELL = 600;
 const CLIMB_OUT = 500;   // settle → the climb away
 
 /* How far back the approach stands, and how high the travel flies. The

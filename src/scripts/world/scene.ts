@@ -44,6 +44,7 @@ import { poseAt, nearest } from './route';
 import { buildScroll } from './scroll';
 import { buildSky } from './sky';
 import { buildStands } from './stands';
+import { buildStation, entryAt, type Where } from './station';
 import { buildStars } from './stars';
 import { buildTerrain } from './terrain';
 import { buildWater } from './water';
@@ -60,7 +61,9 @@ const uTime = uniform(0);
    not. */
 const viewport = () => [document.documentElement.clientWidth, innerHeight] as const;
 
-export async function mount() {
+/** `arrived` is the address the reader loaded, captured by `world.ts` at
+    import — not read here, because by now it has been overwritten (§32). */
+export async function mount(arrived?: Where) {
   /* Built detached. Nothing reaches the document until there is a frame in
      it — a renderer that fails to initialise must leave no node behind, and
      in world-first that matters more than it did: the node it would leave
@@ -183,7 +186,15 @@ export async function mount() {
      the same way the reader's own flying does — through camera.ts, which is
      still the only thing that may move the view. */
   const ride = buildScroll(canvas);
-  ride.jump(0);
+
+  /* ── The station's content (§32) ──────────────────────────────────────
+     The writeup is the document's own HTML, cloned, and it arrives over
+     the scene rather than instead of it. `station.ts` owns the three
+     landmark states and the address bar in both directions; what it needs
+     from here is the route position each frame and a way to jump, which is
+     the same `ride` the wheel drives. */
+  const place = buildStation((y) => ride.jump(y));
+  ride.jump(entryAt(arrived));
 
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
@@ -211,6 +222,10 @@ export async function mount() {
       const on = ride.update(dt);
       view.drive(poseAt(on.y, on.arrive), dt);
     }
+    /* Off the route there is no station: with the stick out the reader is
+       somewhere the route has no position for, and a writeup hanging over
+       a free flight is a claim about where they are that is not true. */
+    place.update(view.flying() ? null : ride.at(), dt);
     // After the camera and before the render: which squares of ground exist
     // is a function of where the camera is *this* frame, and asking a frame
     // late is a hole in the ground on every LOD boundary crossed at speed.
@@ -260,6 +275,10 @@ export async function mount() {
   addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (event.key === 'Escape') {
+      /* One escape key, two things to escape, innermost first: an open
+         writeup is what `Esc` closes, and only with nothing open does it
+         leave the world. §33 replaces the second half of this. */
+      if (place.dismiss()) return;
       const url = new URL(location.href);
       url.searchParams.delete('world');
       location.replace(url.pathname + url.search + url.hash);
@@ -290,8 +309,9 @@ export async function mount() {
   /* One pass over the quadtree before the first frame, so the opening pose
      asks for its ground at load rather than a frame after the canvas is
      already over the document. The route is what puts the camera there —
-     the same call the loop makes, at scroll zero. */
-  view.drive(poseAt(0, 0), 0);
+     the same call the loop makes, at wherever the URL landed (§32): a deep
+     link opens at a station's settle rather than at the arrival. */
+  view.drive(poseAt(ride.at(), 0), 0);
   terrain.update(camera, 0);
   // The whole grid at once rather than a frame's worth of it: this is before
   // the first frame, where fifteen milliseconds are free and cover fading in
@@ -310,13 +330,21 @@ export async function mount() {
   holdScroll();
 
   document.documentElement.dataset.world = '';
-  document.body.append(canvas);
-  requestAnimationFrame(() => canvas.setAttribute('data-ready', ''));
+  document.body.append(place.root, canvas);
+  /* Attached before it is measured: `station.ts` reads the column's own
+     height to decide how much of it the dwell has to carry, and a detached
+     subtree measures zero. A deep link arrives at a settle, so this is the
+     load that has a writeup open in its first frame. */
+  place.update(ride.at(), 0);
+  requestAnimationFrame(() => {
+    canvas.setAttribute('data-ready', '');
+    place.root.setAttribute('data-ready', '');
+  });
 
   run();
 
   return {
-    renderer, scene, camera, view, ride,
+    renderer, scene, camera, view, ride, place,
     sky, stars, terrain, water, blades, stands, clouds, motes,
   };
 }

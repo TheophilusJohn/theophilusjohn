@@ -39,6 +39,21 @@ const MIN_WIDTH = 1024;
 const params = new URLSearchParams(location.search);
 const asked = params.has('world') && !params.has('doc');
 
+/* **Read here, and that is the whole point of reading it here.** §32 drops
+   a reader at the station their URL names, and the URL stops naming it
+   almost immediately: `url-sync` rewrites the path to whatever section of
+   the *document* its observer finds in the middle of the viewport, and
+   `projects.ts` moves the document twice — once at import against the
+   fallback font and again on `document.fonts.ready`. The world mounts
+   somewhere in the middle of all that, behind an adapter request and a
+   dynamic import, so by the time it can ask, `/projects/philoi` has become
+   whichever section the correction happened to be passing. Measured: a
+   deep link to Philoi landing at Homonoia.
+
+   This module is imported synchronously, before the observer's first
+   callback, so this is the address the reader actually arrived at. */
+const arrived = { hash: location.hash, path: location.pathname };
+
 /* Not `navigator.gpu` on its own. The property exists in browsers that
    cannot hand out an adapter — a machine with no supported GPU, a blocked
    driver, a headless run — and a renderer built on that promise fails after
@@ -57,7 +72,7 @@ async function boot() {
   try {
     if (!(await capable())) return;
     const { mount } = await import('./world/scene');
-    await mount();
+    await mount(arrived);
   } catch (error) {
     /* The document is underneath and untouched, so a world that fails to
        start is a load that got the document — which is §0.1's bottom tier

@@ -3274,6 +3274,184 @@ that URL drops you there.
 **Done when:** close the writeup and you are where you were, still on the
 route; deep links and the back button both work in both modes.
 
+*Done.* **The content layer is `station.ts` and it holds nothing of its
+own.** Every element in the column is `cloneNode`d out of the document
+underneath — the machine ID row, the headline, the summary, the metric
+strip, the links and the writeup — so the register is not reproduced, it is
+the same nodes carrying the same classes and the same Astro scope
+attributes. What the module adds is three things and no words: the states,
+the column's own travel, and the address bar.
+
+**The three states are one number**, and it is `bandAt()`'s weight, which
+§31 already computes: 0 across the travel, a smoothstep over the last 700
+scroll units of the approach, 1 across the dwell, and a ramp back out over
+the climb away. The name resolves over 0.10–0.55 of it and the writeup opens
+over 0.62–1.0, reaching 1 exactly at the settle keyframe — which is what
+"arrived" means. The address bar changes hands at 0.5, well clear of both
+ramps. **"Distant" is the absence of the panel**: there is nothing standing
+at a station until §34, so the silhouette arrives with the scene rather
+than here.
+
+**Two clones needed correcting and both were found by looking at them.**
+The `<h3>` is rebuilt as an `<h2>` — the document's own `<h1>` and `<h2>`
+are behind an opaque canvas and out of the accessibility tree, so the level
+moves up to where it actually sits — and ids and inline styles are stripped,
+because `projects.ts` leaves GSAP's `opacity: 0` on `.headline` for most of
+a pin and a clone taken mid-pin arrives invisible.
+
+### The dwell is the reading, which is what makes the writeup fit
+
+The column is **715 to 1,150px tall against a frame of about 700**. That is
+not a layout to solve: it is the writeup, at the document's own 45ch, and a
+station's reading is longer than the screen it is read on.
+
+So the dwell pays for it. The camera holds one pose for 600 scroll units at
+a settle, and those units move the column instead — one scroll unit to one
+pixel, and faster only if the column is longer than the dwell. There is no
+second scroll position and no wheel to intercept: `scroll.ts` is still the
+only gesture and `route.ts` still the only pose. Measured, how far the
+column runs past the frame:
+
+| | 1512×804 | 1440×900 | 1280×800 | 1024×768 | 1024×640 | 1024×560 |
+|---|---|---|---|---|---|---|
+| Enargeia | 255 | 159 | 259 | 234 | 362 | 442 |
+| Homonoia | **476** | 380 | 480 | 455 | 583 | **663** |
+| Philoi | 373 | 277 | 377 | 353 | 481 | 561 |
+| Basis | 119 | 23 | 123 | 124 | 252 | 332 |
+
+Homonoia binds at every width, as it does in document mode. One in six
+exceeds the dwell and only at 560px of height, where the rate goes to 1.105
+pixels per scroll unit and the reading still finishes before the camera
+leaves.
+
+### The metric strip, and the headline with it
+
+§29's first constraint: four metrics at `--t-xl` wrap to two ragged rows in
+a 45ch column with a stranded fourth. Fixed with the first two of the three
+options it offered — **its own width outside the column** (`min(64ch,
+50vw)`: 655px at 1512, 512 at 1024) laid on **two even tracks**, and the gap
+in from `--s-8` to `--s-6` across and `--s-4` down. Four metrics are a
+square, three leave a cell empty rather than stranding one, and nothing is
+dropped. The strip ends at 719px against the subject's 824 at 1512, so it
+stops short of where §34 stands.
+
+**The headline needed the same treatment and that was not predicted.** A
+`<br>` in the frontmatter is content's decision about where a headline
+breaks, and a 45ch column re-breaks it: "Raft, made visible" came back as
+three lines instead of two and took the column 236px further past the
+frame. It takes `max-content` up to 52vw now, which honours the authored
+break at all four and still stops well short of the subject.
+
+**The close control moved, for a reason only a screenshot gives you.** It
+was fixed to the frame's top-left, which is correct until the column
+travels — 200 units into Homonoia's reading, the word CLOSE was sitting
+inside an 88px headline. It is in the meta row now, at the column's right
+edge, and it travels with the heading it belongs to. `Esc` is what covers
+the scrolled case: **one escape key, two things to escape, innermost
+first** — an open writeup closes, and only with nothing open does `Esc`
+leave the world.
+
+**The scrim is §17's, unchanged**, brought back as a `--scrim` token that is
+`--void` at 92% written as a mix rather than as a fifth near-black. Solid to
+60% of a 60vw element, no edge, no border, no radius. Its opacity is
+`max(0.5 × name, writeup)`: half up while a headline is resolving over the
+landscape, all the way up for an open writeup, and back to half when the
+reader closes it — which is the approaching frame again, which is a good
+frame. **No still mode**, per §29's third constraint.
+
+### Both directions of the URL, and two bugs that were the same bug
+
+`replaceState`, never push — §4.6's rule, and the route crosses four
+stations, so a reader who scrolls it twice would have sixteen entries behind
+them. §32's brief says "pushes"; that is the one place it is not taken
+literally, and both modes now behave identically because of it. What makes
+the back button *work* is the other direction: a popstate resolves to a
+station and jumps the route to it, which is the same call a deep link makes
+on load.
+
+**Twelve deep links, measured, all landing:**
+
+| | lands |
+|---|---|
+| `/?doc#slug`, all four | the section's pin start, headline at opacity 1.00 |
+| `/projects/slug?doc`, all four | the same |
+| `/projects/slug?world`, all four | that station's settle, writeup open, URL agreeing |
+
+Back and forward inside world mode were flown too: at Basis, back → Philoi's
+settle with the writeup open; forward → the arrival, no station.
+
+**Two bugs, and they are one shape: an address read too late.**
+
+1. **The world's entry point was read at mount**, which is behind an adapter
+   request and a dynamic import — and by then `url-sync` has rewritten the
+   path to whatever section of the *hidden* document its observer found in
+   the middle of the viewport, while `projects.ts` moves that document twice
+   (once against the fallback font, again on `fonts.ready`). Measured: a deep
+   link to Philoi landing at **Homonoia**. `world.ts` captures the address at
+   import now, before the observer's first callback, and hands it down.
+2. **Document mode had the same failure from the other end.** `url-sync`'s
+   `replaceState` writes a bare path, which drops the fragment — so by the
+   time `projects.ts`'s re-jump is finally correct (on `fonts.ready`, with
+   the pins measured in the face the page renders with) `location.hash` is
+   empty and the correction returns early. Captured at import too.
+
+**And underneath both of them, one that predates this step entirely.**
+**Lenis clamps a scroll target to its own cached limit**, and every jump in
+this codebase is made *because* the document just changed height — a pin
+created, a pin released, a deep link corrected. Its ResizeObserver has not
+fired yet, so the limit is the page's height *before* the change. Measured:
+`/#philoi` asking for 5,927 and getting **4,105**, which is Homonoia, one
+project early — and reproduced at §31's HEAD, so every document-mode deep
+link past the first has landed short since the beats shipped. `jumpTo`,
+`jumpBy` and `jumpToTop` re-measure first now; it is three reads on a
+handful of deliberate jumps, against a correction that never arrives. §17
+reported all four deep links landing at beat 1 and that report was made
+before the pins were long enough for the clamp to bite.
+
+### What it costs
+
+**Nothing was added to the scene**, so §31's draw calls and ms/frame stand
+unchanged by construction. What is added is a full-viewport DOM layer over a
+WebGPU canvas, and the GPU batch instrument cannot see that — so the
+measurement is Chrome's own style and layout counters over 12-second
+windows at 1512×804:
+
+| | frames | recalcs | recalc ms/frame | layouts | task ms/frame |
+|---|---|---|---|---|---|
+| no station in frame | 360 | 360 | 0.099 | **0** | 3.250 |
+| Homonoia, writeup open | 360 | 360 | **0.084** | **0** | 3.354 |
+| Homonoia, dismissed | 360 | 360 | 0.084 | **0** | 3.301 |
+
+**One style recalc a frame and zero layouts in every configuration**, and
+the recalc is *cheaper* with the layer up than without it — which is to say
+it is inside the noise. The layer writes five custom properties a frame and
+guards each against a change under a thousandth; it measures its own height
+on arrival, on resize and on `fonts.ready`, never per frame, and that is
+what keeps the layout count at zero. Total main-thread task time is
+**+0.104ms a frame** with a writeup open.
+
+**rAF cannot be reported from this session.** The compositor presented at
+30 Hz with the tab genuinely foreground — median 33.3ms, p95 34.1 — in all
+eight samples, open and dismissed, at all four settles. That is the tell
+CLAUDE.md already records; the counters above are per-frame *work* and are
+unaffected by the present rate.
+
+**Accessibility.** axe-core clean in document mode at `/` and on a deep
+link, 13 focusables and 11,559px of document — both unchanged. World mode
+came back with **three `region` violations** and now has none: the
+document's `<main>` is behind an opaque canvas and out of the tree, so the
+station panel is a named landmark of its own (a `<section>` labelled by its
+own headline). Two focusables are reachable at a station — `Close` and
+`Live` — one at Basis, which has no live link. Focus is dropped rather than
+left sitting on an element that has just become invisible.
+
+**Bundle**, A/B against a §31 build in the same session at the same gzip
+level. World chunk **215,985 + 3,250 worker = 219,235 gzipped (214.10
+KiB)** of 400, up **1,541**, and the worker is byte-identical — the content
+layer bakes nothing. Document JS **56,507 (55.18 KiB)** of 120, up **38**,
+which is the two captured addresses and the Lenis re-measure. CSS 2,035 →
+**2,524**.
+
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 

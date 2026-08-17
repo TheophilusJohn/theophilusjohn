@@ -45,6 +45,19 @@ a pose that is a pure function of a scroll position and one arrival clock.
 and the bounds still apply to it, and every input in that file is dead until
 `stick(true)`, which is `F` until §35 builds the unlock.
 
+**Since §32 the writeup arrives at a station, and it is the document's own
+nodes.** `station.ts` is the content layer: it clones the machine ID row,
+the headline, the summary, the metric strip, the links and the writeup out
+of the sections already on the page — classes and Astro scope attributes
+and all — so the register cannot drift from document mode's, and it strips
+ids and inline styles because `projects.ts` leaves GSAP's `opacity: 0` on a
+headline for most of a pin. The three landmark states are **one number**,
+`bandAt()`'s weight, and the address bar is `replaceState` in one direction
+and a route jump on popstate in the other. **The dwell is the reading**: a
+station's column is taller than the frame, so the 600 scroll units in which
+the camera holds its pose move the column instead — one gesture, one scroll
+position, nothing intercepted.
+
 **The landscape is a set of files that cannot see a GPU and a few that can**
 (§22). `height.ts` is the field and imports nothing — no three, no DOM — so
 Node runs the `.ts` directly and every number about the terrain is that
@@ -714,6 +727,34 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - A residual motion that is a pure function of scroll **stops exactly when the
   scroll stops**, which is the thing it exists to prevent. The clock is the
   second input, and it is the only one a pose module may not hold itself.
+- **Lenis clamps a scroll target to its own cached limit**, and every
+  programmatic jump in this codebase is made *because* the document just
+  changed height — a pin created, a pin released, a deep link corrected. Its
+  ResizeObserver has not fired at that point, so the limit is the height of
+  the page before the change and the jump silently lands short: `/#philoi`
+  asked for 5,927 and got 4,105, which is Homonoia, one project early.
+  `lenis.resize()` first. Every document-mode deep link past the first had
+  it from §17 to §32.
+- **An address has to be read before anything else rewrites it.** `url-sync`
+  replaces the path from the *document's* own scroll on the first frame and
+  its `replaceState` drops the fragment; `projects.ts` moves the document
+  twice, once in the fallback font. Anything that resolves a URL later than
+  that — the world, which is behind an adapter request and a dynamic import,
+  or a re-jump on `fonts.ready` — is resolving a URL the reader never typed.
+  Tell: a deep link landing one project early, consistently.
+- A grid track left at `auto` is sized by its widest child, so **one item
+  that deliberately overflows the column widens the column**. A metric strip
+  at its own width silently re-measured every paragraph beside it and pushed
+  the meta row's far end 160px past the box it belongs to.
+  `grid-template-columns: minmax(0, 1fr)`.
+- A control fixed to the frame is correct until the content under it moves.
+  A close button at the top-left is fine at a settle and is sitting inside
+  an 88px headline 200px into the reading — put it in the row it belongs to
+  and let a key cover the scrolled case.
+- **A 45ch column re-breaks an authored headline.** The `<br>` in the
+  frontmatter is content's decision about where the line falls; a narrower
+  box turns two lines into three and costs a screen. Display type wants
+  `max-content` and a bound, not the measure the prose uses.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -733,14 +774,20 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §31: 55.0 KiB (56,338 gzipped), unchanged in content
-  since §21 — the one byte that moves is the hash of the scene chunk it
-  names. §28 measured 55.2 with a `__world` hook still in the entry script
+  1024px). Measured at §32: **55.18 KiB (56,507 gzipped)**, up 38 bytes on a
+  §31 build in the same session at the same gzip level — the address
+  `world.ts` and `projects.ts` each capture at import, and Lenis's
+  re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
+  measured 55.2 with a `__world` hook still in the entry script
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §31 with every hook removed: **212.5 KiB** (214,426
+  own merits. Measured at §32: **214.10 KiB** (215,985 + 3,250 worker), up
+  **1,541** on a §31 build in the same session at the same gzip level, of
+  which the worker is 0 — the content layer bakes nothing and the worker is
+  byte-identical. CSS 2,035 → **2,524** (+489) for the station layer and the
+  `--scrim` token. §31 with every hook removed: **212.5 KiB** (214,426
   + 3,223 worker), of which the route and its driver are 2,205 bytes and none
   of them the worker. §30: **210.4 KiB** (212,221
   + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
@@ -801,7 +848,17 @@ budgeted apart and a reader never pays both.
   compare within a run: §25's own figures on the dev server were 53 / 41 / 21
   at 0.64 / 0.54 / 0.50 and §24's 57 / 44 / 24 at 0.521 / 0.477 / 0.455 (§23:
   57 at 0.548; §22: 56 at 0.302; §21, empty: 2 at 0.108; §20: 6 at 2.26).
-  Of a cruise frame the sky dome is 0.18ms and the landscape 0.19
+  Of a cruise frame the sky dome is 0.18ms and the landscape 0.19.
+  **§32 adds nothing to the scene**, so those figures stand by construction —
+  what it adds is a full-viewport DOM layer over the canvas, which the GPU
+  batch instrument cannot see. Measured instead on Chrome's own style and
+  layout counters, 12s windows at 1512×804: **one style recalc a frame and
+  zero layouts** in every configuration, at 0.084ms a frame with a writeup
+  open against 0.099 with no station in frame, and **+0.104ms** of total
+  main-thread task time. It measures its own column on arrival, on resize
+  and on `fonts.ready`, never per frame, which is what holds the layout
+  count at zero. rAF is unreportable from that session — the compositor
+  presented at 30 Hz (33.3 median, 34.1 p95) in all eight samples
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
   Measured at §24 over 75s of boosted flight: level at 190, 549 chunks at
@@ -838,7 +895,11 @@ budgeted apart and a reader never pays both.
   event. rAF median 16.4ms either way, 5 or 6 frames over 25ms in ~1,450,
   never more than 3 chunks pending
 - 60fps on integrated graphics, with LOD doing the work
-- Lighthouse accessibility **100**
+- Lighthouse accessibility **100**. axe-core measured at §32 in world mode
+  too, and it needs one thing document mode does not: the station panel has
+  to be a **named landmark of its own**, because the document's `<main>` is
+  behind an opaque canvas and out of the accessibility tree. Without it,
+  three `region` violations; with it, zero in both modes
 - Usable at 360px wide with motion off
 
 ---

@@ -22,6 +22,15 @@
      one thing allowed to be brighter than the ground it is over (§0.2). */
   --mint:      #C6E9D2;
 
+  /* §17's scrim, back for §32. It is --void at 92% and it is written as a
+     mix rather than as a fifth near-black so it stays downstream of the
+     one colour under every pixel. What it backs is the reading half of a
+     frame with a lit landscape in it: measured at §29, the mean luma
+     behind the column moved 0.01 levels in a second against 0.23 in the
+     open half. No edge, no border, no radius — the gradient is the whole
+     of it. */
+  --scrim:     color-mix(in srgb, var(--void) 92%, transparent);
+
 
   /* ── Type scale ───────────────────────────────────────
      Use these. No arbitrary font sizes anywhere else. */
