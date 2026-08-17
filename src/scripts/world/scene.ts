@@ -37,6 +37,8 @@ import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
 import { buildBlades } from './blades';
 import { buildCamera } from './camera';
+import { buildClouds } from './clouds';
+import { buildMotes } from './motes';
 import { buildPalette, token } from './palette';
 import { buildSky } from './sky';
 import { buildStands } from './stands';
@@ -155,6 +157,22 @@ export async function mount() {
   scene.add(stands.treeMesh);
   scene.add(stands.rockMesh);
 
+  /* ── The air (§30) ───────────────────────────────────────────────────
+     The two atmospheric layers, and they are built together because they
+     read one wind and because between them they are the whole of what makes
+     the world feel occupied rather than modelled.
+
+     The clouds go in first and are updated first, and both matter. They own
+     `fog.ts`'s murk — how far anything can be seen this frame — so a frame
+     that read it before they wrote it would fog the world by where the
+     camera was last frame; and they are drawn before the motes, which is
+     what puts a mote over a lake in front of a form a kilometre behind it. */
+  const clouds = buildClouds(palette, uTime);
+  scene.add(clouds.mesh);
+
+  const motes = buildMotes(palette, uTime);
+  scene.add(motes.mesh);
+
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
      ticker was the right clock while the scene had to stay in step with
@@ -179,6 +197,8 @@ export async function mount() {
     terrain.update(camera, dt);
     blades.update(camera);
     stands.update(camera);
+    clouds.update(camera);
+    motes.update(camera);
     renderer.render(scene, camera);
   };
 
@@ -234,6 +254,8 @@ export async function mount() {
   // the disc is invisible from, which the opening pose is.
   blades.settle(camera);
   stands.settle(camera);
+  clouds.settle(camera);
+  motes.settle(camera);
   renderer.render(scene, camera);
 
   /* The document is behind an opaque canvas from the next line, so it must
@@ -248,5 +270,8 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky, stars, terrain, water, blades, stands };
+  return {
+    renderer, scene, camera, view,
+    sky, stars, terrain, water, blades, stands, clouds, motes,
+  };
 }

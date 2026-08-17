@@ -2785,6 +2785,242 @@ happens to the frame.
 **Report:** ms/frame per layer against SPEC §0.7's 8ms cruise ceiling, which
 this step is the last one spending against.
 
+*Done, and the cloud volume is kept.* **Two layers, two draw calls, 5,858
+triangles and 2,253 gzipped bytes**, and between them they cost under a tenth
+of a millisecond at the poses the world is composed from. The step's own
+warning — "cut it if it fights the shading" — came very close to being taken,
+and what saved it was finding out *why* it looked wrong rather than deciding
+that it did.
+
+**Motes are §27's construction for the third time**, and there is nothing new
+in the machinery: a world-anchored grid of 676 cells at 10 units, mapped
+toroidally into one buffer, refilled only where the cell has moved, 96 cells a
+frame. What is new is that a mote has **no state at all** — it is a phase.
+`fract(t·rate + phase)` runs a cycle in which it fades in low, rises with
+pauses in it, travels downwind, and fades out; a mote that leaves the disc and
+comes back is exactly where it would have been. The rise is
+`f(t) = t − (A/2πk)·sin(2πkt)`, whose derivative is `1 − A·cos(2πkt)` — at
+A = 0.94 and k = 3 it comes within 6% of a stop three times on the way up and
+never quite stops, which is §0.2's "rise and hesitate" written as a term
+rather than as an easing. The same `f` drives the downwind travel, so the
+hesitation is in every axis at once.
+
+**The density rule is `air.ts`, a third pure placement module**, and it is
+its own file for one reason: §0.2's claim is about the *world* — "denser over
+water and vegetation, sparse on bare rock" — and a claim that can only be
+evaluated inside a WebGPU material is a claim nobody can check. Out of the
+shipped module in Node over §26's lattice (radius 3,200, 20-unit spacing,
+80,381 samples):
+
+| height band | share of the world | mean cover | mean density | motes a cell of 4 |
+|---|---|---|---|---|
+| under the water (−8) | 11.9% | 0.000 | **0.863** | 3.27 |
+| −8 to 0 | 27.9% | 0.331 | 0.407 | 1.90 |
+| 0 to 20 | 32.2% | 0.244 | 0.316 | 1.72 |
+| 20 to 40 | 17.0% | 0.185 | 0.255 | 1.45 |
+| 40 to 60 | 8.3% | 0.115 | 0.181 | 1.03 |
+| 60 to 90 | 2.3% | 0.031 | 0.092 | 0.53 |
+| over 90 | 0.4% | 0.000 | **0.060** | 0.34 |
+
+Monotone the whole way down from the water line: **water carries 5.46× the
+air of bare rock over 40 units and the low vegetated country 2.27×**, world
+mean 0.379. The floor is 0.06 rather than 0, because a bare crest at night
+still has air over it and a layer that switches off over rock would draw the
+treeline a second time in a colour nothing else in the world wears. In the
+browser that is 1,340 motes at a meadow, 1,239 at a shore and 325 on a crest,
+of 2,704 slots.
+
+**`--mint` is off the shelf after twenty-eight steps**, and it is the whole
+answer to what §2 was holding it for: the one thing in the world that is
+neither lit by the key light nor marking state. §2's rule survives intact —
+`--leader` still means *elected* — because a mote means nothing at all
+except that the air is not empty.
+
+**The one finding on the motes is a rate, and §26's instrument found it in a
+single reading.** The worst 12×12 block of luma between two frames a sixtieth
+of a second apart, over a meadow:
+
+| layer | first build | shipped |
+|---|---|---|
+| the cloud deck alone | 1.03 | 1.86 |
+| with the grass | 2.08 | 2.78 |
+| **with the motes** | **10.02** | **2.72** |
+| with the cloud forms | 1.03 | 1.30 |
+| the whole frame | 10.32 | 4.36 |
+
+Ten levels is four times the fastest thing in a world whose water was slowed
+down to belong in it (§26), and none of it was a band edge crawling. It is
+arithmetic about a **point**: at a 9-second cycle a mote rose 1.4 units a
+second, which twenty units away is 0.066° a frame — one pixel, on a core four
+pixels across. A dot that crosses its own width in four frames is a firefly on
+fast-forward. Two changes and neither is a fudge: the cycle went to **18–34
+seconds** (§0.2 says *slow*, and 0.24 units a second downwind against the gust
+wave's 9 is the motes agreeing with the wind about direction and disagreeing
+about speed by a factor of forty), and a **near fade** was added at 6 to 17
+units — because §24's floor holds the camera 6 units over ground that motes
+stand 15.6 above, so at any low pose some of them are a hand's width from the
+eye, and a mote that close is thirty degrees of frame rather than a point of
+light. The near fade alone took 5.51 to 2.72.
+
+**The cloud volume was nearly cut and the reason it looked bad was a bug, not
+a contradiction.** Three builds, and the first two are the report:
+
+1. **A lobed disc that does not fit inside its own quad.** The outline is
+   `r / (1 + LOBE·sin(kθ + φ))`, and coverage that reaches `EDGE·(1 + LOBE)`
+   past 1 is cut off by the quad's own edge — the first build's reached 1.20
+   against an inscribed radius of 1. What comes back is a set of shapes with
+   three or four dead-straight sides. It reads as **cut paper**, and "soft
+   billboards fighting a hard-banded world" is exactly what it looks like from
+   the outside. 0.84 × 1.15 = 0.97 is the whole fix.
+2. **A lit face asked as an angular sweep.** `dot(direction from the centre,
+   the sun in this plane)` puts the terminator on a straight line through the
+   middle of every puff, so a cluster reads as folded paper. A cloud's lit face
+   is a *region*: it is the deck's own construction (`sky.ts`), a second sample
+   of the same shape displaced away from the light, and the lens where the two
+   overlap is a crescent with the puff's own lobed outline in it. It has to be
+   displaced by a whole radius — the lens is 61% of the disc at half a radius
+   and 39% at one, and at the first build's 0.42 every form came back almost
+   entirely `--paper`, which is a daytime cloud in a world that is night.
+3. **A body that is `--rule` disappears.** Against this sky at cloud altitude
+   the two are very nearly the same value, so the shaded part of every puff
+   vanished and what was left was a white lens floating with no cloud around
+   it. The three tones are 0.42, 0.71 and 1 of the way to `--paper`, which is
+   the deck's own spacing.
+
+**And the decision that makes it work is that a form is never seen close up.**
+A puff fades out over the same band the murk fades in, so what a reader flying
+into a cloud sees is a shape ahead, then the world closing in, then the shape
+behind — the billboard is what a cloud looks like from outside, the murk is
+what one looks like from inside, and neither is ever asked to be the other.
+The murk lives in **`fog.ts`**, because being inside a cloud is a fact about
+how far you can see: one uniform multiplying the density there, one mix in
+`sky.ts`'s `haze` (which every opaque surface already fogs toward), one on the
+dome, one on the stars, and one on the terrain's rim — which is the term that
+would otherwise still draw a violet line along a crest nothing else in the
+frame can see. **No post pass, no second target, no fifth material**, and it
+costs nothing measurable: the same poses on both builds with §30's two meshes
+hidden come back −0.022 to +0.022ms, inside the noise.
+
+**A transit, at cruise:** the camera stepped along a straight line through the
+middle of a form at 45 units a second, reading the murk the shipped layer
+writes.
+
+| along (units) | −270 | −45 | 0 | +90 | +180 | +240 | +270 |
+|---|---|---|---|---|---|---|---|
+| murk | 0.000 | 0.62 | 1.000 | 1.000 | 1.000 | 0.681 | 0.213 |
+| mean luma | 47.9 | | 48.2 | 75.2 | 35.2 | | |
+
+Murk is over 0.02 for **7.8 seconds and 353 units**, and at 1.000 for 218 of
+them — which at boost is 2.0 seconds. §0.2 asks for "a second"; a 300-unit
+cloud crossed at cruise takes seven, and that is the cloud's size rather than
+a tuning. The frame inside is not a colour: mean luma *rises* to 75 halfway
+through, because what is left when the world goes is the other eight puffs of
+the same form looming in the murk.
+
+**Placement is a pure function of a cell in *cloud space*** — the world
+sliding downwind at the deck's own 3.34 units a second (§27) — so the forms
+advect with the deck over them and nothing is ever re-placed as they do. 25
+cells, a fifth of them empty, 9 puffs each: **one draw call and 450
+triangles**, rebuilt only when the camera crosses a cell, which over 75
+seconds of boosted flight happened **6 times for 0.2ms in total**. Two
+sizing findings came out of looking at the opening pose: the puffs have to be
+big against the spread (38–72 against ±78 read as a bunch of grapes at three
+hundred units; 52–98 against ±76 reads as one silhouette) and the forms need a
+**far fade at 1,150** — left to fog out on their own they are still a third
+opaque at seven hundred units, and the opening frame came back with nine small
+grey lumps strung under the deck's own band.
+
+**Single-sided, and that is a draw call.** The renderer draws a transparent
+*double*-sided object twice — back faces, then front — so the first build cost
+two draw calls and 900 triangles for a layer whose back is never toward the
+eye by construction.
+
+**Cost, on built code against a §28 build measured by the same harness in the
+same session.** Every camera-relative layer is settled for the pose being
+measured, which is a change to the harness and applies to both builds:
+
+| altitude | 70 | 190 | 520 |
+|---|---|---|---|
+| draw calls, §28 → §30 | 56 → 58 | 44 → 45 | 23 → 24 |
+| triangles, §28 → §30 | 753,825 → 759,683 | 693,921 → 694,371 | 316,833 → 317,283 |
+| §28 → §30, DPR 1 | 0.900 → 0.925 | 0.833 → 0.831 | 0.613 → 0.632 |
+| §28 → §30, DPR 1.5 | 1.279 → 1.283 | 1.195 → 1.227 | 1.083 → 1.104 |
+
+The motes are the second draw call at 70 and are **not drawn at 190 or 520**,
+the same way the blades are not: the layer is gated on ground within 126 units
+and the cruise pose is 199 over it. Each layer's own cost, the same drained
+frame with the mesh hidden and shown:
+
+| pose | dpr | + motes | + cloud forms | motes shown |
+|---|---|---|---|---|
+| a meadow, 14 up | 1 | +0.024 | +0.011 | 1,340 |
+| a meadow, 14 up | 1.5 | −0.011 | +0.001 | |
+| a shore, 11 up | 1 | +0.016 | +0.003 | 1,239 |
+| a shore, 11 up | 1.5 | −0.013 | +0.016 | |
+| a crest, 22 up | 1 | +0.011 | +0.005 | 325 |
+| a crest, 22 up | 1.5 | −0.012 | +0.042 | |
+| the opening pose | 1 | −0.003 | +0.008 | not drawn |
+| the opening pose | 1.5 | +0.003 | +0.035 | |
+| standing off a form | 1.5 | +0.000 | **+0.075** | not drawn |
+| inside a form | 1 | −0.001 | **+0.183** | not drawn |
+| inside a form | 1.5 | +0.003 | **+0.653** | |
+
+**Against a ceiling of 8ms this is the cheapest block in the file.** The motes
+are at the instrument's floor and *negative* at DPR 1.5 at three of four
+poses, which is the shape to expect from pure vertex work on a fill-bound
+frame; the cloud forms are the opposite and their worst case is inside one,
+where a few large quads cover the frame — 0.653ms of a budget of 8, at the one
+pose where the sky dome's two fractal noises are entirely hidden behind them.
+
+**The fill is bounded and it is the smallest of the three.** Over 75 seconds
+of terrain-hugging boost the mote disc filled 10,221 cells for **0.072ms a
+frame, worst single frame 1.90ms** at its 96-cell budget — against the blade
+disc's 0.409 and worst 4.50 and the stand grid's 0.405 and worst 4.00 in the
+same run. There are no shadow marches in it: a mote is a light, not a surface.
+
+| 75s at boost, terrain-hugging | frames | median | p99 | max | chunks | gen mean | clearance |
+|---|---|---|---|---|---|---|---|
+| §30, run first | 2,251 | 33.3 | 35.0 | 35.4 | 674 | 8.62ms | 6.000 |
+| §28, run second | 2,251 | 33.3 | 35.0 | 35.4 | 677 | 8.99ms | 6.000 |
+| §28, run first | 2,251 | 33.3 | 34.9 | 35.3 | 674 | 8.87ms | 6.000 |
+| §30, run second | 2,251 | 33.3 | 34.9 | 35.3 | 677 | 8.44ms | 6.000 |
+
+Both orders per §28. Every run holds clearance **6.000** and ends at the same
+pose to the unit, and the generator is untouched — the worker is **byte
+identical** across the two builds, neither layer having anything to bake.
+**The honest caveat on that table: this session's compositor presented at
+30 Hz** — measured directly, an rAF median of 33.40ms with the tab foreground
+— so the intervals are vsync rather than work and "frames over 25ms" is not a
+number this session can produce. What is unaffected is everything timed as a
+batch between two `onSubmittedWorkDone`, which is every ms/frame figure above.
+
+**Brightness, which §38 owns and this step only reports.** §4.7's instrument,
+the same poses on both builds:
+
+| pose | mean luma §28 → §30 | lower half | brightest 12×12 |
+|---|---|---|---|
+| the opening pose | 49.1 → 50.4 (+2.7%) | 62.7 → 62.7 | 192.0 → 192.0 |
+| a meadow | 74.6 → 74.8 (+0.3%) | 91.7 → 91.8 | 197.4 → 197.4 |
+| a shore | 63.8 → 63.9 (+0.1%) | 76.1 → 76.1 | 199.7 → 199.7 |
+| a crest | 49.5 → 53.4 (+7.8%) | 63.8 → 63.8 | 211.0 → 211.0 |
+| standing off a form | 43.3 → 47.3 (+9.2%) | 38.8 → 41.4 | 214.7 → 214.7 |
+| inside a form | 43.7 → 48.1 (+10.1%) | 40.5 → 40.0 | 213.9 → **127.2** |
+
+**The brightest local average does not move in any frame that has a sky in
+it** — it is the deck, and neither layer touches it. The motes, which §0.2
+licenses to be the one thing brighter than the ground it is over, cost the
+mean **0.1 to 0.3%**: a bright dot is cheap on this instrument precisely
+because it is small, and a 12×12 block with a mote in it is mostly
+background. The only reading that moves at all is the one where the murk
+*removes* the deck, and it takes the brightest thing in the world down by 40%.
+
+**Bundle.** World chunk **212,221 + 3,223 worker = 215,444 gzipped (210.4
+KiB)** of 400, up 2,253 on a §28 build in the same session (209,968 + 3,223) —
+of which the worker is **0**. The document side is **56,338 (55.0 KiB)** of
+120 and the only thing in it that moved is the one byte of the scene chunk's
+hash. Both builds were rebuilt with every measurement hook removed, so these
+are the shipping bytes to the digit.
+
 ---
 
 ## ▲ The world is inhabited.

@@ -32,6 +32,8 @@ export type Palette = {
   muted: Token;
   paper: Token;
   lead: Token;
+  /** §30's motes, and the only thing in the world wearing it. */
+  mint: Token;
 };
 
 const NAMES = {
@@ -42,6 +44,7 @@ const NAMES = {
   muted: '--muted',
   paper: '--paper',
   lead: '--leader',
+  mint: '--mint',
 } as const;
 
 export const token = (name: string) =>

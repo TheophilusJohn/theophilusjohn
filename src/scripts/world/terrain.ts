@@ -60,7 +60,7 @@ import {
   vec3,
 } from 'three/tsl';
 import { bands, litness } from './band';
-import { fog } from './fog';
+import { fog, murk } from './fog';
 import { height } from './height';
 import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
 import type { ChunkData } from './chunk';
@@ -273,7 +273,13 @@ export function buildTerrain(palette: Palette) {
      mix, so the water agrees with both. */
   const depth = fog(positionWorld);
   const lit = mix(haze(toEye, palette), surface, depth);
-  material.colorNode = mix(lit, palette.lead, rim.mul(depth.max(RIM_FLOOR)));
+  /* RIM_FLOOR is what keeps a far ridgeline drawn through the haze, and
+     inside a cloud (§30) it is the one thing that would still be: a violet
+     line along a crest nothing else in the frame can see. So the rim is the
+     third term the murk takes, after the fog's density and what it fades
+     into. */
+  const rimmed = rim.mul(depth.max(RIM_FLOOR)).mul(float(1).sub(murk));
+  material.colorNode = mix(lit, palette.lead, rimmed);
 
   const chunks = new Map<string, Chunk>();
   const wanted = new Map<string, Chunk>();

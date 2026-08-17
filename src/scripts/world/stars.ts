@@ -29,6 +29,7 @@ import {
   vec3,
 } from 'three/tsl';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
+import { murk } from './fog';
 import type { Palette } from './palette';
 
 /* Inside the far plane, and **beyond every chunk of ground** — §22 moved it
@@ -131,7 +132,15 @@ export function buildStars(palette: Palette, time: UniformNode<'float', number>)
 
   const above = smoothstep(0, FADE, dir.y);
 
-  material.opacityNode = brightness.mul(twinkle).mul(above).mul(ALPHA);
+  /* Stars are exempt from fog (`fog.ts`) because they are at effective
+     infinity and behind it by construction. They are not exempt from being
+     inside a cloud (§30): that is the one thing between here and infinity
+     that is *local*, and a sky full of stars over a camera in the middle of
+     a cloud form is the tell that the murk is a colour on the ground rather
+     than weather. */
+  const clear = float(1).sub(murk);
+
+  material.opacityNode = brightness.mul(twinkle).mul(above).mul(clear).mul(ALPHA);
 
   const stars = new Sprite(material);
   stars.count = count;

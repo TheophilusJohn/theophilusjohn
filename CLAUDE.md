@@ -39,9 +39,10 @@ Node runs the `.ts` directly and every number about the terrain is that
 function's own output. `chunk.ts` samples it into arrays, `grid.ts` is the
 vertex layout the worker and the main thread both index, `cover.ts` (§27) is
 where anything grows, `sun.ts` and `wind.ts` are the two directions the world
-agrees on, `scatter.ts` (§28) is what stands on it, `terrain-worker.ts` runs
-the generator off the main thread, and `terrain.ts`, `water.ts`, `blades.ts`,
-`stands.ts` and `sky.ts` are the parts that know what a mesh is. Keep it that
+agrees on, `scatter.ts` (§28) is what stands on it, `air.ts` (§30) is what
+floats over it, `terrain-worker.ts` runs the generator off the main thread,
+and `terrain.ts`, `water.ts`, `blades.ts`, `stands.ts`, `motes.ts`,
+`clouds.ts` and `sky.ts` are the parts that know what a mesh is. Keep it that
 way: a worker that reaches anything in three is a second copy of the
 renderer.
 
@@ -112,6 +113,28 @@ chunk: a quadtree covers the same ground at four levels at once, so a tree on
 a boundary would be drawn once, three times or not at all. Variants are three
 floats in the instance rather than three geometries.
 
+**Since §30 the air has things in it too, and one of them is a fact about the
+whole frame.** `motes.ts` is `blades.ts`'s construction for the third time —
+a camera-relative grid of 676 cells, additive `--mint` billboards, and a mote
+with **no state at all**: it is a phase, `fract(t·rate + phase)`, running one
+rise-with-pauses and one downwind drift per cycle. Its density rule is
+`air.ts`, the third pure placement module, and it is its own file for the
+reason `cover.ts` is — §0.2's claim ("denser over water and vegetation,
+sparse on bare rock") is about the world, and a claim that can only be
+evaluated inside a material is one nobody can check. `clouds.ts` is the near
+field of the sky: camera-facing quads in *cloud space* — the world sliding
+downwind at the deck's own rate — placed by the same pure-function rule.
+
+**The murk lives in `fog.ts` and that is the load-bearing decision of §30.**
+Being inside a cloud is a fact about how far you can see, so it is one uniform
+on the fog's density plus one mix in `sky.ts`'s `haze` — which every opaque
+surface in the world already fogs toward — plus the dome, the stars and the
+terrain's rim. No post pass, no second render target, no fifth material, and
+nothing measurable on the frame. A puff fades out over exactly the band the
+murk fades in: **the billboard is what a cloud looks like from outside, the
+murk is what one looks like from inside, and neither is ever asked to be the
+other.**
+
 **A conifer's shade is baked by the worker, which is why placement has to be
 pure.** `chunk.ts` splats each canopy downsun onto §23's shadow lattice and
 multiplies it into the marched term, so the tree is drawn on the main thread
@@ -123,11 +146,13 @@ ridges came back covered in pools with nothing in them), and an object's own
 `N·L` must be **compressed into the bands** before `band.ts` cuts it, because
 the bands are placed around flat ground and a cone has facets at every angle.
 
-**The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
-rocks, water, clouds" is reversed and steps 25–28 and 30 build what replaces
-it: geomorph, water, ground cover and wind, rocks and conifers, motes and
-cloud volume. §30 is what is left of it, and §29 between them is a throwaway probe
-that does not ship. Everything scattered on the terrain is placed by a **pure
+**The landscape is alive from §0.2 (decided at §24), and after §30 it is
+finished.** §4.7's "no trees, rocks, water, clouds" is reversed and steps
+25–28 and 30 built what replaced it: geomorph, water, ground cover and wind,
+rocks and conifers, motes and cloud volume. §29 between them is a throwaway
+probe that does not ship. **Nothing is left of §0.2** — steps 31 onward are
+the route, the stations and what stands on the ground, not what the ground
+is made of. Everything scattered on the terrain is placed by a **pure
 function of `(x, z)`** — chunks generate independently, in three workers, in
 any order, and anything stateful would make two chunks disagree about their
 shared edge.
@@ -629,6 +654,44 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   lump of stone read is that its outline has more corners than its shading
   has bands; eight faces came back as a slope of floating crystals and
   twenty-four as boulders.
+- **A shape drawn inside a quad has to fit inside it.** A lobed disc whose
+  coverage reaches `EDGE·(1 + LOBE)` past the quad's inscribed radius is cut
+  off square, and what comes back is a set of shapes with three or four
+  dead-straight sides — which reads as cut paper and is very easy to
+  misdiagnose as the *design* being wrong. §30's cloud volume was nearly cut
+  over it.
+- A lit face asked as `dot(direction from the centre, the light)` is an
+  angular sweep, so the terminator is a straight line through the middle of
+  the shape. A lit face is a **region**: sample the same shape displaced away
+  from the light and take the lens where the two overlap. The displacement
+  has to be about a whole radius — the lens is 61% of a disc at half a radius
+  and 39% at one.
+- **`--rule` against the sky at cloud altitude is very nearly the same
+  value**, so an unlit body painted in it disappears and leaves the lit part
+  floating with nothing around it. Floor the mix (0.42 of the way to
+  `--paper`) rather than starting it at the token.
+- The renderer draws a **transparent double-sided** object twice — back faces,
+  then front. A billboard built in the camera's own basis never shows its
+  back, so `DoubleSide` there is one wasted draw call and twice the triangles.
+- **§26's instrument applies to a moving point as well as to a band edge, and
+  the arithmetic is about pixels rather than about speed.** A mote rising 1.4
+  units a second is 0.066° a frame at twenty units — one pixel, on a core four
+  across — and a dot that crosses its own width in four frames measured 10.02
+  levels of luma against the cloud deck's 1.03. It is also why a camera-
+  relative point layer needs a **near** fade as well as a far one: the camera
+  floor is 6 units over ground the motes stand 15.6 above, so some of them are
+  always a hand's width from the eye, and one that close is thirty degrees of
+  frame rather than a point of light. The near fade alone took 5.51 to 2.72.
+- A frame-differencing instrument must **render once after changing what is
+  visible and before the first screenshot**, or frame 0 is the previous
+  configuration's frame and every reading is the difference between two
+  scenes. Tell: readings of 90–115 levels where the layer alone gives 1.
+- **The compositor can present at 30 Hz with the tab genuinely foreground**,
+  and then every rAF interval in a flight test is vsync rather than work —
+  a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
+  a batch between two `onSubmittedWorkDone` is affected, which is why that is
+  the frame-cost instrument; "frames over 25ms" simply cannot be reported in
+  such a session. Measure the raw rAF interval before trusting one.
 
 ---
 
@@ -642,20 +705,24 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §28: 55.2 KiB, unchanged in content since §21 — the
-  one byte that moves is the hash of the scene chunk it names
+  1024px). Measured at §30: 55.0 KiB (56,338 gzipped), unchanged in content
+  since §21 — the one byte that moves is the hash of the scene chunk it
+  names. §28 measured 55.2 with a `__world` hook still in the entry script
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §28: **209.0 KiB**, of which the terrain worker is
-  3.2 — conifers and stone were 3,743 bytes, 842 of them the worker, which is
-  where the shade under a canopy is baked. §27 in the same session: 205.3
-  (its own report said 204.6; §26: 202.7, §25: 202.1, §24: 201.4). A
-  `__world` measurement hook lands in the *entry* script, not in the scene
-  chunk, so an A/B of the world chunk is unaffected by it
+  own merits. Measured at §30 with every hook removed: **210.4 KiB** (212,221
+  + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
+  **none of them the worker** — neither layer has anything to bake, so it is
+  byte-identical to §28's. §28 in the same session: 208.2 (its own report said
+  209.0; conifers and stone were 3,743 bytes, 842 of them the worker, where
+  the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
+  §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
+  in the scene chunk, so an A/B of the world chunk is unaffected by it
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–28 and 30), against 0.82 today (§28, DPR 1). The geomorph took
+  landscape shares (steps 25–28 and 30, and after §30 nothing is left to
+  spend it), against 0.83 today (§30, DPR 1). The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
   took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the
@@ -666,11 +733,25 @@ budgeted apart and a reader never pays both.
   and the *disc* is +0.052 / +0.034 / +0.014 at three low poses and nothing
   at all above 58 units over the ground, where it is not drawn. Its fill is
   main-thread work rather than frame cost: 0.070ms a frame over a 75s boost
-  flight, worst frame 2.70ms at its 96-cell budget. Report per layer
+  flight, worst frame 2.70ms at its 96-cell budget. §30's two are the
+  cheapest of the block: the motes are +0.011 / +0.016 / +0.024ms at three low
+  poses and *negative* at DPR 1.5 (pure vertex work on a fill-bound frame),
+  and are not drawn at all above 126 units over the ground; the cloud forms
+  are +0.008 at the opening pose, +0.035 there at DPR 1.5, and **+0.653 at DPR
+  1.5 inside a form**, which is their worst case and the one pose where they
+  hide the sky dome's two fractal noises entirely. The murk that carries them
+  into every other material costs −0.022 to +0.022 — inside the noise.
+  Report per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §28 on built code against a §27 build,
-  same harness, same session: **56 / 44 / 24** at 70, 190 and 520 units of
+- Under 100 draw calls. Measured at §30 on built code against a §28 build,
+  same harness, same session: **58 / 45 / 24** at 70, 190 and 520 units of
+  altitude against §28's 56 / 44 / 23 — the cloud forms at every altitude and
+  the motes only at 70 — at **0.925 / 0.831 / 0.632 ms/frame** against
+  0.900 / 0.833 / 0.613, and 1.283 / 1.227 / 1.104 at DPR 1.5 against
+  1.279 / 1.195 / 1.083. That harness now settles every camera-relative layer
+  for the pose it measures, which both builds pay for. Earlier, at §28 against
+  a §27 build, same harness, same session: **56 / 44 / 24** at 70, 190 and 520 units of
   altitude — two of them §28's — at **0.881 / 0.820 / 0.693 ms/frame** against
   §27's 0.626 / 0.539 / 0.511, and 1.24 / 1.19 / 1.18 at DPR 1.5 against
   1.10 / 1.07 / 1.08. Earlier, at §26 against a §25 build,
@@ -701,7 +782,12 @@ budgeted apart and a reader never pays both.
   ring the interpolation reads (196 → 169 points), which paid for it — and
   the flight came back 638 chunks at 3.34 against the control's 3.67, p99
   18.2 against 18.3. Geometry per chunk 160.4 → 180.7 KB, 31.8 MB alive at
-  the opening pose.
+  the opening pose. §30 changes none of it — the worker is byte-identical
+  again and 75s of the same flight came back 674/677 chunks either way, 8.44
+  to 8.99ms in a session whose compositor was presenting at 30 Hz. Its own
+  fill is the smallest of the three: 10,221 cells for **0.072ms a frame,
+  worst frame 1.90ms** at a 96-cell budget, against the blade disc's 0.409
+  and worst 4.50 in the same run, and with no shadow marches in it at all.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every

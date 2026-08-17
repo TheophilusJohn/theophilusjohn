@@ -51,7 +51,7 @@
    valley floors run to −22, so 20 is the height above which ground is
    standing out of the layer rather than lying in it. */
 
-import { cameraPosition, exp, vec3 } from 'three/tsl';
+import { cameraPosition, exp, float, uniform, vec3 } from 'three/tsl';
 
 export const FOG = 0.0011;
 export const LAYER = 0.35;
@@ -61,9 +61,29 @@ const VALLEY = 60;
 const EXTRA = 0.35;
 const DEEPEST = 2.5;
 
+/* ── Inside a cloud (§30) ───────────────────────────────────────────────
+   `clouds.ts` writes this: 0 in clear air, 1 with the camera in the middle
+   of a form. It lives here rather than there because *being inside a cloud
+   is a fact about how far you can see*, and that is what this file is —
+   every opaque surface in the world already multiplies by `fog`, so one
+   uniform in this expression dims and flattens the whole frame at once
+   without a post pass, a second render target or a fifth material.
+
+   Nothing here decides what colour the murk is; `sky.ts` owns that, because
+   what a fogged surface fades *into* has been its answer since §26.
+
+   MURK is a multiplier on the density rather than a lerp toward zero: at 8
+   the ground keeps 0.46 of its light at 100 units and 0.05 at 200, so a
+   ridge a valley away goes and the ground under the camera does not. A
+   cloud you cannot see anything through at all is a fade to a colour, and a
+   fade to a colour is not flight. */
+export const murk = uniform(0);
+const MURK = 8;
+
 export const fog = (world: any) => {
   const d = world.sub(cameraPosition);
   const dist = vec3(d.x, d.y.mul(LAYER), d.z).length();
   const thick = exp(world.y.sub(FLOOR).div(VALLEY).negate()).clamp(0, DEEPEST).mul(EXTRA).add(1);
-  return exp(dist.mul(FOG).mul(thick).pow(2).negate());
+  const inside = float(1).add(murk.mul(MURK - 1));
+  return exp(dist.mul(FOG).mul(thick).mul(inside).pow(2).negate());
 };

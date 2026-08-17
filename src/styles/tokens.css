@@ -17,7 +17,10 @@
   --muted:     #9A93C0;
   --paper:     #EDEAFB;
   --leader:    #A99BF5;
-  --mint:      #C6E9D2;   /* reserved second accent. Do not use without a reason. */
+  /* Held in reserve from §2 to §30. The reason it was waiting for is the
+     motes: the one thing in the world that is alive rather than lit, and the
+     one thing allowed to be brighter than the ground it is over (§0.2). */
+  --mint:      #C6E9D2;
 
 
   /* ── Type scale ───────────────────────────────────────

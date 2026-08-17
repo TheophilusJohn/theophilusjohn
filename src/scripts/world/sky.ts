@@ -46,6 +46,7 @@ import {
 } from 'three/tsl';
 import type Node from 'three/src/nodes/core/Node.js';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
+import { murk } from './fog';
 import type { Palette } from './palette';
 import { SUN } from './sun';
 import { DECK_DRIFT, WIND } from './wind';
@@ -95,8 +96,23 @@ export function gradient(dir: Node<'vec3'>, palette: Palette) {
    line under a lit band rather than a hard one under nothing. */
 const HAZE = 0.75;
 
+/* ── The inside of a cloud (§30) ───────────────────────────────────────
+   What everything fades into while `murk` is up. Between `--void-lift` and
+   `--rule`, which is the deck's own body colour taken down a little: the
+   inside of a cloud is the same material as the outside of one and it has
+   no light of its own, so it is darker than the face the key light reaches
+   and lighter than the ground under it. Not `--void` — that is the clear
+   colour and the fog target already, and a cloud interior painted in it is
+   the world switching off rather than closing in. */
+const INTERIOR = 0.5;
+export const interior = (palette: Palette) => mix(palette.lift, palette.rule, INTERIOR);
+
 export const haze = (toEye: Node<'vec3'>, palette: Palette) =>
-  mix(palette.void, gradient(toEye.negate(), palette), HAZE);
+  mix(
+    mix(palette.void, gradient(toEye.negate(), palette), HAZE),
+    interior(palette),
+    murk,
+  );
 
 /* ── The clouds ────────────────────────────────────────────────────────
    High enough that the cruise pose (190) is well under the deck and the
@@ -193,9 +209,14 @@ export function buildSky(palette: Palette, time: UniformNode<'float', number>) {
   const material = new MeshBasicNodeMaterial({ side: BackSide, fog: false });
   material.positionNode = positionLocal.add(cameraPosition);
 
+  /* The dome takes the murk too, and it has to: the deck is drawn on rays
+     that reach it from below, so a camera inside a form at 300 units still
+     has a perfectly clear night sky over it unless something says
+     otherwise. Mixed after `clouded` rather than inside it, so what goes is
+     the whole sky and not just the part with cloud on it. */
   material.colorNode = Fn(() => {
     const dir = positionWorld.sub(cameraPosition).normalize();
-    return clouded(dir, palette, time);
+    return mix(clouded(dir, palette, time), interior(palette), murk);
   })();
 
   const mesh = new Mesh(new SphereGeometry(RADIUS, 48, 32), material);

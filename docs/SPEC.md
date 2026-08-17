@@ -372,6 +372,38 @@ these rise and hesitate.
 Additive, fogged like everything else, and they are the one thing in this
 world that is allowed to be brighter than the ground it is over.
 
+**Built at §30, and a mote has no state at all — it is a phase.** §27's
+camera-relative grid for the third time (676 cells of 10 units, 2,704 slots,
+96 refilled a frame), and each mote runs one cycle of `fract(t·rate + phase)`
+in which it fades in low, rises, travels downwind and fades out. "Rise and
+hesitate" is a term rather than an easing: the rise is
+`f(t) = t − (A/2πk)·sin(2πkt)`, whose derivative `1 − A·cos(2πkt)` comes within
+6% of a stop three times a cycle and never quite reaches one, and the same `f`
+drives the travel so the pause is in every axis at once.
+
+The density rule is its own pure module, `air.ts`, for the reason `cover.ts`
+and `scatter.ts` are: a claim about the world that can only be evaluated
+inside a material is a claim nobody can check. Measured out of it in Node over
+80,381 samples: monotone from the water line up, **5.46× as much air over
+water as over bare rock above 40 units** and 2.27× over the low vegetated
+country, world mean 0.379, and a floor of 0.06 rather than 0 because a bare
+crest still has air over it.
+
+Two rates had to be solved rather than chosen, both by §26's instrument. The
+cycle is **18 to 34 seconds**: at the first build's 9 to 17 a mote rose 1.4
+units a second, which twenty units away is a pixel a frame on a core four
+pixels across, and the worst 12×12 block moved 10.02 levels of luma against
+the cloud deck's 1.03 — four times the fastest thing in a world whose water was
+slowed down to belong in it. And there is a **near fade at 6 to 17 units**,
+because the camera floor is 6 units over ground the motes stand 15.6 above: at
+any low pose some of them are a hand's width from the eye, and a point of
+light that close is not a point. Shipped, the motes read 2.72 against the
+grass's 2.78.
+
+They cost the brightness budget **0.1 to 0.3% of mean luma and nothing at all
+on the brightest local average** — which is what licences the token: a bright
+dot is cheap on §4.7's instrument precisely because it is small.
+
 ##### Wind
 
 One vector field, low frequency, drifting.
@@ -414,6 +446,44 @@ This is the single most flight-like thing in this subsection. It is also the
 one most likely to look bad — soft billboards in a hard-banded world is a
 contradiction, and it may have to be banded to the point of looking like
 solid forms. Try it, look at it, cut it if it fights the shading.
+
+**Built at §30 and kept**, and it was nearly cut: what makes it work is that
+**a form is never seen close up**. A puff fades out over exactly the band the
+murk fades in, so flying into one is a shape ahead, then the world closing in,
+then the shape behind — the billboard is what a cloud looks like from outside,
+the murk is what one looks like from inside, and neither is asked to be the
+other. Twenty-five cells of nine camera-facing quads in cloud space (the world
+sliding downwind at the deck's own rate), a fifth of them empty: **one draw
+call and 450 triangles**, rebuilt only when the camera crosses a cell — six
+times in 75 seconds of boosted flight, for 0.2ms in total.
+
+**The murk is one uniform in `fog.ts`**, because being inside a cloud is a
+fact about how far you can see. Everything opaque already multiplies by `fog`
+and fades toward `sky.ts`'s `haze`, so one uniform in each dims and flattens
+the whole frame — plus the dome, the stars, and the terrain's rim, which is
+the term that would otherwise still draw a violet line along a crest nothing
+else in the frame can see. No post pass, no second render target, and −0.022
+to +0.022ms measured with the forms hidden: inside the noise.
+
+Three things had to be found before it stopped looking like cut paper, and
+none of them was the contradiction the paragraph above predicted. **The lobed
+disc did not fit inside its own quad** and was being clipped square, which is
+the whole of the "cut paper" reading. **The lit face was asked as an angular
+sweep** — a dot with the sun's direction in the billboard plane — which puts a
+straight terminator through the middle of every puff; it has to be the deck's
+own construction, a second sample of the same shape displaced a whole radius
+away from the light, and the lens where they overlap is a crescent with the
+puff's own outline in it. And **a body painted in `--rule` disappears** against
+this sky at cloud altitude, leaving a white lens floating with no cloud around
+it; the three tones are 0.42, 0.71 and 1 of the way to `--paper`.
+
+Measured: murk over 0.02 for 353 units of a transit and at its ceiling for
+218, which is 7.8 seconds at cruise and 2.0 at boost — §0.2 asks for "a
+second" and a three-hundred-unit cloud crossed at 45 units a second takes
+seven, which is the cloud's size rather than a tuning. The frame inside is not
+a colour: mean luma *rises* halfway through, because what is left when the
+world goes is the other eight puffs of the same form. Cost is 0.035ms at the
+opening pose and **0.653ms at DPR 1.5 inside a form**, of a budget of 8.
 
 ##### What it costs
 
@@ -790,14 +860,14 @@ Violet-black. Cool, near-neutral, with enough hue that the accent belongs to it 
 --muted:     #9A93C0;  /* body copy */
 --paper:     #EDEAFB;  /* headings, primary text */
 --leader:    #A99BF5;  /* the accent */
---mint:      #C6E9D2;  /* optional second accent, currently unused */
+--mint:      #C6E9D2;  /* second accent — the motes, §30 */
 ```
 
 `--leader` is lavender and carries one meaning everywhere it appears: active, elected, current. Never use it as generic decoration — if it isn't marking state or a live link, it shouldn't be lavender.
 
 The practical reason for lavender over the earlier amber: in the render layer the accent is drawn as thousands of overlapping translucent particles. Lavender stays saturated as it stacks. Amber goes brown and cyan blows out to white.
 
-`--mint` is held in reserve as a second accent — useful if a state ever needs to be distinguished from *elected* (committed vs. pending, say). Don't introduce it without a reason.
+~~`--mint` is held in reserve as a second accent — useful if a state ever needs to be distinguished from *elected* (committed vs. pending, say). Don't introduce it without a reason.~~ **Spent at §30, on the motes** (§0.2), and it is the one use that does not compete with `--leader`: a mote is not a state. Nothing else in the world wears it, and a second thing that wants it now has to argue against the first.
 
 **Revised (§14): `--dim` is `#8780B2`, not the `#4A4470` this section shipped with.** The old value was 2.07:1 on `--void` and accounted for every one of the 100 axe violations §14 measured — the whole primary nav, both section headings, the period, the stack, the metric labels, the footer, the log bands. Same hue and saturation, lightness only, 5.07:1; the high-contrast value moved with it, to 7.42:1, because a toggle that shifts contrast by half a point looks broken. **Do not restore the darker value.** What it encoded survives as a rule about *what the token is used for* — `--dim` is texture and must never carry information said nowhere else — and a contrast checker cannot see that distinction anyway.
 
