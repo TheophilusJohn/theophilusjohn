@@ -2342,6 +2342,238 @@ you can see from above — and nothing stands on a slope it could not hold.
 **Report:** ms/frame, draw calls, instances at cruise, and the per-chunk
 generation cost against §23's 4.51ms.
 
+*Done.* **Two draw calls for the whole world, not one per variant per
+chunk.** The step's construction does not survive a quadtree: the same ground
+is covered at four levels at once, so "the trees of this chunk" is not a set
+— a tree on a boundary belongs to a level-0 leaf, to the level-1 parent
+standing in for it while it generates, and to the level-2 chunk both were
+subdivided out of, and it would be drawn once, three times or not at all
+depending on which of them the frustum keeps. So it is §27's construction
+instead: **a world-fixed grid of cells mapped toroidally into one buffer,
+carried with the camera**, one mesh per species. The variants come with that
+rather than against it — a conifer's height, its breadth against that height
+and its yaw are three floats in the instance, so there are more shapes than
+the step's three or four and fewer draws than its eight.
+
+**Placement is `scatter.ts` and it imports nothing that has seen a GPU**, the
+way `cover.ts` does, and for a sharper reason: the tree is drawn on the main
+thread and **the shade under it is baked in a worker**, so the two ends have
+to agree about conifer 1 of cell (i, j) to the bit or there is a pool of
+shade with nothing standing in it. Out of the shipped module in Node, over
+§26's own lattice (radius 3,200, 20-unit spacing, 80,381 samples):
+
+| height band | share of the world | mean conifer | mean stone | any stone |
+|---|---|---|---|---|
+| under the water (−8) | 11.9% | 0.000 | 0.002 | 1% |
+| −8 to 0 | 27.9% | 0.235 | 0.053 | 44% |
+| 0 to 20 | 32.2% | **0.301** | 0.058 | 47% |
+| 20 to 40 | 17.0% | 0.247 | 0.077 | 51% |
+| 40 to 60 | 8.3% | 0.093 | 0.143 | 57% |
+| 60 to 90 | 2.3% | 0.000 | 0.302 | 65% |
+| over 90 | 0.4% | 0.000 | **0.380** | 63% |
+
+**The two species are each other's complement and that is the treeline.**
+Conifers peak at 0.30 in the low country and are gone by 58; stone starts at
+0.05 there and is the only thing left over 90. **42% of dry ground is
+forest**, in stands with edges — crossing the world at five-unit steps, a run
+of forest has a median length of 125 units against a scree field's 75. The
+disc holds 2,702 conifers and 1,589 boulders at the opening pose, 4,042 and
+1,903 in a valley — and those are the *browser's* counts, which match Node's
+to the instance, because both ends call one function.
+
+**608 units, and 370 was the number this step was nearly shipped with.** The
+first build reached 370 — six times the grass — and put **no tree at all in
+the opening frame**. At 190 units up and 9° of pitch the bottom edge of the
+frame is 39° below the horizon, so the nearest ground anybody can see is 246
+units away horizontally and 315 along the view, which is past where a
+370-unit disc has already faded everything to nothing. What a camera-relative
+layer is sized against is not how far you can see; it is **where the near
+edge of the frame lands**, and at cruise altitude that is most of the way to
+the old reach. Stone keeps a shorter one (420) because it is an order of
+magnitude smaller: a four-unit boulder is eight pixels there where a
+twelve-unit conifer is fifteen at 590.
+
+**An object's own `N·L` has to be compressed into the bands, and this is the
+finding of the step.** `band.ts` puts its edges at 0.64 and 0.90 around flat
+ground at 0.52 — 14° of tilt to leave the low band. A cone standing upright
+has facets at every angle: its sunward face is at **0.99** and the one beside
+it at 0.10, so three bands become four bands across one tree. Measured, and
+not subtle: the first build's conifers came back as a field of white spikes
+and its boulders as white confetti, both the brightest things in the frame.
+Mapping `N·L` into a range instead — 0.05 to 0.86 for a conifer, 0.30 to 0.84
+for stone — is what makes an object cross *one* edge.
+
+**A conifer bands one step down, which is the direction §27 does not go.**
+`band.ts` gains a −1 rung (`--void-lift`, `--rule`, `--dim`, `--paper`) and
+the whole ladder shifts, unlike +1's: going up, `--paper` and `--leader` stay
+put because the top of the world is already as bright as it may be, and going
+down there is no such ceiling to hold. A pine at night is darker than the
+ground it stands on, and a treeline is legible from above because the forest
+is a *mass with an edge*.
+
+**The shade is baked, and only at the finest level.** §0.2 asks for "a disc
+of occlusion under each one baked into the vertex attribute the ground
+already carries", so it is the conifers' canopies projected downsun as
+ellipses onto §23's shadow lattice and multiplied into the term the march
+produced — no second attribute, no second pass, and it morphs like the rest
+of the shadow because it *is* the rest of the shadow. Splatted rather than
+gathered: a gather pays for a cell once per lattice point that could see it,
+where this walks each cell once and touches the handful of points its trees
+darken.
+
+Level 1 was in the first build and had to come out. A level-1 chunk reaches
+576 units and the trees fade out at 590, so **the shade outran the thing
+casting it**: the far ridges came back covered in soft dark ellipses with
+nothing standing in them, which reads as holes cut in the ground. Level 0
+reaches 288 and is fully morphed in by 158, so what is left is the error in
+the other direction — a tree past that distance whose pool has not arrived —
+at a distance where the pool is a dozen pixels. It is not a seam either way:
+a level-0 chunk is *born* showing its parent's surface, which has no stands
+in it, so a forest's shade fades in at exactly the rate its geometry does.
+Rocks cast nothing at all, and that is arithmetic: a four-unit boulder throws
+six units of shadow at this sun's 32° against an eight-unit lattice.
+
+**Does it reach the frame?** The same poses on this build and on one whose
+occlusion constant is zero, with the trees themselves hidden so what is left
+is the ground alone:
+
+| pose | ground pixels changed | mean drop | worst drop |
+|---|---|---|---|
+| in a forest, 9 units up | 3.7% | 1.7 | **75.2** |
+| a treeline from 90 up | 2.3% | 6.4 | 69.2 |
+| looking down from 30 | 10.7% | 2.3 | 46.4 |
+
+**It is a band edge where the ground is near one and a shading ramp where it
+is not** — the same thing the terrain's own marched shadow is, which is the
+point: 75 levels of luma under a tree on a slope, two on a flat forest floor
+where the whole pool sits inside the low band.
+
+**What it costs the generator is 4%, and the two early-outs are why.** Both
+`buildChunk`s run in Node out of the shipped files, over the same specs:
+
+| chunk | §27 | §28 | |
+|---|---|---|---|
+| level 0, in the cluster | 1.55ms | 1.60ms | +3% |
+| level 0, open country | 1.59ms | 1.65ms | **+4%** |
+| level 1 | 1.54ms | 1.54ms | 0% |
+| level 2 | 1.46ms | 1.46ms | 0% |
+| level 3, a root | 1.03ms | 1.04ms | +1% |
+
+A level-0 chunk walks about ninety 16-unit cells. The first is the clump
+noise — one call, no field sample — and the second is the altitude window off
+a single coarse height; between them they reject nine cells in ten before
+anything expensive happens. The cell box is also **asymmetric**, because a
+shadow only runs one way: fourteen units of margin upsun of the lattice and
+under one downsun of it, which is a quarter fewer cells for no shade at all.
+Against §23's 4.51ms per chunk this is still well under.
+
+**And the surface it generates is the same surface.** Over five specs,
+position, normal and cover are identical in **every byte**; only the shadow
+moves, and only where a conifer stands. The new shade morphs like the rest of
+it and its target is exact to **0.0** against the parent's own chunk.
+Geometry per chunk is unchanged at 180.7 KB — nothing was added to a vertex.
+
+**Cost, on built code, against a §27 build measured by the same harness in
+the same session.** Two draw calls and 485,184 triangles, at every altitude
+the camera can reach — unlike the blades, which are not drawn above 58 units:
+
+| altitude | 70 | 190 | 520 |
+|---|---|---|---|
+| draw calls, §27 → §28 | 54 → 56 | 42 → 44 | 22 → 24 |
+| triangles, §27 → §28 | 268,641 → 753,825 | 208,737 → 693,921 | 108,897 → 594,081 |
+| §27 → §28, DPR 1 | 0.626 → 0.881 | 0.539 → 0.820 | 0.511 → 0.693 |
+| §27 → §28, DPR 1.5 | 1.103 → 1.238 | 1.073 → 1.185 | 1.075 → 1.175 |
+
+The layer's own cost, the same drained frame with the two meshes hidden and
+shown:
+
+| pose | draws | triangles | DPR 1 | DPR 1.5 |
+|---|---|---|---|---|
+| in a forest, 9 units up | 53 → 55 | +485,184 | +0.347ms | +0.123ms |
+| a treeline from 90 up | 56 → 58 | +485,184 | +0.328ms | +0.121ms |
+| the opening pose | 42 → 44 | +485,184 | +0.279ms | +0.095ms |
+| a scree slope from 14 up | 55 → 57 | +485,184 | +0.376ms | +0.136ms |
+
+**Under four tenths of a millisecond at DPR 1 against a budget of 8**, and
+*less* at DPR 1.5 — the delta halves there, which is the shape to expect from
+pure vertex work landing on a frame that is already fill-bound. It is seven
+times the blade disc's cost for six times its reach and ten times its object
+count. The honest caveat: **86% of the rock buffer is degenerate at any
+moment**, because the two species share the trees' grid and stone reaches
+420 of its 608 — one draw call's worth of vertex work that is never seen, and
+the price of not sampling the field twice.
+
+**The fill is bounded rather than low**, §27's construction and §27's numbers.
+Over 75 seconds of terrain-hugging boost it filled 20,431 cells with 13,619
+shadow marches for **0.15ms a frame**, worst single frame **1.30ms** at its
+128-cell budget — under the blade disc's own worst of 1.50 in the same run,
+because a diagonal crossing at boost is 24 of these cells against 80 of those.
+
+| 75s at boost, terrain-hugging | frames | median | p99 | max | >25ms | chunks | gen mean |
+|---|---|---|---|---|---|---|---|
+| §27, run first | 4,500 | 16.7 | 17.6 | 23.5 | 0 | 643 | 3.36ms |
+| §28, run second | 4,500 | 16.7 | 17.7 | 22.2 | 0 | 641 | 3.14ms |
+| §28, run first | 4,505 | 16.7 | 17.6 | 50.2 | 5 | 639 | 3.66ms |
+| §27, run second | 4,530 | 16.7 | 17.7 | 25.1 | 1 | 635 | 3.11ms |
+
+**Both orders, because one order is not a measurement.** Whichever build goes
+first in a session pays for the cold start and comes back 0.3–0.5ms slower
+per chunk with the session's only outlying frames in it — run the control
+first and §28 looks *faster* than it. Averaged over the two positions the
+mix is 3.24 against 3.40ms, a 5% cost, which is what a 4% level-0 chunk works
+out to over a flight that generates every level. Every run holds clearance
+**6.000** and ends at the same pose to the unit.
+
+**The wind is the gust wave and nothing else.** §0.2 asks for one field, and
+the canopies read the same 0.075 Hz travelling wave the grass does, with the
+same wander across it — what is per tree is *stiffness*, not phase, because a
+phase offset would destroy the travelling band and a band moving downwind is
+the only thing that makes a gust read as wind rather than as a pulse. Nothing
+is added to the spectrum §26 and §27 measured. On §26's instrument — the
+worst 12×12 block of luma between two frames a sixtieth of a second apart,
+over a forest:
+
+| layer | worst 12×12 in one frame |
+|---|---|
+| the cloud deck alone | 1.35 |
+| with the grass | 1.81 |
+| with the canopies | **1.53** |
+| the whole frame | 1.68 |
+
+A conifer is wood: the canopies add 0.18 levels where the grass adds 0.46,
+which makes them the slowest-moving thing added to this world since the deck.
+
+**What it costs the brightness budget it gives back.** §35 owns this and the
+step only has to report it, but the direction is the story:
+
+| pose | mean luma §27 → §28 | lower half | brightest 12×12 |
+|---|---|---|---|
+| the opening pose | 49.6 → 49.1 (−1.1%) | 63.8 → 62.7 | 192.0 → 192.0 |
+| in a forest | 62.6 → 52.2 (**−16.6%**) | 84.5 → 67.8 | 214.2 → 214.2 |
+| a treeline from 90 up | 69.8 → 67.7 (−3.0%) | 79.4 → 77.8 | 175.0 → 175.0 |
+| a scree slope | 93.0 → 92.9 (−0.1%) | 120.2 → 119.9 | 213.8 → 213.8 |
+
+A layer of dark silhouettes over a light landscape is the first thing in
+seven steps to *lower* the mean, by a sixth of it in a forest — and the
+brightest local average does not move at all in any frame, because it is a
+cloud and nothing here touches the deck.
+
+**Boulders are twenty-four faces, and eight was measured first.** An
+octahedron scaled three ways is a rhombus from every angle, and a slope of
+them came back as a scatter of floating crystals; what makes a lump of stone
+read is that its outline has more corners than its shading has bands. Flatter
+than wide, and buried — the centre sits 0.12 of a half-axis over the ground,
+so about two fifths of the stone is under the surface and it lies *in* a
+slope rather than on it.
+
+**Bundle.** World chunk **210,770 + 3,254 worker = 214,024 gzipped (209.0
+KiB)** of 400, up 3,743 on a §27 build in the same session (207,869 + 2,412),
+of which the worker is 842 — the shade bake and the placement rule it needs.
+The measurement hook both builds were driven through lives in the *entry*
+script rather than in the scene chunk, so these are the shipping bytes to the
+digit. The document side is **56,595 (55.2 KiB)** of 120, and the only thing
+in it that moved is the hash of the scene chunk it names.
+
 ### 29. Motes and cloud volume
 The two atmospheric ones, together because they share the wind field.
 

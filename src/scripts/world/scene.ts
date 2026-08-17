@@ -39,6 +39,7 @@ import { buildBlades } from './blades';
 import { buildCamera } from './camera';
 import { buildPalette, token } from './palette';
 import { buildSky } from './sky';
+import { buildStands } from './stands';
 import { buildStars } from './stars';
 import { buildTerrain } from './terrain';
 import { buildWater } from './water';
@@ -144,6 +145,16 @@ export async function mount() {
   const blades = buildBlades(palette, uTime);
   scene.add(blades.mesh);
 
+  /* Conifers and stone on a disc of their own (§28), six times the blades'
+     reach because a twelve-unit tree is still thirty pixels at three hundred
+     units where a blade is four at sixty. Two draw calls, one grid, one fill
+     — and the shade under a conifer is not here at all: the worker bakes it
+     into the ground's own shadow attribute, off the same `scatter.ts` this
+     reads. Opaque and before the water in draw order, like the ground. */
+  const stands = buildStands(palette, uTime);
+  scene.add(stands.treeMesh);
+  scene.add(stands.rockMesh);
+
   /* ── The loop ──────────────────────────────────────────────────────────
      Plain rAF, where every step to §20 drove this off gsap.ticker. The
      ticker was the right clock while the scene had to stay in step with
@@ -167,6 +178,7 @@ export async function mount() {
     // late is a hole in the ground on every LOD boundary crossed at speed.
     terrain.update(camera, dt);
     blades.update(camera);
+    stands.update(camera);
     renderer.render(scene, camera);
   };
 
@@ -221,6 +233,7 @@ export async function mount() {
   // over the opening half second is not. It returns immediately at any pose
   // the disc is invisible from, which the opening pose is.
   blades.settle(camera);
+  stands.settle(camera);
   renderer.render(scene, camera);
 
   /* The document is behind an opaque canvas from the next line, so it must
@@ -235,5 +248,5 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky, stars, terrain, water, blades };
+  return { renderer, scene, camera, view, sky, stars, terrain, water, blades, stands };
 }

@@ -321,6 +321,43 @@ shrinking into the ground is invisible in flight and a hard cut is not.
 on slopes and scree at the foot of cliffs does more for scale than trees do,
 because it reads at every distance and does not need a treeline.
 
+**Built at §28, and it is a camera-relative grid rather than a per-chunk
+buffer.** "One draw call per variant per chunk" does not survive a quadtree:
+the same ground is covered at four resolutions at once, so a tree on a
+boundary belongs to a leaf, to the parent standing in for it while it
+generates and to the chunk both were subdivided out of — it would be drawn
+once, three times or not at all depending on which is visible. A world-fixed
+cell owned by nothing has none of that, and it costs **two draw calls for the
+whole world** rather than one per variant per chunk. The variants come with
+it: a conifer's height, its breadth against that height and its yaw are three
+floats in the instance, so there are more shapes than four and fewer draws
+than eight.
+
+The disc reaches **608 units** where the grass reaches 60, and that number is
+a measurement of the *frame* rather than of the eye. At the opening pose the
+camera is 190 units up at 9° of pitch, so the bottom edge of the frame is 39°
+below the horizon and the nearest visible ground is 315 units along the view:
+a 370-unit disc — the first build — put no tree in the opening frame at all.
+What a camera-relative layer has to be sized against is where the near edge of
+the frame lands.
+
+Two things the build found about the light. **An object's own `N·L` has to be
+compressed into the bands**, because the bands are placed around flat ground
+(0.52, and 14° of tilt changes one) while a cone has facets at every angle:
+used raw, the same three bands are four bands across one tree, and the first
+build came back as a field of white spikes and a scatter of white confetti.
+And a conifer bands **one step down** — `--void-lift` to `--dim` — which is
+the direction ground cover does not go: a stand of pines at night is darker
+than the ground it stands on, and the treeline is legible from above because
+the forest is a mass with an edge. Measured, the layer *lowers* mean frame
+luma by up to 17% and does not move the brightest local average at all.
+
+The shadow is baked as asked and **only at the finest level**, which is the
+other thing the build found. Level 1 was in the first build and had to come
+out: a chunk there reaches 576 units and the trees fade at 590, so the far
+ridges came back covered in soft dark ellipses with nothing standing in them.
+Shade may lag the thing casting it; it may not outrun it.
+
 ##### Motes
 
 The thing that most says *alive* at night, and the cheapest thing here.

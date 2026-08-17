@@ -9,6 +9,20 @@
 import { coverAt } from './cover';
 import { height, landform, rangeMask, uplift } from './height';
 import { SEG, SHADOW_SEG, VERTEX_COUNT, type ChunkSpec } from './grid';
+import {
+  CANOPY_R,
+  CANOPY_Y,
+  CELL,
+  SPACING,
+  TREES,
+  TREE_H_MAX,
+  TREE_W_MAX,
+  conifer,
+  groundAt,
+  treeBand,
+  treeClump,
+  treeDensity,
+} from './scatter';
 import { SUN } from './sun';
 
 export type ChunkData = {
@@ -142,12 +156,147 @@ export function sunlight(x: number, z: number, y: number): number {
   return 1 - Math.min(deepest / SOFT, 1);
 }
 
+/* ── What stands on the ground, in the ground's own shadow (§28) ────────
+   §0.2: "a tree with no shadow reads as a decal. The worker already marches
+   the field; a scattered object is a bump on it, and the cheapest honest
+   answer is a disc of occlusion under each one baked into the vertex
+   attribute the ground already carries." So it is exactly that — the
+   conifers of `scatter.ts` projected onto the shadow lattice and multiplied
+   into the term the march produced. No second attribute, no second pass on
+   the GPU, and it morphs like the rest of the shadow because it *is* the
+   rest of the shadow.
+
+   **Only the conifers, and only at the finest level**, which is two
+   decisions and one of them was measured the hard way. A boulder is four
+   units tall and throws six units of shadow at this sun's 32°, against a
+   lattice that is eight units at level 0 and sixty-four at level 3 — so a
+   rock's shade would be baked into nothing at every level there is. A
+   conifer's ellipse is fifteen units across, which two lattice points
+   resolve at level 0 and one does at level 1.
+
+   The first build baked level 1 as well, and what came back is the reason
+   not to: **shade outruns the thing casting it**. `stands.ts` fades a tree
+   out at 590 units and a level-1 chunk reaches 576, so the far ridges came
+   back covered in soft dark ellipses with nothing standing in them — which
+   reads as holes cut in the ground, and is worse in every frame than the
+   error in the other direction. Level 0 reaches 288 and is fully morphed in
+   by 158, so what is left is trees past that distance whose pool of shade
+   has not arrived yet, at a distance where the pool would be a dozen pixels.
+   It cost 20% of a level-1 chunk's generation as well.
+
+   None of which is a seam. §25's morph is what carries a chunk from its
+   parent's surface to its own, so a level-0 chunk is *born* showing the
+   level-1 surface, which has no stands in it, and the shade of a forest
+   fades in over the chunk's life at exactly the rate its geometry does.
+
+   The projection is a sphere's shadow on flat ground: an ellipse, offset
+   downsun from the trunk by the canopy's height times cot(elevation), a
+   semi-minor axis of the canopy radius and a semi-major of that over
+   sin(elevation). Combined by max rather than by product, so a stand of
+   conifers is ground in shade rather than ground in the dark. */
+const OBJECT_SS = 8;
+const OCCLUSION = 0.7;
+
+const SUN_XZ = Math.hypot(SUN.x, SUN.z);
+const SHADE_X = -SUN.x / SUN_XZ;
+const SHADE_Z = -SUN.z / SUN_XZ;
+/** How far downsun a shadow runs per unit of height: cot(32°). */
+const SHADE_RUN = SUN_XZ / SUN.y;
+/** How much longer than wide a sphere's shadow is: 1/sin(32°). */
+const SHADE_LONG = 1 / SUN.y;
+
+/* How far outside the lattice a tree can stand and still darken it — and it
+   is **not the same on all four sides**, because a shadow only ever runs one
+   way. The tallest conifer's ellipse is offset 11.0 units downsun and is 7.4
+   by 7.9 half-extents, so upsun of the lattice a tree matters from 14 units
+   out and downsun of it from under one. Asking symmetrically would be a
+   quarter more cells for no shade at all. */
+const SHADE_RISE = TREE_H_MAX * CANOPY_Y * SHADE_RUN;
+const SHADE_R = CANOPY_R * TREE_W_MAX * TREE_H_MAX;
+const SHADE_BX = Math.abs(SHADE_X) * SHADE_R * SHADE_LONG + Math.abs(SHADE_Z) * SHADE_R;
+const SHADE_BZ = Math.abs(SHADE_Z) * SHADE_R * SHADE_LONG + Math.abs(SHADE_X) * SHADE_R;
+const MARGIN_X0 = SHADE_X * SHADE_RISE + SHADE_BX;
+const MARGIN_X1 = SHADE_BX - SHADE_X * SHADE_RISE;
+const MARGIN_Z0 = SHADE_Z * SHADE_RISE + SHADE_BZ;
+const MARGIN_Z1 = SHADE_BZ - SHADE_Z * SHADE_RISE;
+
 /* Smoothstepped rather than linear, which is not a nicety. A bilinear patch
    is only C0 across a cell boundary, and a *hard band edge* drawn over that
    discontinuity comes back as axis-aligned rectangles a few units across —
    measured on the massif's mid slope. Fading the interpolant makes the
    lattice C1 and the edges follow the ground. */
 const ease = (t: number) => t * t * (3 - 2 * t);
+
+/* How much of the key light the conifers standing near this lattice take off
+   it, one value per lattice point. **Splatted rather than gathered**, and
+   that is the whole of why it is affordable: a gather would ask every
+   lattice point which cells could shadow it and pay for each of those cells
+   once per point, where this walks each cell once and touches the handful of
+   points its trees darken. The cell walk is the cost, the projection is not.
+
+   Two early-outs stand in front of the field, and between them they reject
+   nine cells in ten before anything expensive happens: the clump noise, which
+   is one call and no sample at all, and then the altitude window off a single
+   coarse height. */
+const scratch = new Float32Array(6);
+
+function occlusion(x0: number, z0: number, ss: number, lw: number, lh: number): Float32Array {
+  const O = new Float32Array(lw * lh);
+  const x1 = x0 + (lw - 1) * ss;
+  const z1 = z0 + (lh - 1) * ss;
+  const ci0 = Math.floor((x0 - MARGIN_X0) / CELL);
+  const ci1 = Math.floor((x1 + MARGIN_X1) / CELL);
+  const cj0 = Math.floor((z0 - MARGIN_Z0) / CELL);
+  const cj1 = Math.floor((z1 + MARGIN_Z1) / CELL);
+
+  for (let cj = cj0; cj <= cj1; cj++) {
+    for (let ci = ci0; ci <= ci1; ci++) {
+      const cx = (ci + 0.5) * CELL;
+      const cz = (cj + 0.5) * CELL;
+      const clump = treeClump(cx, cz);
+      if (clump <= 0) continue;
+      // One sample for the altitude window and the water margin, then the
+      // other two only where a conifer is still possible.
+      const h = height(cx, cz, SPACING);
+      if (treeBand(h) <= 0) continue;
+      const density = treeDensity(groundAt(cx, cz, h), clump);
+      if (density <= 0) continue;
+
+      for (let k = 0; k < TREES; k++) {
+        if (!conifer(ci, cj, k, density, scratch)) continue;
+        const tall = scratch[2]!;
+        const r = CANOPY_R * scratch[3]! * tall;
+        // The ellipse: the canopy's own sphere, projected downsun.
+        const rise = CANOPY_Y * tall * SHADE_RUN;
+        const ex = scratch[0]! + SHADE_X * rise;
+        const ez = scratch[1]! + SHADE_Z * rise;
+        const a = r * SHADE_LONG;
+        const bx = Math.abs(SHADE_X) * a + Math.abs(SHADE_Z) * r;
+        const bz = Math.abs(SHADE_Z) * a + Math.abs(SHADE_X) * r;
+
+        const i0 = Math.max(Math.ceil((ex - bx - x0) / ss), 1);
+        const i1 = Math.min(Math.floor((ex + bx - x0) / ss), lw - 2);
+        const j0 = Math.max(Math.ceil((ez - bz - z0) / ss), 1);
+        const j1 = Math.min(Math.floor((ez + bz - z0) / ss), lh - 2);
+
+        for (let j = j0; j <= j1; j++) {
+          const dz = z0 + j * ss - ez;
+          for (let i = i0; i <= i1; i++) {
+            const dx = x0 + i * ss - ex;
+            const u = (dx * SHADE_X + dz * SHADE_Z) / a;
+            const v = (dz * SHADE_X - dx * SHADE_Z) / r;
+            const q = 1 - (u * u + v * v);
+            if (q <= 0) continue;
+            const o = OCCLUSION * ease(q);
+            const at = j * lw + i;
+            if (o > O[at]!) O[at] = o;
+          }
+        }
+      }
+    }
+  }
+  return O;
+}
 
 /** One level's surface over a square block of its own grid: the heights, the
     shading normals and the marched shadow, with nothing about where the
@@ -228,6 +377,8 @@ function buildSurface(ox: number, oz: number, size: number, i0: number, j0: numb
       C[j * lw + i] = height(wx, wz, cs);
     }
   }
+  const O = ss <= OBJECT_SS ? occlusion(ox + lx * ss, oz + lz * ss, ss, lw, lh) : null;
+
   const cinv = 1 / (2 * ss);
   for (let j = 1; j < lh - 1; j++) {
     const wz = oz + (lz + j) * ss;
@@ -238,7 +389,7 @@ function buildSurface(ox: number, oz: number, size: number, i0: number, j0: numb
       /* From that coarse surface, which is also the one being marched: a
          vertex sitting in a detail dip is *below* the field the ray travels
          over, and starting there would shadow every hollow in the world. */
-      S[at] = sunlight(wx, wz, c);
+      S[at] = O ? sunlight(wx, wz, c) * (1 - O[at]!) : sunlight(wx, wz, c);
       /* §27 — the density, off the *landform* gradient rather than the
          surface's own, for the same reason the shading normal is (LANDFORM
          above): a 14-unit detail bump is 23° of tilt and would strip the

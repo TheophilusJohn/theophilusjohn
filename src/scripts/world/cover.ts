@@ -79,7 +79,10 @@ const CLUMP_OFF_Z = -502.4;
 const PATCH_OFF_X = -271.1;
 const PATCH_OFF_Z = 640.3;
 
-const ramp = (a: number, b: number, x: number) => {
+/* Exported since §28: `scatter.ts` ramps six terms of its own over the same
+   inputs, and two copies of a smoothstep between two named ends is two
+   places for one of them to acquire a different clamp. */
+export const ramp = (a: number, b: number, x: number) => {
   const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
   return t * t * (3 - 2 * t);
 };

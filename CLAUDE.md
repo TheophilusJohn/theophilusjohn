@@ -32,10 +32,11 @@ Node runs the `.ts` directly and every number about the terrain is that
 function's own output. `chunk.ts` samples it into arrays, `grid.ts` is the
 vertex layout the worker and the main thread both index, `cover.ts` (§27) is
 where anything grows, `sun.ts` and `wind.ts` are the two directions the world
-agrees on, `terrain-worker.ts` runs the generator off the main thread, and
-`terrain.ts`, `water.ts`, `blades.ts` and `sky.ts` are the parts that know
-what a mesh is. Keep it that way: a worker that reaches anything in three is
-a second copy of the renderer.
+agrees on, `scatter.ts` (§28) is what stands on it, `terrain-worker.ts` runs
+the generator off the main thread, and `terrain.ts`, `water.ts`, `blades.ts`,
+`stands.ts` and `sky.ts` are the parts that know what a mesh is. Keep it that
+way: a worker that reaches anything in three is a second copy of the
+renderer.
 
 **Since §23 the worker also bakes light**, and `sun.ts` is why that is
 allowed: the key light is one direction in a module that imports nothing, so
@@ -80,8 +81,9 @@ disc of 60 units. The disc is filled on the main thread because a blade has
 to stand on ground only `height()` knows about; it is a world-anchored grid
 of cells mapped toroidally into one buffer, so a slot is refilled only when
 the cell it holds changes, under a per-frame budget. **The band model is
-`band.ts`** now — the edges, the ramp and the shadow depth in one place —
-because §27 puts a second surface in those bands and §28 adds two more, and a
+`band.ts`** now — the edges, the ramp and the shadow depth in one place, on
+three rungs since §28 (−1 a conifer, 0 the ground and stone, +1 growth) —
+because §27 puts a second surface in those bands and §28 two more, and a
 blade whose terminator sat a hundredth off the ground's would draw a line
 along every slope.
 
@@ -89,13 +91,36 @@ along every slope.
 is: the blades want a bend vector, the cloud deck wants the displacement it
 integrates to, the water wants a bearing per wave. One direction, one gust
 wave, one wander, and each layer's use is one line — everything that moves is
-within 22° of one direction and inside the frequency band §26 measured.
+within 22° of one direction and inside the frequency band §26 measured. §28's
+canopies read the gust wave itself and add nothing to the spectrum: what is
+per tree is stiffness, never phase, because a phase offset destroys the
+travelling band and the band is what makes a gust read as wind.
+
+**Since §28 things stand on the ground as well as growing on it.**
+`scatter.ts` is the second pure placement module — conifers and stone, keyed
+to a world-fixed 16-unit cell — and `stands.ts` draws them on a
+camera-relative grid the way `blades.ts` does, at 608 units instead of 60. It
+is **two draw calls for the whole world**, not §0.2's one per variant per
+chunk: a quadtree covers the same ground at four levels at once, so a tree on
+a boundary would be drawn once, three times or not at all. Variants are three
+floats in the instance rather than three geometries.
+
+**A conifer's shade is baked by the worker, which is why placement has to be
+pure.** `chunk.ts` splats each canopy downsun onto §23's shadow lattice and
+multiplies it into the marched term, so the tree is drawn on the main thread
+and the shade under it is computed in a worker three levels away — they agree
+only because `scatter.ts` answers the same question on both sides. Two rules
+came out of building it: **shade may lag the thing casting it and may never
+outrun it** (level 1 reaches 576 units, the trees fade at 590, and the far
+ridges came back covered in pools with nothing in them), and an object's own
+`N·L` must be **compressed into the bands** before `band.ts` cuts it, because
+the bands are placed around flat ground and a cone has facets at every angle.
 
 **The landscape is alive from §0.2 (decided at §24).** §4.7's "no trees,
 rocks, water, clouds" is reversed and steps 25–29 build what replaces it:
 geomorph, water, ground cover and wind, rocks and conifers, motes and cloud
-volume. Everything scattered on the terrain is placed by a **pure function of
-`(x, z)`** — chunks generate independently, in three workers, in any order,
+volume. §29 is what is left. Everything scattered on the terrain is placed by
+a **pure function of `(x, z)`** — chunks generate independently, in three workers, in any order,
 and anything stateful would make two chunks disagree about their shared edge.
 
 ---
@@ -568,6 +593,33 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   `dist` instead of the build the harness was pointed at. It survives across
   sessions. Resolve the served asset chain (`/?world` → entry → scene chunk →
   md5) before trusting an A/B, or check `lsof -nP -iTCP:4321 -sTCP:LISTEN`.
+- **A camera-relative layer is sized against where the near edge of the frame
+  lands, not against how far you can see.** At the opening pose the camera is
+  190 units up at 9° of pitch, so the bottom of a 60° frame is 39° below the
+  horizon and the nearest visible ground is 315 units along the view — a
+  370-unit disc drew nothing at all in the frame the world is composed
+  against, while looking correct from every low pose it was tuned at.
+- **Baked shade may lag the thing casting it and may never outrun it.** §28
+  baked conifer shadows at levels 0 and 1; a level-1 chunk reaches 576 units
+  and the trees fade out at 590, so the far ridges came back covered in soft
+  dark ellipses with nothing standing in them, which reads as holes cut in
+  the ground. The error in the other direction is invisible, because §25's
+  morph carries a chunk in from a parent that has none.
+- **The bands are placed around flat ground, and an object is not flat
+  ground.** At a 32° sun a level surface is `N·L` 0.52 and 14° of tilt changes
+  band; an upright cone's sunward face is 0.99 and the facet beside it 0.10,
+  so three bands become four across one tree. Compress an object's own `N·L`
+  into a range before `band.ts` cuts it, or conifers come back as white
+  spikes and boulders as white confetti — the brightest things in the frame.
+- **A flight test is order-sensitive and one order is not a measurement.**
+  Whichever build runs first in a browser session pays for the cold start,
+  comes back 0.3–0.5ms slower per chunk and owns every frame over 25ms —
+  enough to make the build with more work in it look *faster* than its own
+  control. Run both orders and report both.
+- An octahedron scaled three ways is a rhombus from every angle. What makes a
+  lump of stone read is that its outline has more corners than its shading
+  has bands; eight faces came back as a slope of floating crystals and
+  twenty-four as boulders.
 
 ---
 
@@ -581,17 +633,20 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §24: 55.3 KiB, unchanged in content since §21 — the
+  1024px). Measured at §28: 55.2 KiB, unchanged in content since §21 — the
   one byte that moves is the hash of the scene chunk it names
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §27: 204.6 KiB, of which the terrain worker is 2.4
-  — ground cover and wind were 2,727 bytes, 295 of them the worker, which is
-  where the density is baked (§26: 202.7, §25: 202.1, §24: 201.4)
+  own merits. Measured at §28: **209.0 KiB**, of which the terrain worker is
+  3.2 — conifers and stone were 3,743 bytes, 842 of them the worker, which is
+  where the shade under a canopy is baked. §27 in the same session: 205.3
+  (its own report said 204.6; §26: 202.7, §25: 202.1, §24: 201.4). A
+  `__world` measurement hook lands in the *entry* script, not in the scene
+  chunk, so an A/B of the world chunk is unaffected by it
 - **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–29), against 0.50 today. The geomorph took
+  landscape shares (steps 25–29), against 0.82 today (§28, DPR 1). The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
   took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the
@@ -605,7 +660,11 @@ budgeted apart and a reader never pays both.
   flight, worst frame 2.70ms at its 96-cell budget. Report per layer
 - LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §26 on built code against a §25 build,
+- Under 100 draw calls. Measured at §28 on built code against a §27 build,
+  same harness, same session: **56 / 44 / 24** at 70, 190 and 520 units of
+  altitude — two of them §28's — at **0.881 / 0.820 / 0.693 ms/frame** against
+  §27's 0.626 / 0.539 / 0.511, and 1.24 / 1.19 / 1.18 at DPR 1.5 against
+  1.10 / 1.07 / 1.08. Earlier, at §26 against a §25 build,
   same harness, same machine: **54 / 42 / 22** at 70, 190 and 520 units of
   altitude — one of them the water — at **0.581 / 0.501 / 0.493 ms/frame**
   against §25's 0.590 / 0.497 / 0.490, and ~1.03 at DPR 1.5 either way. §27

@@ -68,13 +68,27 @@ export const litness = (facing: Node<'float'>, shadow: Node<'float'>) =>
     `--muted` is the mid band there and this is the first thing in the world
     to use that token. The top pair does not shift: `--paper` to `--leader` is
     already the brightest thing the ground can be, and growth is not a
-    reason to put more `--leader` in the frame. */
-const steps = (palette: Palette, step: 0 | 1): [Token, Token, Token, Token] =>
+    reason to put more `--leader` in the frame.
+
+    **−1 is §28's conifers, and it is the direction the other two are not.** A
+    stand of pines at night is darker than the ground it stands on, and the
+    whole of what makes a treeline legible from above is that it is a *mass*
+    with an edge — so a conifer bands from `--void-lift` up. Not from
+    `--void`: that is the clear colour, the fog target and the zenith at once,
+    and a tree painted in it is a hole in the terrain rather than a tree.
+    The whole ladder shifts down, unlike +1's: going up, `--paper` and
+    `--leader` stay put because the top of the world is already as bright as
+    it may be, and going down there is no such ceiling to hold. Rocks are
+    step 0 — stone is what the ground is made of, and what has to read is the
+    shape, not a second material. */
+const steps = (palette: Palette, step: -1 | 0 | 1): [Token, Token, Token, Token] =>
   step === 0
     ? [palette.rule, palette.dim, palette.paper, palette.lead]
-    : [palette.dim, palette.muted, palette.paper, palette.lead];
+    : step === 1
+      ? [palette.dim, palette.muted, palette.paper, palette.lead]
+      : [palette.lift, palette.rule, palette.dim, palette.paper];
 
-export function bands(lum: Node<'float'>, palette: Palette, step: 0 | 1 = 0) {
+export function bands(lum: Node<'float'>, palette: Palette, step: -1 | 0 | 1 = 0) {
   const [low, mid, high, top] = steps(palette, step);
   // One pixel of edge, wherever the edge lands.
   const edge = fwidth(lum).mul(EDGE).max(0.001);
