@@ -1340,6 +1340,156 @@ and say so rather than tuning octaves for a session.
 **Report:** ms/frame, chunk generation cost separately from render cost,
 draw calls, triangle count, and screenshots from three altitudes.
 
+*Done.* **It reads as a landscape, and that is the finding — the rest is
+numbers.** Ranges standing in open country, ridge systems receding into fog,
+a horizon, valley floors with texture on them. Flying is the point of it in
+a way no still shows, which is the same sentence §23 will have to write
+about the terminator. Judged by looking, as the step asks, and the honest
+qualifier is that it is *shape* that works: the light is a two-stop ramp
+that stands in until §23, and the frame is flatter than it will be once the
+bands and the rim in `--leader` are on it.
+
+**Five files, and only one of them can see a GPU.** `height.ts` is the field
+and imports nothing — no three, no DOM — so Node runs the `.ts` directly and
+every field number below is that function's own output. `chunk.ts` samples
+it into arrays. `grid.ts` is the vertex layout the worker and the main
+thread both index. `terrain-worker.ts` is nine lines. `terrain.ts` is the
+only part that knows what a mesh is.
+
+**The construction.** A continental fBm (4 octaves, λ1,150, ±40) is the
+landform, and a mask taken off its own value is *where there are mountains
+at all* — without it a ridged field is uniform mountains to the horizon,
+which is a texture rather than a place. A ridged multifractal (7 octaves,
+λ380, ×76) inside that mask is the relief: `1−|n|` folds the noise at zero
+so maxima become creases, squaring sharpens the crease into a crest, and
+Musgrave's weight term feeds each octave through the last so detail collects
+on ridges and valleys stay smooth. A third fBm (4 octaves, λ110, ±7) runs
+*outside* the mask, and it was added after looking: the mask is near zero on
+a valley floor by design, so the only thing left there was a continental
+octave 144 units across, and ground with no relief under 144 units does not
+read as ground — it reads as fog, or as a hole in the frame where the light
+is. Over a 3,000-unit square the field is **−22.4 to 128.1, mean 15.6**,
+with 38% of it in one 16-unit bucket at the bottom.
+
+**The cluster comes back as a term, and it does two things.** Five Gaussians
+weighted by share (σ160 on a 120-unit ring, ×26) raise the ground *and* open
+the range mask where they land, so what the traffic builds is a massif with
+the same crests everywhere else has rather than a dome sitting on a plain —
+which is the failure §0 names. Equal shares is what an idle cluster looks
+like; §26 sites it and §29 brings back the election. Note left in the file
+for §29: this runs inside the worker, so a share change is a message and a
+regeneration of the chunks within reach, not a uniform.
+
+**A quadtree, and rings were tried first on paper.** Rings are far cheaper —
+twelve chunks cover what forty-six quadtree leaves do — and they do not
+work. A ring hierarchy needs level L's block to exactly fill the hole in
+level L+1's, which forces each level's origin to be a multiple of the next
+level's chunk size; propagate that down four levels and the finest level can
+only re-centre **every 32 chunks**. Every published implementation absorbs
+the leftover with L-shaped trim strips. A quadtree has no alignment
+condition at all, and its leaves are keyed by their own coordinates, so a
+chunk is generated once and nothing a neighbour does invalidates it.
+
+Four levels, 48 quads a side, chunks of 96/192/384/768 units and therefore
+spacings of 2/4/8/16; a cell splits while the camera is within 1.5 of its
+own width; a 5×5 block of the coarsest floats around the camera, which puts
+ground in every direction out to **at least 1,536 units** — past where the
+fog has taken it to `--void`. Cracks between levels are **skirts, not
+stitching**: stitching is exact and would make a chunk's geometry depend on
+which levels its four neighbours happen to be, so crossing a boundary would
+regenerate a ring of chunks that had not moved. A skirt is 196 of a chunk's
+2,597 vertices, depends on nothing outside it, and both sides of every seam
+have one.
+
+**Render cost, at three altitudes, DPR 1 at 1512×804:**
+
+| | leaves | tris allocated | draw calls | tris drawn | ms/frame | at DPR 1.5 |
+|---|---|---|---|---|---|---|
+| low, 70 | 154 | 768,768 | **56** | 285,569 | **0.302** | 0.476 |
+| cruise, 190 | 136 | 678,912 | **43** | 220,673 | **0.255** | 0.425 |
+| high, 520 | 76 | 379,392 | **27** | 140,801 | **0.200** | 0.376 |
+
+§21's empty world was 2 draw calls at 0.108ms. So the whole landscape costs
+**0.19ms a frame** and 54 draw calls at the worst of the three, against a
+budget of 100 and a 60fps frame of 16.6. Batches of 240 between two
+`queue.onSubmittedWorkDone()` with the site's loop stopped, after a warm
+batch of 60. Frustum culling is doing two thirds of the work: a chunk is a
+bounded square whose height range the worker already reports, so it gets a
+bounding sphere without a read-back.
+
+**Generation cost, which is the one that had to be separate.** In a worker
+pool — three of them, `hardwareConcurrency − 1` capped at 3 — importing
+`chunk.ts` and `height.ts` and nothing else. The opening fill is **180
+chunks in 258.1ms of worker time, worst 4.3ms**; the main thread's share of
+that is building the geometry and the bounding sphere, **6.3ms in total,
+worst 0.2ms**.
+
+**Under flight it is smaller than the fill.** 75 seconds held at boost, 180
+units/s, level: **13,482 units travelled and 2,263 new chunks**, 5,091ms of
+worker time (2.25ms mean, **worst 4.9ms**) — 2.3% of the pool. Main-thread
+attach over the whole flight: **144.8ms, worst 0.3ms in any one frame**.
+
+**No hitch, and it is measured rather than asserted:** 4,507 frames, median
+gap **16.7ms**, p99 16.8, max **16.8**, and **zero frames over 25ms**. With
+`document.hidden` checked false, because a backgrounded tab reports frozen
+timings rather than wrong ones.
+
+**No holes either.** A leaf whose chunk has not arrived is stood in for by
+the nearest generated ancestor — the chunk it was subdivided out of, still
+alive on a four-second retirement clock — and every other descendant of that
+ancestor is hidden with it so the two cannot z-fight over the part they
+share. Instrumented as a count of leaves with no generated ancestor: **0 at
+every one-second sample of the flight, worst 5 of ~140 on a 10Hz sample**.
+Chunks alive stayed between 259 and 287 the whole way, which is ~24MB of
+buffers and ~17MB of the CPU copies three retains behind them.
+
+**Bundles. The document side is byte-identical**, and that is checked by
+building `HEAD` and this tree and comparing: 48,993 + 6,907 + 569 = **56,469
+gzipped** either way, CSS 2,031. The world chunk went **199,321 → 202,436
+(+3,115)** and the worker is a new **1,264**, so a world load is 203,700
+(198.9 KiB) of a 400 KiB budget. The document chunk never names
+`terrain-worker`, so it cannot be fetched in document mode — checked on all
+four gates along with the scene chunk.
+
+**Four things moved outside the terrain, all of them because there is now
+ground.** The camera's far plane 1,000 → 2,600 and near 0.1 → 0.5, since
+everything past 1,300 is fully fogged and the clip is invisible. The star
+sphere **200 → 2,500**: stars are transparent and depth-test *after* the
+opaque ground, so a sphere inside the terrain's reach draws stars in front
+of a mountain 900 units out. Fog 0.043 → **0.0015**, re-solved against real
+distances instead of a 42-unit disc; the squashed vertical axis from §18
+survives and matters more now that altitude is unbounded. And the cruise
+speed 14 → **45**, because 380 units between ridges is what a speed can
+finally be relative to.
+
+**The opening pose is a search, not a guess.** Scored over the field for
+open ground under the camera, nothing within 300 units, a 125-unit range
+between 380 and 900, and more ground standing behind it: (−60, 190, 60),
+yaw 30°, pitch −9°. The heading lands within five degrees of the bearing to
+the cluster massif a kilometre out, which is the search's coincidence rather
+than a composition — §26 is what makes it deliberate.
+
+**Document mode did not regress.** axe-core **0 violations across eight
+states**, LCP 24ms desktop and 48ms mobile, CLS 3.0e-5 and 0, page height
+**11,559** unchanged, `/projects/homonoia` still lands at **y 3,354**, and
+`?doc` still survives a scroll to `/projects/homonoia?doc`.
+
+**Two traps paid for in this step**, both in CLAUDE.md now. A
+`/// <reference lib="webworker" />` is not scoped to its file: it merged the
+worker globals into the whole project and took every `KeyboardEvent` in
+camera.ts and url-sync.ts down to a bare `Event` — fourteen errors in three
+files that never imported the worker. And the WebGPU backend deletes a
+geometry's *index* attribute from its buffer map on dispose, so one shared
+index buffer across 300 chunks would be dropped out from under all of them
+by the first retirement; 30KB a chunk to not have that.
+
+**Left for the steps that own it.** The light is §23's, and so is the sky —
+the starfield still fades from level rather than from a horizon it can see.
+The camera flew 2,100 units *under* the ground on the first attempt at the
+flight test, which is §24 and is why that test is run level. `place()` on
+the camera and the `window.__world` probe both existed for these
+measurements and were taken out again.
+
 ### 23. Cel shading and atmosphere
 Banded light — lit, mid, shadow, hard terminator — replacing the Phong
 material outright. **Rim light on every crest in `--leader`**; it is the

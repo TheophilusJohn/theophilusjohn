@@ -31,9 +31,13 @@ import {
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import type { Color } from 'three/webgpu';
 
-/* Inside the far plane, and far enough out that no star can be mistaken
-   for anything standing in the world. */
-const SPHERE = 200;
+/* Inside the far plane, and **beyond every chunk of ground** — §22 moved it
+   from 200, where it sat while the world was empty. Stars are transparent
+   and depth-test against the opaque terrain drawn before them, so a sphere
+   inside the terrain's reach puts stars *in front of* a mountain 900 units
+   out. At 2,500 the test is the sky being behind the world, which is what
+   it should have been measuring all along. */
+const SPHERE = 2500;
 
 /* Where the sky starts, and **§21 had to change what that means.** It was
    the angle the horizon arc was drawn at — a function of camera altitude,

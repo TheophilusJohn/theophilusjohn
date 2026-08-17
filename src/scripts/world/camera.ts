@@ -30,10 +30,13 @@ const DEG = Math.PI / 180;
    against. */
 const FOV = 60;
 
-/* The far plane is the star sphere. Near stays at 0.1 — §24 clamps the
-   camera above the terrain, and until then it can be inside anything. */
-const NEAR = 0.1;
-const FAR = 1000;
+/* The far plane is past the star sphere, which is past the last chunk of
+   ground (§22). Everything between 1,300 and 2,600 is fully fogged, so the
+   clip is invisible and the whole range is spare. Near lifts to 0.5 with
+   it: 5,200:1 is a depth range a 24-bit buffer holds without fighting, and
+   §24's altitude clamp is what says nothing will ever be closer. */
+const NEAR = 0.5;
+const FAR = 2600;
 
 /* Straight down and straight up are both a gimbal: at ±90° the yaw axis and
    the view axis are the same line and a drag stops meaning anything. Five
@@ -45,7 +48,14 @@ const PITCH_LIMIT = 85 * DEG;
    as moving your head rather than as a joystick. */
 const LOOK = 0.25 * DEG;
 
-const SPEED = 14;      // units per second at full input
+/* §21 set this at 14 against an empty world, where there was nothing for a
+   speed to be relative to. §22 gives it one: `height.ts` puts one ridge
+   system 380 units from the next, so 45 crosses a range every 8.4 seconds
+   and a minute in one direction passes seven of them. At 14 the same minute
+   covered two and a half, and the world read as vast because it was slow —
+   which is the wrong reason for a world to read as vast. Shift is 180, and
+   at that a minute is 10.8km of new ground. */
+const SPEED = 45;      // units per second at full input
 const BOOST = 4;       // multiplier while a modifier is held
 
 /* Momentum, and it is the same shape as the scroll damping it replaces: an
@@ -55,11 +65,21 @@ const BOOST = 4;       // multiplier while a modifier is held
    aimed. */
 const DRIFT = 0.22;
 
-/* Nothing here is a designed pose — there is nothing in the world to
-   compose against yet (§22). It is high enough that terrain will arrive
-   below rather than around the camera, and level enough that the sky is
-   the top half of the frame. */
-const START = new Vector3(0, 24, 0);
+/* §22 gives this something to compose against, and this pose is a search
+   over the field rather than a guess: open ground under the camera, nothing
+   within 300 units to look at, a 125-unit range between 380 and 900, and
+   more ground standing behind it. 190 clears that range by 65, which puts
+   its crest just above the view axis at a 9° depression — high enough to be
+   the subject and low enough that the sky is still half the frame.
+
+   The heading is 30°, which is within five of the bearing to the cluster
+   massif (`height.ts`, CLUSTER_SITE) a kilometre out. That is a
+   coincidence of the search rather than a composition, and §26 is what will
+   make it deliberate — it sites the four structures, and this pose moves
+   with them. */
+const START = new Vector3(-60, 190, 60);
+const START_YAW = 30;
+const START_PITCH = -9;
 
 /* event.code, not event.key: it names the physical key, so WASD is the same
    three fingers on AZERTY and Dvorak. */
@@ -73,8 +93,8 @@ const DOWN = ['KeyQ', 'KeyC'];
 export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   const camera = new PerspectiveCamera(FOV, aspect, NEAR, FAR);
 
-  let yaw = 0;
-  let pitch = -10 * DEG;
+  let yaw = START_YAW * DEG;
+  let pitch = START_PITCH * DEG;
   const position = START.clone();
   const velocity = new Vector3();
 

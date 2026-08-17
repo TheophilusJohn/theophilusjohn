@@ -1,62 +1,45 @@
-/* §4.7 / §18 — fog, and it is not atmosphere for its own sake.
+/* §4.7 / §18 / §22 — fog, and it is not atmosphere for its own sake.
 
-   **Nothing imports this between §21 and §22.** The strip took the ground,
-   the mist and the traffic with it and left the sky, which is exempt from
-   fog by construction, so there is currently nothing in the world for this
-   to fade. It is kept rather than deleted because §0.5 keeps it by name and
-   because the one finding in it — the squashed vertical axis — is the thing
-   that makes the tuning hold at more than one altitude, and §22 makes
-   altitude unbounded where §18 had 22 units of it. It costs nothing in the
-   bundle: an unimported module is not in the graph.
+   Without it every depth in the world is the same brightness and the volume
+   flattens back into the diagram §16 exists to escape. It is also what
+   hides the far clip, so the ground has no visible end: past about 1,300
+   units the terrain is --void whether it is there or not, which is what
+   lets §22 stop generating it at 1,536 and lets the camera's far plane sit
+   at 2,600 without anything popping at either edge.
 
-   Two of the constants below are pinned to a world that no longer exists.
-   FOG 0.043 was solved against a ground disc of RADIUS 42 carried with the
-   camera, which was the only fixed distance there was; a chunked terrain
-   extending past the horizon has a different one. Re-tune at §22 and keep
-   LAYER's argument, which is about what an atmosphere *is* rather than
-   about how far away the ground was.
+   Exponential-squared. Additive layers multiply their opacity by this and
+   fading a contribution to zero *is* fading it to --void, since the canvas
+   is cleared to it. The ground is opaque and does not: it mixes toward
+   --void, because --void is under every pixel and a surface has to arrive
+   at it rather than at nothing (§19).
 
-   Without it every point in a particle world is the same brightness at
-   every depth and the volume flattens back into the diagram §16 exists to
-   escape. It is also what hides the far clip, so the ground has no visible
-   end, and what stops the last few units of the disc's radius piling into
-   a bright band across the frame.
-
-   Exponential-squared, to --void. Nothing here mixes toward a colour: the
-   canvas is cleared to --void and every material over it is additive, so
-   fading a contribution to zero *is* fading it to --void. One multiply on
-   opacity.
-
-   Tuned against the horizon arc, because that is the only fixed distance
-   in the world: the ground disc is RADIUS units across and carried with
-   the camera, so `exp(-(42k)²)` is what the ground has left where the arc
-   is drawn. At 0.043 that is 0.03 — gone by the arc, as §4.7 asks, so the
-   line is confirming a limit the ground has already faded into rather than
-   cutting one.
+   **FOG is re-tuned at §22 and this is the second world it has been set
+   against.** §18 solved 0.043 against a ground disc of RADIUS 42 carried
+   with the camera — the only fixed distance that world had. A procedural
+   terrain has real ones: ridges 380 units apart, a horizon that has to hold
+   three or four ranges of depth, and chunks out to 1,536. 0.0015 leaves the
+   ground 0.91 of its light at 200 units, 0.57 at 500, 0.16 at 900, 0.022 at
+   1,300 and 0.005 where the ground runs out.
 
    **The vertical axis is squashed, and it is the difference between a
    tuning that holds and one that only holds at the altitude it was set
-   at.** Scroll is altitude now (§18): the same camera stands 26 units up
-   over the hero and 4 down among the ridges. On plain radial distance the
-   ground directly under the hero camera is 26 units away and comes back at
-   0.29, so the whole first screen — the one everybody sees — goes into the
-   haze while the low stops stay lit. Measured before this term: the hero
-   was at half the light §17 shipped and philoi at 1.5x of it.
+   at.** §18 found this when scroll became altitude over a 22-unit descent;
+   §22 makes altitude unbounded, so it matters more rather than less. On
+   plain radial distance the ground directly under a camera cruising at 150
+   is 150 units away and goes into the haze while the same ground seen from
+   40 stays lit — the horizon would close in every time the reader climbed.
 
    Weighting dy at 0.35 says the fog is a layer over the ground and thin
    through its own thickness, which is both what an atmosphere is and what
-   makes §4.7's sentence true at every altitude rather than at one of them:
-   the arc sits at RADIUS horizontally whatever the altitude, so that is
-   where the ground fades, and climbing out of the layer costs almost
-   nothing. Near ground stays lit under a high camera and the far ground
-   still goes; the depth gradient is 20x either way.
+   makes the distance above a *horizontal* one at any altitude. Near ground
+   stays lit under a high camera and the far ground still goes.
 
    Stars are exempt. They are at effective infinity and behind the fog by
    construction; running this on them would delete the sky. */
 
 import { cameraPosition, exp, vec3 } from 'three/tsl';
 
-export const FOG = 0.043;
+export const FOG = 0.0015;
 export const LAYER = 0.35;
 
 export const fog = (world: any) => {

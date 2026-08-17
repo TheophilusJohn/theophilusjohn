@@ -26,6 +26,15 @@ cost. Document mode was finished and shipped first (steps 1–14) and stays
 finished — that is what makes the reversal survivable. Steps 21–30 build the
 world. See `docs/STEPS.md`.
 
+**The landscape is five files and only one of them can see a GPU** (§22).
+`height.ts` is the field and imports nothing — no three, no DOM — so Node
+runs the `.ts` directly and every number about the terrain is that
+function's own output. `chunk.ts` samples it into arrays, `grid.ts` is the
+vertex layout the worker and the main thread both index, `terrain-worker.ts`
+runs the generator off the main thread, and `terrain.ts` is the only part
+that knows what a mesh is. Keep it that way: a worker that reaches anything
+in three is a second copy of the renderer.
+
 ---
 
 ## Hard rules
@@ -341,6 +350,40 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - Sub-millisecond frames need a warm-up batch before the timed one, or the
   first measurement is submit overhead and DPR 1.5 comes back *faster* than
   DPR 1.
+- `/// <reference lib="webworker" />` is **not scoped to its file**. It
+  merges the worker globals into the whole project, and the first casualty
+  is `addEventListener` — every `KeyboardEvent` and `PointerEvent` handler
+  in every other file degrades to a bare `Event`. Type the worker scope by
+  hand instead: 14 errors in three files that never imported the worker.
+- The WebGPU backend deletes a geometry's **index** attribute from its
+  buffer map on dispose, along with its own. One index buffer shared across
+  a pool of streaming chunks is therefore dropped out from under every chunk
+  still drawing with it by the first retirement. Give each its own copy.
+- A nested ring clipmap has an alignment condition that does not survive
+  four levels: level L's block must exactly fill the hole in level L+1's, so
+  each origin has to be a multiple of the *next* level's chunk size, and by
+  the fourth level the finest ring can only re-centre every 32 chunks. That
+  is what L-shaped trim strips exist for. A quadtree has no such condition —
+  children tile their parent — and its leaves are keyed by their own
+  coordinates, so nothing a neighbour does can invalidate a generated chunk.
+- Cracks between LOD levels are **skirts or stitching, and stitching is the
+  expensive one**. Snapping a fine edge to the coarse level's sampling is
+  exact, and it makes a chunk's geometry a function of what its four
+  neighbours currently are — so crossing a boundary regenerates a ring of
+  chunks that never moved, and nothing can be cached by key.
+- An LOD criterion measured from y=0 is measured from the wrong place. A
+  camera cruising at 190 over ground at −6 is 190 away from *everything*,
+  the finest level wants 144, and it never appears at all. The vertical leg
+  has to be the height above the ground under the camera, which means the
+  main thread samples the height field once a frame — the same call §24's
+  clamp needs.
+- Transparent objects depth-test **after** the opaque pass, so a star sphere
+  inside the terrain's reach draws stars in front of a mountain. Put the sky
+  beyond the last chunk of ground, not beyond the last thing that existed
+  when it was tuned.
+- Flying "forward" is along the view axis, so a harness that holds W with
+  any pitch on descends. 75s at 180 units/s and −9° is 2,100 units down, and
+  the whole test then happens under the terrain without failing.
 
 ---
 
@@ -354,15 +397,20 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §20: 55.2 KiB
+  1024px). Measured at §22: 55.1 KiB, byte-identical to §21
 - World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits
-- LCP under 2.5s on throttled 4G. Measured at §20: 104ms desktop, 72ms mobile
+  own merits. Measured at §22: 198.9 KiB, of which the terrain worker is 1.2
+- LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
 - **Interactive world under 3s** on a desktop connection
-- Under 100 draw calls. Measured at §21: 2, at 0.108ms/frame (§20: 6 at 2.26)
+- Under 100 draw calls. Measured at §22: **56** at the lowest of three
+  altitudes, at **0.302ms/frame** (§21, empty: 2 at 0.108; §20: 6 at 2.26)
+- Chunk generation is tracked apart from render cost, because at this scale
+  what breaks is a hitch when new ground arrives, not a low average.
+  Measured at §22 over 75s of boosted flight: 2,263 chunks, 2.25ms each in
+  the worker pool, 0.3ms worst on the main thread, **zero frames over 25ms**
 - 60fps on integrated graphics, with LOD doing the work
 - Lighthouse accessibility **100**
 - Usable at 360px wide with motion off

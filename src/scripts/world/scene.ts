@@ -14,11 +14,14 @@
    loads first, and a landscape that exists to be flown over is a different
    object from one that exists to be glimpsed between paragraphs.
 
-   What is left is deliberately almost nothing — the renderer, the sky and a
-   camera you can fly:
+   What is here is the renderer, the sky, a camera you can fly and — since
+   §22 — a landscape under it. The landscape is four files of its own and
+   almost none of it is in this one: `height.ts` is the field, `chunk.ts`
+   samples it, `grid.ts` is the vertex layout both ends share, `terrain.ts`
+   decides which squares of ground exist. Still ahead:
 
-   - §22 builds the landscape: ridged multifractal over fBm, chunked, LOD
    - §23 makes the light bands and replaces the sky wholesale
+   - §24 clamps the camera above the ground it can now see
    - §29 brings the cluster back as a thing standing in a place, and with it
      the election, which is still the one thing to get right
 
@@ -32,6 +35,7 @@ import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
 import { buildCamera } from './camera';
 import { buildStars } from './stars';
+import { buildTerrain } from './terrain';
 
 /* Wall clock, unscaled. There is no section speed to scale it by any more —
    the sky was already exempt from that (§18), and now everything is. */
@@ -39,6 +43,9 @@ const uTime = uniform(0);
 
 const uLead = uniform(new Color());
 const uPaper = uniform(new Color());
+const uRule = uniform(new Color());
+const uDim = uniform(new Color());
+const uVoid = uniform(new Color());
 
 const token = (name: string) =>
   new Color(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
@@ -105,6 +112,14 @@ export async function mount() {
   const sky = buildStars({ paper: uPaper, lead: uLead }, uTime);
   scene.add(sky.stars);
 
+  /* Three tones for the ground and the colour under it. --rule is the
+     shadow side, --dim the mid, --paper the faces square to the key light;
+     §0.2 asks for the palette to carry the light rather than the light to
+     carry a palette, and this is the smooth version of the three bands §23
+     will quantise it into. */
+  const terrain = buildTerrain({ shadow: uRule, mid: uDim, lit: uPaper, void: uVoid });
+  scene.add(terrain.group);
+
   /* Every palette token is a uniform, re-read on every change, never folded
      into the shader at build. §15 read them once at mount and a page
      *loaded* in high contrast got a different scene from one *toggled* into
@@ -116,6 +131,9 @@ export async function mount() {
   function repaint() {
     uLead.value = token('--leader');
     uPaper.value = token('--paper');
+    uRule.value = token('--rule');
+    uDim.value = token('--dim');
+    uVoid.value = token('--void');
     renderer.setClearColor(token('--void'), 1);
   }
   repaint();
@@ -141,6 +159,10 @@ export async function mount() {
     last = now;
     uTime.value += dt;
     view.update(dt);
+    // After the camera and before the render: which squares of ground exist
+    // is a function of where the camera is *this* frame, and asking a frame
+    // late is a hole in the ground on every LOD boundary crossed at speed.
+    terrain.update(camera, dt);
     renderer.render(scene, camera);
   };
 
@@ -186,6 +208,10 @@ export async function mount() {
     location.replace(url.pathname + url.search + url.hash);
   });
 
+  /* One pass over the quadtree before the first frame, so the opening pose
+     asks for its ground at load rather than a frame after the canvas is
+     already over the document. */
+  terrain.update(camera, 0);
   renderer.render(scene, camera);
 
   /* The document is behind an opaque canvas from the next line, so it must
@@ -200,5 +226,5 @@ export async function mount() {
 
   run();
 
-  return { renderer, scene, camera, view, sky };
+  return { renderer, scene, camera, view, sky, terrain };
 }
