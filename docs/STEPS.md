@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–28 are done. The site is live. **Update this line at the end of
+Steps 1–29 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
@@ -2658,6 +2658,80 @@ world-first entirely.
 **Done when:** the arrival has been flown and looked at.
 **Report:** which of the three, in a sentence, with two screenshots — the
 station framed with type, and the same frame with the type hidden.
+
+*Done, and the answer is the second one: **it works, with changes.*** Archivo
+at `--t-2xl` in `--paper` over the landscape reads as **composed** — a
+frame with a subject on the right and a column on the left — rather than as a
+caption over a screenshot, and nothing about the register had to move to get
+there. Four constraints came out of it, and they are what the probe was for.
+
+**The code is deleted.** What is left is this section. The probe was one
+file (`probe.ts`), a `--scrim` token brought back from §17, and four lines of
+`scene.ts`; §33 rebuilds all of it properly and against four stations rather
+than one.
+
+**What was built.** A 42×13×9 slab at (−450, −293), sited in Node against the
+field — 500 units down the opening view axis, on dry ground flat enough to
+stand on, and deliberately nothing like a candidate for §32. Wheel delta
+accumulated into a 0..1 progress and damped, because Lenis is stopped and
+there is no scroll *position* behind an opaque canvas — the gesture is what
+the question is about. The camera lerped between two poses on a smoothstep
+with a floor under it, and Homonoia's machine ID, headline, metric strip and
+first paragraph **cloned out of the document underneath** rather than
+retyped, scoped styles and all. `F` released it to free flight.
+
+### The framing, which is what §33 asked for
+
+| | |
+|---|---|
+| opening pose | (−60, 190, 60), yaw 30°, pitch −9° |
+| station | (−390, 22, −191), yaw 47°, pitch −3° |
+| the object | 42 units tall, 118 units out, 26 above the eye's own ground |
+| where it lands | ~65% of the frame's width, base on the horizon line |
+| the column | left, `--s-16` in, 45ch, vertically centred |
+| the type | last 38% of the journey, smoothstepped |
+
+**The yaw is 17° off the bearing to the object**, which is what puts it right
+of centre with the type clear of it. That number is the composition: at 0°
+the slab is behind the paragraph and at 30° it is at the edge of the frame.
+
+### The four constraints on §33
+
+**1. The metric strip does not fit a 45ch column.** Four metrics at
+`--t-xl` wrap to two rows with a stranded fourth and uneven gaps — the
+document gives the strip a full-width row and the world gives it a column.
+It needs its own width outside the column, a tighter gap, or fewer than four
+in world mode. It is the only thing in the frame that is visibly *laid out
+wrong* rather than merely different.
+
+**2. The display size needs no change.** §29's own question named
+`--t-hero`, which does not exist; the token is `--t-2xl`, `clamp(2.5rem, 7vw,
+5.5rem)`, and at 1440 that is a 100px headline over a landscape. It reads. It
+was the thing most likely to fail and it did not.
+
+**3. The scrim is right as §17 built it, and it does a second job nobody
+specified.** Solid to 60% of its own 60%, no edge, no border — and over a
+*lit* landscape rather than a `--void` page it is still invisible as an
+object. What it also does is hold the reading half of the frame still: over
+one second at the station, the mean luma behind the column changed by **0.01
+levels against 0.23 in the open half**, because the two things that move —
+the cloud deck at the top of the sky and the grass in the near ground — are
+mostly outside the column and the scrim damps what is left. So the
+sub-question answers itself: **a live world behind text is not distracting
+and nothing needs stilling.** Do not build a still mode for §33.
+
+**4. The arrival needs something after it.** The camera reaches a fixed pose
+and stops dead. The damped gesture eases the approach, so it does not jolt —
+but with no residual motion at the station it reads as *the scroll running
+out* rather than as having arrived somewhere. A slow drift, a parallax, or a
+last few units of travel after the type is up is the fix, and choosing which
+is §33's.
+
+**And the other half of the worry is answered too.** §28's conifers are what
+made this frame judgeable: the mid-flight picture is a slab standing against
+a massif with a treeline on it, and the station has forest across the whole
+left of the frame behind the column. The world stopped being bare at 28,
+which is why this probe sits after it.
 
 **And the other half of the worry.** Separately from this probe, and worth
 saying because it is the same sentence from the other side: **the world feels
