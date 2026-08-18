@@ -41,6 +41,11 @@ quarter of the frame, aim at 0.4 of its height, turn 17° off the bearing) and
 a pose that is a pure function of a scroll position and one arrival clock.
 `scroll.ts` is the gesture — wheel, keys, touch, damped at 0.22s, capped at
 420 units a second — because in world mode there is no document to scroll.
+**It also settles**: a gesture that ends within 350 scroll units of a settle
+is carried to the dwell's first unit, forward only, approach side only,
+never from inside the dwell, and never mid-scroll. It retargets `want`, so
+the ease, the cap and the interruption are the ones already there, and it
+can only ever move a reader forward.
 `camera.ts` still owns the pose: the route hands one to `drive()`, the floor
 and the bounds still apply to it, and every input in that file is dead until
 `stick(true)`, which is `F` until §35 builds the unlock.
@@ -732,6 +737,14 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - A residual motion that is a pure function of scroll **stops exactly when the
   scroll stops**, which is the thing it exists to prevent. The clock is the
   second input, and it is the only one a pose module may not hold itself.
+- **"When does a gesture end" is a question about the input, not about the
+  motion it started.** A snap gated on the *flight's* velocity fires only
+  after the damped chase has coasted to a stop, so the reader watches the
+  camera settle and then move again — two motions where there should be one.
+  Gate it on the input rate (damped, plus a floor on the silence) and the
+  retarget merges into the flight already running. The floor is what protects
+  a deliberate reader: measured, 0.35s covers every wheel cadence up to
+  300ms between notches and gives way at 400.
 - **A value derived from a damped position is not itself damped.** The
   gesture being smooth says nothing about what reads it: a band weight taken
   off `scroll.ts`'s output stepped by 0.15 of an opacity and 256px of text in
@@ -806,9 +819,10 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §32: **214.38 KiB** (216,279 + 3,250 worker), of
+  own merits. Measured at §32: **214.53 KiB** (216,433 + 3,250 worker), of
   which the worker is 0 — the content layer bakes nothing and the worker is
-  byte-identical. That is +294 for the damping, the third phase and the last
+  byte-identical. That is +154 for the settle at the end of a gesture, over
+  214.38 KiB (216,279) for the damping, the third phase and the last
   climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
   **1,541** on a §31 build in the same session at the same gzip level. CSS
   2,035 → **2,548** for the station layer and the `--scrim` token. §31 with every hook removed: **212.5 KiB** (214,426

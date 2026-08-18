@@ -17,7 +17,7 @@
    both move the reader by most of the route in one frame, and easing that
    would fly the camera in from a pose nobody was at. */
 
-import { ARRIVE_TAU, LENGTH, atSettle, poseAt } from './route';
+import { ARRIVE_TAU, LENGTH, atSettle, poseAt, stops } from './route';
 
 /* Roughly a wheel notch on a mouse, and the browser's own line height when
    a wheel reports lines rather than pixels. */
@@ -55,6 +55,74 @@ const MAX_SPEED = 420;
    It is here rather than there because it is the one input to a pose that is
    not scroll, and `route.ts` may not hold state. */
 
+/* ── The settle, at the end of a gesture ────────────────────────────────
+   A reader who stops just short of a station rests just short of it: the
+   headline half up, the numbers arriving, the camera still on the approach.
+   Nothing is wrong with that frame and it is not the one the station was
+   composed for. So the end of a gesture near a settle finishes the arrival.
+
+   **Document mode does not do this**, and the model is worth naming
+   precisely because it is not a snap: `projects.ts` pins each section for
+   220% of the viewport, so most of the page's scroll length *is* a beat and
+   wherever a reader stops they have stopped inside one. The world has no
+   pins — a settle is a keyframe with 2,300 units of travel either side — so
+   the same guarantee has to be made a different way.
+
+   Four rules, and every one of them exists to keep this from becoming the
+   route driving instead of the reader:
+
+   - **only at the end of a gesture.** Never mid-scroll, and the test is the
+     gesture's own rate rather than the flight's. Taking the *flight's* rate
+     instead would fire the snap only once the damped chase had already
+     coasted to a stop, and the reader would watch the camera settle and then
+     move again — two motions where there should be one. Fired at gesture
+     end, the retarget merges into the flight already running;
+   - **only within reach of a settle.** Outside the window the reader rests
+     where they left it, because pulling someone out of the middle of a
+     1,500-unit travel leg is exactly the thing this must not be;
+   - **forward only.** A reader scrolling *up* through the window is leaving,
+     and snapping them forward would reverse them under their own hand;
+   - **never inside the dwell.** Those 600 units are the reading (§32), the
+     wheel is moving text through them, and a snap back to the top of the
+     column would undo the reader's own scroll. The window stops at the
+     dwell's first unit.
+
+   It retargets `want` rather than running a second motion beside it, so the
+   ease, the speed cap and the interruption are the ones that already exist:
+   any input moves `want` again on the same frame and the chase redirects
+   with nothing to unwind. And it only ever moves the reader **forward**, by
+   at most CAPTURE — it can add a little to a gesture and can never leave
+   someone short of where they scrolled to, which is the failure §31 took a
+   whole mechanism out over. */
+
+/* How near a settle the gesture has to have ended. Half of SETTLE_IN's 700,
+   which is not a round number so much as a readable state: at the far edge
+   of the window the band weight is 0.5, so the machine ID and the headline
+   are fully up and the metric strip is a third in. The reader is plainly at
+   the station and the snap finishes an arrival rather than starting one. It
+   is 10–15% of the 2,300 to 3,367 units between one settle and the next. */
+const CAPTURE = 350;
+
+/* When the gesture is over. Both gates have to pass, and each catches what
+   the other cannot: the silence is a floor — longer than the gap between
+   notches at four a second, so deliberate reading is never interrupted —
+   and the rate scales the wait with how hard the gesture was, because a
+   3,000-unit-a-second flick needs 0.42s of quiet to decay under the
+   threshold where a 480-a-second one needs 0.35. Below 90 units a second is
+   slower than one wheel notch every 1.3 seconds, which is not scrolling. */
+const GESTURE_END = 0.35;
+const GESTURE_STOP = 90;
+const GESTURE_TAU = 0.12;
+
+/** The dwell start to settle into, or null for "rest where you are". */
+function capture(y: number): number | null {
+  for (const stop of stops) {
+    if (y >= stop.y) continue; // at or past the settle: the dwell is the reading
+    return stop.y - y <= CAPTURE ? stop.y : null;
+  }
+  return null;
+}
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 /* World units per scroll unit, at its worst anywhere in the step being
@@ -82,9 +150,23 @@ export function buildScroll(target: HTMLElement) {
   let arrive = 0;
   let live = true;
 
+  /* The gesture, as three numbers: how long since anything arrived, how
+     much arrived this frame, and a damped rate built from the two. */
+  let idle = 0;
+  let pending = 0;
+  let input = 0;
+  /* Tested once per gesture rather than once per frame, and cleared by any
+     input — which is also the whole of "a new wheel event cancels it". */
+  let latched = false;
+  let forward = true;
+
   const move = (delta: number) => {
     if (!live) return;
     want = clamp(want + delta, 0, LENGTH);
+    pending += Math.abs(delta);
+    if (delta !== 0) forward = delta > 0;
+    idle = 0;
+    latched = false;
   };
 
   /* Passive: nothing here needs to cancel the event. Lenis is stopped and
@@ -128,13 +210,36 @@ export function buildScroll(target: HTMLElement) {
     touch = y;
   }, { passive: true });
 
+  /* A deep link, the back button and §35's rejoin all land exactly on a
+     settle, which is the one position the window excludes — so none of them
+     can be followed by a snap. The gesture state is cleared anyway, so that
+     a reader who arrives by URL and then scrolls is treated as having made
+     their first gesture rather than as having ended one. */
   function jump(y: number) {
     want = clamp(y, 0, LENGTH);
     at = want;
     arrive = 0;
+    idle = 0;
+    pending = 0;
+    input = 0;
+    latched = false;
+    forward = true;
   }
 
   function update(dt: number) {
+    idle += dt;
+    const raw = dt > 0 ? pending / dt : 0;
+    pending = 0;
+    input += (raw - input) * (1 - Math.exp(-dt / GESTURE_TAU));
+
+    if (live && !latched && forward && idle >= GESTURE_END && input < GESTURE_STOP) {
+      const to = capture(want);
+      if (to !== null) want = to;
+      // Latched either way: nothing can change the answer until an input
+      // does, and an input clears this.
+      latched = true;
+    }
+
     const step = (want - at) * (1 - Math.exp(-dt / TAU));
     if (step !== 0 && dt > 0) {
       const rate = fastest(at, step);

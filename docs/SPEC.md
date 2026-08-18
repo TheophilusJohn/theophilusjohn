@@ -625,6 +625,22 @@ over it and Lenis is stopped — so the wheel, the keys and touch are read
 directly and turned into one number, which is the same thing as a scrollbar
 without a second source of truth.
 
+**The end of a gesture settles into a station.** Document mode has no snap
+and does not need one — its pins occupy most of the page's scroll length, so
+wherever a reader stops they have stopped inside a beat. A settle is a
+keyframe with 2,300 units of travel either side, so the world makes the same
+guarantee differently: a gesture that ends within **350 scroll units** of a
+settle is carried to the dwell's first unit, where the reading starts from
+the top. On the approach side only and forward only — from inside the dwell
+the wheel is moving text, and from the climb out a reader is leaving. Two
+gates on "the gesture has ended" (0.35s of silence and an input rate under
+90 units a second), and it is the *gesture's* rate rather than the flight's,
+so the retarget merges into the flight already running instead of moving the
+camera a second time after it has stopped. It retargets `want`, so the ease,
+the cap and the interruption are the ones that already exist; any input
+cancels it on the frame it lands; and it only ever moves a reader forward,
+never short of where they scrolled to.
+
 **The route has a top speed and it is 420 units a second.** Scroll is not
 paced by the hand the way a document is: a 1,500px/s scrub put the camera at
 4,512 units a second against a cruise of 45, which is a smear rather than

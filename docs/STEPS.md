@@ -3593,6 +3593,113 @@ back and forward, the stick, and both escapes. **Bundle** 216,279 + 3,250
 worker = **214.38 KiB** (+294 on §32, worker byte-identical), document
 56,508 (55.18 KiB), CSS 2,548 (+24).
 
+### The end of a gesture settles into a station
+
+A reader who stops just short of a station rests just short of it: the
+headline half up, the numbers arriving, the camera still on the approach.
+Nothing is wrong with that frame and it is not the one the station was
+composed for. So the end of a gesture near a settle finishes the arrival.
+
+**Document mode does not do this, and the model is worth naming precisely
+because it is not a snap.** `projects.ts` pins each section for 220% of the
+viewport, so most of the page's scroll length *is* a beat and wherever a
+reader stops they have stopped inside one. The world has no pins — a settle
+is a keyframe with 2,300 to 3,367 units of travel either side — so the same
+guarantee has to be made a different way.
+
+**The window is 350 scroll units, on the approach side only.** That is half
+of `SETTLE_IN`, and it is not a round number so much as a readable state: at
+the far edge of it the band weight is 0.5, so the machine ID and the
+headline are fully up and the metric strip is a third in. The reader is
+plainly at the station and the snap finishes an arrival rather than starting
+one. It is 10–15% of the distance between one settle and the next, which is
+what keeps it from being the route driving.
+
+One-sided, and both symmetries were considered and rejected: from *inside*
+the dwell the wheel is moving text (§32's reading) and a snap to the top of
+the column would undo the reader's own scroll; from the *climb-out* a snap
+back would undo a departure, which is a thing every reader does at every
+station. Forward-only for the same reason — a reader scrolling *up* through
+the window is leaving, and pulling them forward would reverse them under
+their own hand.
+
+**Two gates on "the gesture has ended", and each catches what the other
+cannot.** A floor of **0.35s** since anything last arrived, and a damped
+input rate below **90 scroll units a second**. The floor is what protects
+deliberate reading; the rate scales the wait with how hard the gesture was,
+because a 3,000-unit-a-second flick needs 0.42s of quiet to decay under the
+threshold where a 480-a-second one needs 0.35.
+
+**The test is the *gesture's* rate rather than the flight's**, and that is
+the one real design decision here. Taking the flight's rate instead would
+fire the snap only once the damped chase had already coasted to a stop, and
+the reader would watch the camera settle and then move again — two motions
+where there should be one. Fired at gesture end, the retarget merges into
+the flight already running.
+
+It retargets `want` rather than running a second motion beside it, so the
+ease, the speed cap and the interruption are all the ones that already
+exist. And it only ever moves the reader **forward**, by at most 350: it can
+add a little to a gesture and can never leave anyone short of where they
+scrolled to, which is the failure §31 removed a whole mechanism over.
+
+**Flown.** Four stations, five landing offsets, three gesture speeds — a
+notch every 250ms, §31's reader (600px then 700ms), and a flick. Every
+figure is where the route came to rest, as an offset from the settle. The
+three speeds agree to the unit everywhere, at every station, before and
+after, which is the point: **a resting place is a function of the gesture's
+total, not of its speed**, and the snap is what changes it.
+
+| gesture lands at | before | after |
+|---|---|---|
+| −480 (outside the window) | −480 | **−480** |
+| −240 | −240 | **0** |
+| −120 | −120 | **0** |
+| +120 (inside the dwell) | +120 | **+120** |
+| +720 (past it, on the climb out) | +720 | **+720** |
+
+**Never mid-gesture**, measured as the worst gap between `want` and the sum
+of the reader's own deltas while scrolling notch by notch through the
+window:
+
+| a notch every | 200ms | 250ms | 300ms | 400ms | 600ms |
+|---|---|---|---|---|---|
+| `want` − deltas, mid-gesture | **0** | **0** | **0** | 240 | 240 |
+
+So the guard covers every cadence up to 300ms and gives way at 400. That is
+the boundary the 0.35s floor buys and it is the right side of it: a wheel
+reader inching forward at 400ms a notch, inside the last 350 units of an
+approach, is arriving, and what they get is a 240-unit assist to the place
+they were going. A trackpad never reaches that gap at all — its inertia
+emits events continuously — and once the reader is in the dwell nothing
+snaps again.
+
+**Interruptible, measured mid-ease.** From 300 short of Enargeia, the snap
+fires at 420ms with the route 19 units in:
+
+| | before | after |
+|---|---|---|
+| wheel up 360 while the snap runs | −660 | **−360** |
+| wheel down 120 while the snap runs | −180 | **+120** |
+
+The route reverses under the hand on the frame the event lands. Note what
+the second column means: after the snap has fired, the reader's delta is
+measured from the dwell start, because the snap *is* a move and by then they
+are at the station. They get the full 360 or the full 120 they asked for,
+and nothing is ever discarded.
+
+**No effect on the three things that must not have one.** A deep link, a
+popstate and §35's rejoin all land exactly on a settle, which is the one
+position the window excludes — `capture()` skips any stop at or behind the
+reader — and `jump()` clears the gesture state besides, so a reader who
+arrives by URL is treated as having made no gesture rather than as having
+ended one. With the stick out the snap is dead with the rest of the module.
+Re-verified after the change: twelve deep links, axe clean in both modes,
+back and forward, the stick round trip, both escapes.
+
+**Bundle** 216,433 + 3,250 worker = **214.53 KiB** (+154, worker
+byte-identical, CSS unchanged).
+
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 
