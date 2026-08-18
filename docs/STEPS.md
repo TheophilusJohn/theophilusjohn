@@ -4347,6 +4347,42 @@ guard. World **215.34 KiB** (217,261 + 3,250 worker) of 400, up 138 on
 §32's 217,123; the worker is byte-identical, since nothing here reaches the
 scene. CSS 2,901 → **2,924**. `/world.json` is 50 bytes.
 
+### A defect in this step, found auditing §0.6 afterwards
+
+**`Esc` stays armed on the one load that never enters the world, and it
+writes a preference.** The head script binds the key when the pre-paint
+answer is `world`, and stands it down once `data-world` appears so §32's
+innermost-first rule can own it. What it never asks is whether the world is
+still *coming*. On the adapter-refused path `world.ts` takes the curtain
+down, un-inerts the document and deliberately stores nothing — "a machine
+that cannot run the world has not expressed a preference about it" — and
+then the listener from the head script is still live over a document that
+has nothing to escape.
+
+Measured: on `/` with `requestAdapter` returning null, the reader lands
+correctly in document mode (`data-mode` gone, address `/`, nothing stored),
+and one press of `Esc` navigates to `/?doc` and writes `tj:mode = 'doc'`.
+Ordinary document mode is clean by contrast — the head script returns before
+binding anything, so `Esc` causes no navigation and stores nothing.
+
+Two things are wrong with it and the second is the one that matters: a key
+that does nothing useful is noise, but a key that silently records a *mode
+preference* means the next visit to `/` is the document by stored choice, on
+a machine that may well get an adapter next time. That is the exact failure
+the rule was written to prevent, undone by the listener that was supposed to
+be the safety net.
+
+**The fix is one condition** — the listener should return unless
+`data-mode` is still `world`, not merely unless `data-world` is absent — and
+it is not applied here because this entry is the record, not the work. §38
+re-verifies it.
+
+**What does hold**, measured at the same time: `Esc` from inside an open
+writeup closes the writeup and leaves on the second press, with focus parked
+on a link in the body; and the way out is two Shift+Tabs from that link
+(past `Close`). Reachable from anywhere, as §0.6 asks — first in the tab
+order only from the top of the document.
+
 ### 34. The four scenes
 Four places in the landscape, far enough apart that reaching one is a
 journey and close enough that the next is visible from the last. Each is a
@@ -4512,6 +4548,48 @@ where the DPR cap, the blade disc, the sky dome's two fractal noises and the
 mote billboards all get their real prices, and three of those were cheap
 enough to keep only because vertex work was free.
 
+### The world-only audit, which is the argument the architecture rests on
+
+SPEC §0.6: *"The world is not required to be keyboard-navigable as a flight
+simulator. It is required to be **escapable**, and to have no information in
+it that the document lacks."* CLAUDE.md carries it as hard rule 6. It is
+asserted in four places and **verified nowhere** — and it is not a
+nice-to-have, it is the whole reason the world is allowed to load first. If
+one fact is world-only, the document stops being a complete alternative and
+becomes a summary, and every accessibility claim in this project rests on it
+not being one.
+
+It has been cheap to assert so far because §32 made drift structurally
+impossible for the writeups: `station.ts` clones the document's own nodes
+rather than retyping them, so a station cannot say something `/` does not.
+**§34 is what ends that.** A scene is information — Homonoia's election
+resolving, Philoi's two cursors converging without loss, Enargeia's forward
+pass travelling through the layers — and none of it is a clone of anything.
+A reader who watches an election and understands how Raft behaves under
+partition has learned something from the world, and the audit asks whether
+the document says it too.
+
+So the audit is a list, walked rather than argued:
+
+- **Every station**, scene by scene: what does watching it tell you, and
+  where is that in the `.mdx`? A scene that shows something the writeup does
+  not say is either a writeup that needs a line or a scene making a claim
+  nobody checked
+- **Everything the route reports** — the rail, the address bar, the arrival
+  frame's name (§34) — against what document mode reports in its place
+- **The cities and the ten landmarks** (§36, §37), which carry no writeup by
+  construction and must therefore carry no facts either. That is the easy
+  half and it is worth confirming rather than assuming
+- **Both loaders and both failure paths**: anything the curtain says, and
+  anything either mode says when something goes wrong
+
+**Done when:** every fact reachable in world mode is reachable in document
+mode, listed and checked one by one rather than asserted; the world is
+escapable from every state by keyboard, **including the adapter-refused
+fallback, where §33 left `Esc` armed and writing a preference**; and axe is
+clean across every state in both modes.
+
 **Report:** ms/frame, draw calls, chunk generation cost, bundle both sides,
 LCP both modes, axe across every state — **and the frame budget re-measured
-on integrated graphics**, per layer, against the 8ms cruise ceiling.
+on integrated graphics**, per layer, against the 8ms cruise ceiling — plus
+the world-only list itself, which is the deliverable of the audit above.
