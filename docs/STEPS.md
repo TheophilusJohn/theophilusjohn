@@ -6,13 +6,15 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–29 are done. The site is live. **Update this line at the end of
+Steps 1–33 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker.
 
-`/` is the document and carries no Three. The world is at `?world` until
-§33 builds world-first entry, and it is a landscape you can fly over
-without going through it.
+**`/` is the world** (§33), on WebGPU at 1024px and up with motion on.
+Everything else, and `?doc`, is the document — which is still the whole
+site, still carries no Three, and is now reached by a control rather than
+by default. `?world` overrides a stored preference and nothing overrides
+capability.
 
 **The architecture turned at 21.** SPEC §0 makes the world the site and the
 document the escape hatch; the divider above step 21 records what that
@@ -4177,6 +4179,171 @@ World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 trapped; a crawler still gets real HTML at every URL; LCP unchanged.
 **Report:** time to interactive world, LCP both modes, bundle both sides.
 
+### The four decisions the step asked for
+
+They were asked before anything was built, because each of them is a
+different site.
+
+- **A void curtain, not the document.** SPEC §0.1 says the document paints
+  first and the world mounts over it, and the literal reading of that is a
+  reader looking at a portfolio for two seconds and then losing it. So the
+  document is *painted* — it is what LCP sees and what a crawler reads —
+  and never *shown*: an opaque `--void` layer goes up before first paint,
+  carrying the wordmark, the loader and the way out. The canvas comes up
+  underneath it in the same colour, so the curtain is the only thing that
+  fades and there is no cross-fade anywhere (§20's pair of eased opacities
+  does not sum to 1).
+- **The percentage counts bytes and chunks.** Not a time curve fitted to a
+  typical load. Three phases with fixed weights — and the weights are the
+  one arbitrary thing here, written down as such — with a real count inside
+  each: streamed bytes against the chunk's own size for the fetch, and
+  `terrain.stats.holes` against the opening pose's leaf count for the
+  ground.
+- **Mode memory is written by acts, not by loads.** `tj:mode` is set only
+  when a reader uses the way out or the way back. The automatic default
+  never writes, and `?doc` / `?world` are obeyed and never stored — a link
+  someone sent you is not a preference. Precedence is
+  `?doc > ?world > tj:mode > capability`, and nothing overrides capability:
+  reduced motion gets the document whatever the URL says (§0.6).
+- **There is a way back.** §0.1 specifies the exit and stops, which on its
+  own is a one-way door — a reader who leaves once has `tj:mode` set to doc
+  for good. A `World` link joins the header nav, revealed only after a real
+  adapter has been granted, so it never offers what the machine cannot do.
+
+### What is in front of the world
+
+`Entry.astro` is two elements with different lifetimes, and that is the
+whole design: `.escape` is permanent and `.curtain` is for the load. Both
+are server-rendered and both are `display: none` until the head script
+writes `data-mode="world"` on the root, so a crawler and a no-script reader
+see neither.
+
+The **head script** is where world-first actually happens. It resolves the
+mode before first paint, and three things depend on that answer being there
+in the frame the browser paints: the curtain (or there is a flash of the
+document), the intro's decision **not** to arm (or a world load puts LCP
+behind the JS bundle for a sequence nobody sees), and the escape — which is
+a promise about a load that has not got a bundle yet, so both the click and
+the `Esc` key are bound inline, delegated off `document` before `<body>`
+exists. `window.__leaveWorld` is the one definition of leaving; `scene.ts`
+calls it rather than reimplementing it, and the inline `Esc` listener stands
+down as soon as `data-world` appears, so §32's innermost-first rule (close
+the writeup, then leave) still holds with no coordination.
+
+The document under the curtain is **`inert`**, not `visibility: hidden`.
+Both take it out of the tab order and the accessibility tree; only the
+second puts the hero's own paint in question for the length of the load,
+and LCP is the number this step is not allowed to move. `visibility: hidden`
+still applies once `data-world` is up, which is §21's rule unchanged.
+
+### A manifest, because a chunk's name only exists after it is built
+
+`import()` will not tell you how far through it is, so the loader streams
+the world chunk with `fetch()` for a byte count and leaves the import to
+find it in the cache. That needs a URL, and there is nowhere to get one at
+runtime: the filename is a hash the build chose and `__vitePreload`'s
+dependency table is a closure inside the entry chunk. So a Vite plugin in
+`astro.config.mjs` writes `/world.json` — where the chunk is and how many
+bytes it decodes to — and the head script fetches it in parallel with the
+entry chunk, so it is off the critical path.
+
+The whole thing rests on the second request being a cache hit, which is
+what `public/_headers` now asserts and what the harness measures rather
+than assumes: **`transferSize` 0 on the import, in every run**. The bar
+counts *decoded* bytes because that is what a stream hands back; the label
+names the *wire* figure from `Content-Length`, because that is what a
+reader on a slow connection is waiting for. Neither is derived from the
+other, and no digit is interpolated.
+
+### The ground is the load, and the pump was rAF
+
+A first frame with squares of sky where the terrain should be is a bad
+arrival, so the curtain waits for the quadtree to cover the opening pose —
+136 chunks, and `holes` reaching zero is exactly "no part of this frame is
+missing ground". Pumping that on rAF hands three chunks to three workers
+and then leaves them idle for the rest of the frame: **860ms** for a pool
+that generates one in about three. A macrotask yield instead — the same
+queue the worker replies arrive on — took the whole load from **1,089ms to
+399**. There is a 4s wall-clock backstop behind it; the route has never
+reached it.
+
+### Two bugs the harness found, and neither was where it looked
+
+**`url-sync` was swallowing the way back.** Every path on this site
+normalises to `/`, so its click handler — which exists so the header nav
+does not reload the page (§4.6) — caught `/?world` too: `preventDefault`,
+`pushState`, and a scroll inside the document it was already in. The
+address bar said `?world` on a page that was still document mode, three
+navigations in a row, and it could not be otherwise, because the mode is
+decided in a head script and a `pushState` does not run one. A link that
+changes the query is changing the *mode*, not the range, and now returns
+early. This is CLAUDE.md's "a query parameter that carries a mode has to
+survive everything that rewrites the URL", one level worse: the link never
+arrived at all.
+
+**The way out was unreadable over a lit cloud.** Everything else in world
+mode sits in the left half behind §17's scrim; this is a bare 10px label in
+a corner over whatever the sky is doing. Measured behind the ink at
+Homonoia's settle: **1.01:1**. A halo in `--void` rather than a panel — the
+move the cursor's dot already makes — takes the worst pixel to **3.91:1**
+and the 95th percentile to **4.51:1 or better at every station**, against a
+ceiling of 5.07:1, which is `--dim` on `--void` and the site's own body
+contrast. §38's scope sentence needs updating for it: text is no longer
+confined to the writeup column.
+
+Three of my own instruments were wrong before any of that was true, and
+each was wrong in the direction of reporting no problem. §17's 12×12 block
+average is glyph-sized for the display face and not for 10px mono, so it
+averaged the halo away against the gaps between words. A padded sample rect
+reached the top of the route rail, which is `--leader` on `--void` and
+scores as ink in a brightness mask — that is where the identical 0.385
+across four different scenes came from. And the first three harness
+failures were `localStorage` being per origin rather than per page, a field
+order I misread in my own tuple, and two expectations I had invented
+(Philoi's headline, and an address `url-sync` is supposed to rewrite). The
+product was right every time.
+
+### Verified
+
+44 gate checks, 10 regression checks, axe clean in five states. Routing:
+`/` on a capable machine, `?doc`, `?world`, a stored mode, and each of the
+four capability refusals. The way out from **four points in the load** — a
+load whose entry chunk is blocked outright, mid-download, mid-terrain, and
+flying — by click and by `Esc`, both landing in the document with the mode
+stored. The adapter refused after the curtain is up: it comes down, the
+document is un-inerted, the root scrolls again, and nothing is stored,
+because a machine that cannot run the world has not expressed a preference
+about it. The round trip out and back. The way back offered only where an
+adapter was actually granted. `/projects/philoi` opening the world at
+Philoi and `Esc` twice landing in the document at Philoi. First Tab landing
+on the way out. Ten URLs over raw HTTP with real HTML and no redirects
+lost, and three of them in a browser with JavaScript disabled: no curtain,
+no escape, nothing inert, the page scrolls, 8,299 characters of `main`.
+
+**Measured**, cold cache, real browser, three runs each — interactive world
+is `.world[data-ready]`, which is set after the first render with the loop
+already running:
+
+| | FCP | LCP | interactive world |
+|---|---|---|---|
+| world, desktop | 44–84ms | 44–84ms `<h1>` | **391 / 399 / 445 ms** |
+| world, fast 4G | 244–248 | 244–248 | 842 / 844 / 844 |
+| world, slow 4G | 536–552 | 536–552 | 2,766 / 2,801 / 2,899 |
+| document, desktop | 48–64 | 72–84 `.reveal-line` | — |
+| document, slow 4G | 532–540 | 1,112–1,116 | — |
+
+**LCP is unchanged and the world's is lower**, because the intro's pre-paint
+hold is not armed there — 44–84ms against the document's 72–84 on desktop,
+and 536–552 against 1,112–1,116 on slow 4G. Say the rest of it out loud:
+that entry names the hero `<h1>`, which on a world load is behind an opaque
+curtain and never seen. The number a reader lives is the last column.
+
+**Bundle.** Document **55.69 KiB** (57,024) of 120, up 686 bytes on §32's
+56,507 — the mode decision, the escape, the loader and the `url-sync`
+guard. World **215.34 KiB** (217,261 + 3,250 worker) of 400, up 138 on
+§32's 217,123; the worker is byte-identical, since nothing here reaches the
+scene. CSS 2,901 → **2,924**. `/world.json` is 50 bytes.
+
 ### 34. The four scenes
 Four places in the landscape, far enough apart that reaching one is a
 journey and close enough that the next is visible from the last. Each is a
@@ -4252,8 +4419,11 @@ its slab. Each gets a proxy per §35's convention.
 ### 38. Brightness, performance, accessibility
 Re-solved for a world with cities in it. The measurement harness from
 §17–§20 stands and most of what it was constraining is gone: text is
-confined to the writeup column, so the bound applies behind it and nowhere
-else.
+confined to the writeup column, so the bound applies behind it and — since
+§33 — behind one other thing. The way out is a 10px label in a corner with
+no scrim under it, holding itself against the sky with a `--void` halo at
+3.91:1 worst-pixel. A city in that corner is exactly the case it has not
+been measured against.
 
 60fps on integrated graphics, with LOD doing the work. Lighthouse
 accessibility 100 in document mode; escapable, and nothing world-only, in

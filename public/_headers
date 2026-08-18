@@ -1,0 +1,16 @@
+# §33. The loader streams the world chunk with fetch() to get a byte count
+# out of it, and then imports it — so the import has to be a cache hit or
+# the world is downloaded twice. Hashed assets are immutable by
+# construction: the name changes when the bytes do.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Not immutable: the filenames inside it change every deploy, so a stale
+# copy points the loader at a chunk that is no longer there. It falls back
+# to a plain import in that case, but a fresh manifest is one round trip
+# that has already overlapped the entry chunk.
+/world.json
+  Cache-Control: public, max-age=0, must-revalidate

@@ -1,0 +1,60 @@
+---
+/* §33 / SPEC §0.1 — what a world load looks like before the world exists.
+
+   Two elements and they have different lifetimes, which is the whole of the
+   design:
+
+   - **`.escape` is permanent.** It is the way out, it is in the HTML the
+     server sent, and it is the first focusable thing on the page. It is up
+     before the entry bundle has arrived, it stays up for the whole load, and
+     it is still there once the world is flying — one control in one place,
+     never a pair that hand over. §0.1: nobody is trapped, and the control is
+     always visible.
+   - **`.curtain` is for the load only.** An opaque `--void` layer over the
+     document, carrying the honest progress state §0.1 asks for. It fades out
+     once the canvas has a frame in it, and `scene.ts` removes it.
+
+   The document underneath is painted and untouched — it is what LCP sees and
+   what a crawler reads — it is simply never *looked* at on a world load. It
+   is made `inert` rather than hidden for exactly that reason: `inert` takes
+   it out of the tab order and the accessibility tree without touching
+   `visibility`, which is the one thing that would put the hero's paint in
+   question. (It would not, in fact — LCP counts text that is
+   `visibility: hidden` — but "would not, in fact" is a worse guarantee than
+   not raising the question.)
+
+   Both are rendered on every page and both are display: none until the head
+   script writes `data-mode="world"` on the root. With JS off that attribute
+   never appears, so this component is invisible to a crawler and to a
+   no-script reader, and the page is the document. */
+---
+
+<!-- Both of these are children of <body> and outside the document's own
+     <main>, which in world mode is behind an opaque canvas and out of the
+     accessibility tree anyway. So each has to be its own named landmark,
+     for the reason §32's station panel is one: without it axe reports
+     `region` on every node here, and the reader's only reachable content
+     sits outside every landmark on the page. Measured: two violations in
+     the curtain, one once it is flying; zero with these. -->
+<nav class="escape" aria-label="Site mode">
+  <a href="/?doc" data-escape>Read the document</a>
+</nav>
+
+<section class="curtain" aria-label="Loading the world">
+  <span class="curtain-mark">theophilusjohn.com</span>
+
+  <div class="curtain-state">
+    <div
+      class="curtain-bar"
+      role="progressbar"
+      aria-label="Progress"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      aria-valuetext="0%, starting"
+    >
+      <i></i>
+    </div>
+    <p class="curtain-read"><b>0%</b><span>starting</span></p>
+  </div>
+</section>

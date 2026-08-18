@@ -83,6 +83,15 @@ export function holdScroll() {
   lenis?.stop();
 }
 
+/* The other direction, and it exists for exactly one load: §33 holds the
+   scroll the moment it decides to boot the world — the document is under a
+   curtain from the first painted frame — and then the adapter request comes
+   back empty. That load is document mode reached late, and a document that
+   cannot scroll is not one. */
+export function releaseScroll() {
+  lenis?.start();
+}
+
 /* Lenis clamps a target to its own cached limit, and every caller below is
    a jump made *because* the document just changed height — a pin created,
    a pin released, a deep link corrected. Its ResizeObserver has not fired

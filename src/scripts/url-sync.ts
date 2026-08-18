@@ -81,6 +81,17 @@ addEventListener('click', (event) => {
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin || norm(url.pathname) !== '/') return;
 
+  /* **A link that changes the query is changing the mode, not the range**
+     (§33). Every path on this site normalises to `/`, so without this the
+     handler below swallows `/?world` and `/?doc` as well: it calls
+     preventDefault, pushes the new address and scrolls the document it is
+     already in. The address bar then says `?world` on a page that is still
+     document mode — and it cannot be otherwise, because the mode is
+     decided in a head script and a pushState does not run one.
+     Measured: the header's way back into the world changed the URL and
+     nothing else, in the same document, three navigations in a row. */
+  if (url.search && url.search !== location.search) return;
+
   event.preventDefault();
   history.pushState(null, '', url.pathname + (url.search || location.search) + url.hash);
   current = null;

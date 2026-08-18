@@ -13,7 +13,8 @@ Portfolio-first, four projects, heavily animated, dark. Two modes:
 
 - **World mode** — a flyable, cel-shaded night landscape. The four projects
   are scenes standing in it, on a route driven by scroll. **This is what
-  loads** on WebGPU, ≥1024px, motion on. See SPEC §0.
+  `/` loads** on WebGPU, ≥1024px, motion on — since §33, in fact and not
+  only in the spec. See SPEC §0.
 - **Document mode** — the site is ONE page. All content lives on `/`. Deep
   links work via History API `replaceState`, not routes. Crawlable,
   accessible, fast. It must stand entirely alone. It is what everything else
@@ -79,6 +80,28 @@ instead — one gesture, one scroll position, nothing intercepted — and that
 one is damped at 0.09s rather than 0.30, because a reader's own wheel moving
 text must not lag. Both are exempt on a jump, which is §31's rule one level
 up.
+
+**Since §33 the mode is decided before first paint, and that is the whole
+of world-first.** The head script in `Base.astro` resolves it and writes
+`data-mode` on the root: capability first and unbypassable (an adapter, 1024
+px, motion on — `?world` moves *memory* aside, never this), then
+`?doc > ?world > tj:mode > capability`. A URL is obeyed and never stored,
+because a link someone sent you is not a preference; `tj:mode` is written
+only by the two controls that are a reader's own act, which is the same
+three-state shape as `tj:motion`. Three things need that answer in the frame
+the browser paints: the **curtain** (`Entry.astro`'s opaque `--void` layer,
+carrying an honest percentage — streamed bytes, then generated chunks, never
+a time curve), the intro's decision **not to arm** (a world load would
+otherwise put LCP behind the bundle for a sequence under an opaque canvas),
+and the **way out**, which is a promise about a load with no bundle yet — so
+the click and `Esc` are bound inline, delegated off `document`, and
+`window.__leaveWorld` is the one definition of leaving that `scene.ts` also
+calls. `world.ts` is the half that cannot be synchronous: it asks for the
+adapter, streams the chunk named by `/world.json` (a build plugin writes it;
+a hashed filename does not exist until the build that made it), and takes
+the curtain back down if the answer is no. **Nothing on that path is
+destructive** — the document is painted, `inert` rather than hidden, and one
+attribute away.
 
 **The landscape is a set of files that cannot see a GPU and a few that can**
 (§22). `height.ts` is the field and imports nothing — no three, no DOM — so
@@ -860,6 +883,50 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   frontmatter is content's decision about where the line falls; a narrower
   box turns two lines into three and costs a screen. Display type wants
   `max-content` and a bound, not the measure the prose uses.
+- **A link that changes the query is a mode change, and `url-sync` ate it.**
+  Every path on this site normalises to `/`, so the handler that stops the
+  header nav reloading the page (§4.6) also caught `/?world`: preventDefault,
+  pushState, and a scroll inside the document it was already in. The address
+  bar then reads `?world` on a page that is still document mode, and it
+  cannot be otherwise — the mode is resolved in a head script and a
+  pushState does not run one. Tell: the URL changes and the document does
+  not, three navigations in a row, with the same per-document nonce each
+  time.
+- **Pumping a worker pool on rAF makes it a display-rate pool.** The only
+  thing that dispatches terrain is `terrain.update()`, so awaiting a frame
+  between calls hands three chunks to three workers and then idles them for
+  the rest of the frame: 136 chunks took **860ms** against a pool that
+  generates one in about three. A macrotask yield — the same queue the
+  replies arrive on — took the whole world load from 1,089ms to 399. Use a
+  frame only when the thing being paced is *drawn*.
+- **§17's 12×12 block is glyph-sized for the display face, not for 10px
+  mono**, and at that size the label is mostly gaps. Measuring a halo that
+  way averages it against the space between words and reports no
+  improvement from a fix that visibly works. And a sample rect padded past
+  the element reaches whatever is next to it: a rect padded 12px below the
+  way out caught the top of the route rail, which is `--leader` on `--void`
+  and scores as ink in a brightness mask — that is where four different
+  scenes reporting an identical 0.385 came from. For text over the world,
+  build the glyph mask first (hide the canvas, render the label white on
+  `--void`, read coverage), then measure the background *under the covered
+  pixels only*.
+- **`localStorage` is per origin, not per page**, so a harness that seeds it
+  with `evaluateOnNewDocument` carries every earlier test's writes into the
+  next one — and clearing on *every* document instead wipes the write the
+  test just made, which is usually the subject. Seed once per run, behind a
+  `sessionStorage` sentinel.
+- A harness that does not clear the cache cannot see a download phase at
+  all: the loader's fetch step completed instantly from an earlier test's
+  copy and the phase it was waiting for never appeared. And `load` on a
+  throttled connection does not fire until the world chunk has arrived, so a
+  wait for the fetch phase armed after it always misses — go to
+  `domcontentloaded`.
+- **A cross-checked tuple is only as good as its field order.** Two "failures"
+  in the entry harness were `escape` read in `curtain`'s position, and two
+  more were expectations I had invented rather than read (a project's
+  headline, and an address `url-sync` is *supposed* to rewrite). Name the
+  fields in the assertion; a labelled object cannot be misread the way a
+  four-element array can.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -888,7 +955,10 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §32: **215.21 KiB** (217,123 + 3,250 worker), of
+  own merits. Measured at §33: **215.34 KiB** (217,261 + 3,250 worker), up
+  138 bytes on §32 — the mount's progress callback and its wait for ground —
+  of which the worker is again 0. §32: **215.21 KiB** (217,123 + 3,250
+  worker), of
   which the worker is 0 — the content layer bakes nothing and the worker is
   byte-identical. That is +32 for the creep's re-aim, over 215.18 KiB
   (217,091) for the beats moving into the dwell, over
@@ -896,7 +966,8 @@ budgeted apart and a reader never pays both.
   over 214.38 KiB (216,279) for the damping, the third phase and the last
   climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
   **1,541** on a §31 build in the same session at the same gzip level. CSS
-  2,035 → **2,548** for the station layer and the `--scrim` token. §31 with every hook removed: **212.5 KiB** (214,426
+  2,035 → **2,548** for the station layer and the `--scrim` token, and
+  2,658 → **2,924** at §33 for the curtain and the way out. §31 with every hook removed: **212.5 KiB** (214,426
   + 3,223 worker), of which the route and its driver are 2,205 bytes and none
   of them the worker. §30: **210.4 KiB** (212,221
   + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
@@ -928,8 +999,19 @@ budgeted apart and a reader never pays both.
   hide the sky dome's two fractal noises entirely. The murk that carries them
   into every other material costs −0.022 to +0.022 — inside the noise.
   Report per layer
-- LCP under 2.5s on throttled 4G. Measured at §22: 24ms desktop, 48ms mobile
-- **Interactive world under 3s** on a desktop connection
+- LCP under 2.5s on throttled 4G. Measured at §33 in a real browser on a
+  cold cache, three runs each: document mode **72–84ms desktop** and
+  **1,112–1,116 on Lighthouse's Slow 4G**; world mode **44–84** and
+  **536–552**, lower in both because §33 does not arm the intro's pre-paint
+  hold there. Say the rest of it: that entry names the hero `<h1>`, which on
+  a world load is behind an opaque curtain and never seen — report the
+  interactive-world figure beside it or the number flatters the page.
+  §22 measured 24ms desktop / 48ms mobile on a different harness
+- **Interactive world under 3s** on a desktop connection. Measured at §33 at
+  `.world[data-ready]`, which is set after the first render with the loop
+  already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
+  4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
+  (136 chunks at the opening pose) and the fetch about 50
 - Under 100 draw calls. Measured at §30 on built code against a §28 build,
   same harness, same session: **58 / 45 / 24** at 70, 190 and 520 units of
   altitude against §28's 56 / 44 / 23 — the cloud forms at every altitude and
@@ -1018,7 +1100,13 @@ budgeted apart and a reader never pays both.
   too, and it needs one thing document mode does not: the station panel has
   to be a **named landmark of its own**, because the document's `<main>` is
   behind an opaque canvas and out of the accessibility tree. Without it,
-  three `region` violations; with it, zero in both modes
+  three `region` violations; with it, zero in both modes. **§33 adds two
+  more nodes outside `<main>` and they need the same thing** — the curtain
+  is a labelled `<section>` and the way out a labelled `<nav>`; without them
+  two `region` violations during the load and one once it is flying.
+  Measured clean at §33 in five states: document mode, the curtain held,
+  the world at the arrival, the world at a station, and document mode with
+  the way back shown
 - Usable at 360px wide with motion off
 
 ---

@@ -21,7 +21,7 @@ const bands = [
   { direction: 'left' as const, lines: trace.slice(32, 48) },
 ];
 ---
-<Base title="Theophilus John — Distributed systems and infrastructure">
+<Base title="Theophilus John — Distributed systems and infrastructure" entry>
   {/* Start offset for the drift, §2. This has to run in `head`, before any
       band element exists: the phase reaches the track through CSS, so it is
       part of the track's first computed style and there is no frame where an
@@ -66,6 +66,14 @@ const bands = [
     (function () {
       var r = document.documentElement;
       if (r.dataset.motion === 'off') return;
+      /* Three ways to answer no now, and this is the one §33 adds. A world
+         load plays the intro under an opaque curtain — nobody sees it —
+         while the hold in front of it puts the hero's paint behind the JS
+         bundle, which is the exact cost §12 armed this narrowly to avoid.
+         The world falls back to the document if the adapter request fails,
+         and that load then has no intro: an enhancement missing, which is
+         what the timeout release below already treats it as. */
+      if (r.dataset.mode === 'world') return;
       try {
         if (sessionStorage.getItem('tj:intro')) return;
       } catch (e) {}

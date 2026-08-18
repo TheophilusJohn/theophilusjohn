@@ -62,9 +62,21 @@ const uTime = uniform(0);
    not. */
 const viewport = () => [document.documentElement.clientWidth, innerHeight] as const;
 
+/** What the loader is told, in the last fifth of its bar (§33). Reported
+    rather than estimated: the fraction is a count of real chunks. */
+export type Progress = (at: number, what: string) => void;
+
+/* The backstop on waiting for ground. A frame with squares of sky in it
+   where the terrain should be is a bad first impression, so the curtain
+   waits for the quadtree to cover the opening pose — but it may not wait
+   for ever on a machine that cannot keep up. Past this the world is shown
+   with whatever it has and the rest arrives over the next second, through
+   §25's morph, which is what that mechanism is for. */
+const GROUND_BY = 4000;
+
 /** `arrived` is the address the reader loaded, captured by `world.ts` at
     import — not read here, because by now it has been overwritten (§32). */
-export async function mount(arrived?: Where) {
+export async function mount(arrived?: Where, report: Progress = () => {}) {
   /* Built detached. Nothing reaches the document until there is a frame in
      it — a renderer that fails to initialise must leave no node behind, and
      in world-first that matters more than it did: the node it would leave
@@ -280,20 +292,19 @@ export async function mount(arrived?: Where) {
      and the attribute that covers the page is set here — after there is a
      frame in the canvas — rather than in the head script.
 
-     `Esc` leaves. **This is a placeholder for §33**, which owns the visible,
-     persistent, keyboard-reachable control and the mode memory. It is here
-     at all because §0.1 is explicit that nobody is trapped, and a world
-     with no way out is not a smaller version of that promise. */
+     **§33 owns the way out**, and it owns it from before this file has been
+     downloaded: the control is in the server-rendered HTML and the head
+     script binds both the click and the key. What is added here is the
+     half that only exists once there is something to be inside of — an
+     open writeup is what `Esc` closes first, and only with nothing open
+     does it leave. Handing over is one attribute: the head script's own
+     listener stands down the moment `data-world` appears, so the two never
+     both fire and there is still exactly one definition of leaving. */
   addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (event.key === 'Escape') {
-      /* One escape key, two things to escape, innermost first: an open
-         writeup is what `Esc` closes, and only with nothing open does it
-         leave the world. §33 replaces the second half of this. */
       if (place.dismiss()) return;
-      const url = new URL(location.href);
-      url.searchParams.delete('world');
-      location.replace(url.pathname + url.search + url.hash);
+      window.__leaveWorld?.();
       return;
     }
 
@@ -325,6 +336,36 @@ export async function mount(arrived?: Where) {
      link opens at a station's settle rather than at the arrival. */
   view.drive(poseAt(ride.at(), 0), 0);
   terrain.update(camera, 0);
+
+  /* ── Waiting for ground (§33) ────────────────────────────────────────
+     The pass above *asks* for the opening pose's chunks; the workers
+     answer over the next frames, and until they do the ground is squares
+     of sky. So the curtain stays up and the last fifth of its bar is this
+     wait, counted in the one unit that is honest here: `holes` is the
+     number of wanted leaves with no generated ancestor to stand in for
+     them, which is exactly "how much of this frame has no ground in it".
+     It starts at the whole quadtree and reaches zero. On a cold load it
+     drops by exactly the number of workers each time round, because there
+     are no ancestors yet: nothing has been generated, so every wanted leaf
+     has to be its own coverage and the count is the honest one.
+
+     **Not rAF, and that is worth the sentence.** `update()` is what
+     dispatches, so pumping it at the display rate hands three chunks to
+     three workers and then leaves them idle for the rest of the frame:
+     measured, 136 chunks took 860ms that way, against a pool that
+     generates one in about three. A macrotask yield instead — which is the
+     queue the worker replies arrive on, so each turn dispatches whatever
+     came back on the last one. The deadline is the backstop, and it is
+     wall clock rather than a frame count for the same reason. */
+  const want = terrain.counts().wanted || 1;
+  for (const until = performance.now() + GROUND_BY; ; ) {
+    const holes = terrain.stats.holes;
+    report((want - holes) / want, `generating terrain · ${want - holes}/${want} chunks`);
+    if (!holes || performance.now() > until) break;
+    await new Promise((next) => setTimeout(next, 0));
+    terrain.update(camera, 0);
+  }
+
   // The whole grid at once rather than a frame's worth of it: this is before
   // the first frame, where fifteen milliseconds are free and cover fading in
   // over the opening half second is not. It returns immediately at any pose
@@ -353,6 +394,21 @@ export async function mount(arrived?: Where) {
     canvas.setAttribute('data-ready', '');
     place.root.setAttribute('data-ready', '');
     rail.root.setAttribute('data-ready', '');
+
+    /* And the curtain comes down, over a world that is already complete
+       behind it — the canvas does not fade in under `data-mode="world"`,
+       because what it would be fading in *from* is the same `--void` this
+       is painted in. One layer moves, not two: a pair of eased opacities
+       does not cross-fade (§20), and here there is nothing to cross-fade
+       with anyway.
+
+       Removed rather than left at zero: it is a full-viewport element over
+       the whole scene, and a transparent one still composites. */
+    const curtain = document.querySelector<HTMLElement>('.curtain');
+    if (!curtain) return;
+    report(1, 'ready');
+    curtain.setAttribute('data-out', '');
+    setTimeout(() => curtain.remove(), 700);
   });
 
   run();

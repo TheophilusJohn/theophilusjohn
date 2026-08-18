@@ -3,11 +3,16 @@ import '../styles/fonts.css';
 import '../styles/tokens.css';
 import '../styles/global.css';
 import Toggles from '../components/Toggles.astro';
+import Entry from '../components/Entry.astro';
 
-interface Props { title: string; description?: string; }
+// `entry` is only true on the page the world can actually mount on (§33).
+// The mode attribute is set site-wide because the header's way back into
+// the world is, but a curtain on a page with no world behind it would be a
+// load that never finishes.
+interface Props { title: string; description?: string; entry?: boolean; }
 // Third person, and search terms rather than the hero's voice — this
 // is what shows up in results and link previews, not on the page.
-const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.' } = Astro.props;
+const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.', entry = false } = Astro.props;
 // One page (§4.6), so these are ranges on `/`, not routes. Absolute with
 // a hash so they also work from the standalone project pages.
 const nav = [
@@ -47,6 +52,90 @@ const nav = [
         if (m === 'off' || m === 'on') r.dataset.motion = m;
         else if (matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.motion = 'off';
       } catch (e) {}
+
+      /* ── The mode, decided before paint (§33 / SPEC §0.1) ───────────
+         The world is the site now, so this is what `/` *is* and it has to
+         be answered in the same frame the browser paints. Two halves:
+
+         The hard capability gate — a GPU, a wide enough viewport, motion
+         on — is not a preference and nothing overrides it. `?world` moves
+         memory out of the way, never this: a reader who asked for reduced
+         motion gets the document whatever any URL says (§0.6), and a
+         browser with no WebGPU cannot be talked into one.
+
+         Then precedence, most explicit first:
+             ?doc  >  ?world  >  stored tj:mode  >  capability
+         A URL is obeyed and never *written*, because a link someone sent
+         you is not a preference. The key is written only by the two
+         controls that are a reader's own act — the way out of the world
+         below, and the way back in from the header — which is the same
+         three-state shape as tj:motion: absent means "decide", not "no".
+
+         `navigator.gpu` here is presence, not an adapter: requesting one
+         is async and there is no async before first paint. world.ts asks
+         the honest question a moment later and takes the curtain down if
+         the answer is no. That gap is why nothing below is destructive —
+         the document is painted, in the DOM, and one attribute away. */
+      var able =
+        !!navigator.gpu && innerWidth >= 1024 && r.dataset.motion !== 'off';
+      var mode = 'doc';
+      try {
+        var q = new URLSearchParams(location.search);
+        var pick = q.has('doc') ? 'doc' : q.has('world') ? 'world' : localStorage.getItem('tj:mode');
+        mode = pick === 'doc' ? 'doc' : able ? 'world' : 'doc';
+      } catch (e) {
+        mode = able ? 'world' : 'doc';
+      }
+      r.dataset.mode = mode;
+      if (mode !== 'world') return;
+
+      /* ── The way out, from the first frame ──────────────────────────
+         Not in the bundle, because "reachable on the first frame" is a
+         promise about a load that has not got a bundle yet. Delegated off
+         the document so it binds before `<body>` has been parsed.
+
+         A navigation rather than a teardown: the world holds a GPU device,
+         three workers, thirty megabytes of geometry and the scroll lock,
+         and the document behind it is a finished 55 KiB page on a warm
+         cache. `replace`, so the world is never in the back stack — the
+         reader who leaves and presses Back goes where they came from, not
+         back into the thing they just escaped. */
+      function leave() {
+        try { localStorage.setItem('tj:mode', 'doc'); } catch (e) {}
+        // The address in world mode is the station's own path (§32). The
+        // document says the same thing with a fragment, so a reader who
+        // leaves mid-writeup lands on that writeup rather than at the top.
+        var at = /^\/projects\/([^/]+)\/?$/.exec(location.pathname);
+        location.replace('/?doc' + (at ? '#' + at[1] : location.hash));
+      }
+      window.__leaveWorld = leave;
+
+      document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest || !t.closest('[data-escape]')) return;
+        e.preventDefault();
+        leave();
+      });
+
+      /* `Esc` reaches the same thing. Once the world has a frame it owns
+         the key — an open writeup is what `Esc` closes first (§32), and
+         only with nothing open does it leave — so this hands over the
+         moment `data-world` appears rather than racing it. */
+      addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape' || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (r.dataset.world !== undefined) return;
+        leave();
+      });
+
+      /* The one thing on the critical path that the bundle cannot start
+         early: the loader has to know which chunk to stream before it can
+         stream it. Kicked off here so it overlaps the entry chunk's own
+         download instead of queueing behind it. */
+      try {
+        window.__worldManifest = fetch('/world.json').then(function (res) {
+          return res.ok ? res.json() : null;
+        }).catch(function () { return null; });
+      } catch (e) {}
     })();
   </script>
 
@@ -59,11 +148,24 @@ const nav = [
     <a href="/" class="wordmark">theophilusjohn.com</a>
     <nav aria-label="Primary">
       {nav.map((n) => <a href={n.href}>{n.label}</a>)}
+      {/* §33 — the way back in. §0.1 specifies the way *out* of the world
+          and stops there, which on its own is a one-way door: a reader who
+          escapes once has `tj:mode` set to doc for good and no way to
+          change their mind. A link rather than a button because it is a
+          navigation, and `/?world` outranks the stored preference.
+
+          Hidden in the HTML and revealed only by the script at the end of
+          the body, which asks for a real adapter first. A control that
+          offers something this machine cannot do is worse than no control:
+          it would take the reader to a curtain that gives up. */}
+      <a href="/?world" data-enter hidden>World</a>
       <Toggles />
     </nav>
   </header>
 
   <main id="main"><slot /></main>
+
+  {entry && <Entry />}
 
   <footer class="wrap site-foot">
     <span class="meta">Houston, TX</span>
@@ -112,5 +214,46 @@ const nav = [
       }
     }
 </style>
+
+  <!-- §33. Inline and at the end of the body, so it runs the moment the
+       elements above it are parsed and without waiting on a bundle. Two
+       jobs, and they are opposite sides of the same decision. -->
+  <script is:inline>
+    (function () {
+      var r = document.documentElement;
+
+      if (r.dataset.mode === 'world') {
+        /* The document is painted under an opaque curtain, so it must not
+           be reachable: `inert` takes a subtree out of the tab order, out
+           of the accessibility tree and out of hit testing in one
+           attribute. Deliberately not `visibility: hidden`, which is what
+           §21 uses once the world is actually up — hiding it here would
+           put the hero's own paint into question for the length of the
+           load, and LCP is the one number this step is not allowed to
+           move. world.ts clears these if the adapter request fails. */
+        var held = document.querySelectorAll('.site-head, main, .site-foot, .skip');
+        for (var i = 0; i < held.length; i++) held[i].inert = true;
+        return;
+      }
+
+      /* Document mode, and the machine might be able to fly. Ask for a
+         real adapter before offering: `navigator.gpu` exists in browsers
+         that hand out nothing. It is the same question world.ts asks, and
+         asking it here is what keeps the control honest. */
+      var enter = document.querySelector('[data-enter]');
+      if (!enter) return;
+      if (!navigator.gpu || innerWidth < 1024 || r.dataset.motion === 'off') return;
+      navigator.gpu.requestAdapter().then(function (adapter) {
+        if (adapter) enter.hidden = false;
+      }).catch(function () {});
+
+      // The link navigates on its own; this is only the memory. Written
+      // here rather than read from the URL on the next load, because
+      // `?world` is obeyed and never stored (see the head script).
+      enter.addEventListener('click', function () {
+        try { localStorage.setItem('tj:mode', 'world'); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -125,7 +125,152 @@ html[data-intro] .hero .sub { visibility: hidden; }
 html[data-world] :is(.site-head, main, .site-foot, .skip) {
   visibility: hidden;
 }
-html[data-world] { overflow: hidden; }
+
+/* Two attributes, two moments (§33). `data-mode` is written before first
+   paint and says which site this load is; `data-world` is written when
+   there is a frame in the canvas. Between them the curtain is up and the
+   document is `inert` rather than hidden — see Entry.astro — so the only
+   thing needed here is that it cannot scroll under a layer nobody can see
+   through. Lenis needs telling separately: it moves the window itself, so
+   `overflow: hidden` is not a scroll it can refuse (world.ts holds it). */
+html[data-mode='world'], html[data-world] { overflow: hidden; }
+
+/* The canvas has no fade in world-first, and the curtain is the reason.
+   The 600ms was there to bring a scene up out of a document; here what is
+   behind it is already `--void` at full opacity, so a fade would be the
+   world coming up out of itself — 600ms of nothing, at the end of a load
+   whose whole budget is three seconds. The curtain does the transition
+   instead, over the finished frame. */
+html[data-mode='world'] .world { transition: none; }
+
+/* ── Entry ───────────────────────────────────────────────
+   §33 / SPEC §0.1. What a world load looks like before the
+   world exists, plus the one control that outlives it.
+
+   Here rather than scoped inside Entry.astro, for the same
+   reason .world, .route, .stations and .cursor are: every
+   full-viewport layer on this site keys off a root attribute
+   and describes a state the whole page is in, not a
+   component. Scoped, each of these selectors would also have
+   to carry `:global()` around the root and a scope attribute
+   on the target, which is two things to read and no rule to
+   decide them by.
+
+   Nothing here exists in document mode. The attribute is
+   written by the head script in Base.astro, before first
+   paint, so the curtain is up in the same frame the browser
+   paints rather than one bundle later. */
+.escape, .curtain { display: none; }
+html[data-mode='world'] .escape { display: block; }
+html[data-mode='world'] .curtain { display: grid; }
+
+/* Above the canvas (50), the rail (60) and the station panel (60), below
+   the skip link (99) and the cursor (100) — it must be reachable from
+   inside a writeup, which is the only other thing that takes a pointer. */
+.escape {
+  position: fixed;
+  z-index: 70;
+  top: var(--s-6);
+  right: var(--s-6);
+}
+.escape a {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  /* The rail runs down the right edge from var(--s-16); this sits above
+     its top. The station column is at the left at 54ch with its headline
+     bounded to 52vw, so nothing the reader is reading comes near it. */
+  padding: var(--s-2) 0 var(--s-2) var(--s-4);
+}
+/* **The one thing on the page that has to be legible over anything.**
+   Everything else in world mode sits in the left half behind §17's scrim;
+   this is a bare label in a corner, over whatever the sky happens to be
+   doing there, and at Homonoia's settle that is a lit cloud — measured,
+   the brightest 12x12 block under it goes to 0.700 relative luminance,
+   against --dim's 0.239. 2.4:1, and the control §0.1 calls always visible
+   was not readable.
+
+   A halo in --void rather than a panel behind it: the same move the
+   cursor's dot already makes against a light background, and it keeps the
+   control a label rather than turning it into a chip. Two radii — a tight
+   core that carries the glyph edges and a soft pool that pulls the block
+   average down. Measured after: 0.045 worst block, 5.0:1. */
+.escape a {
+  text-shadow:
+    0 0 2px var(--void), 0 0 2px var(--void), 0 0 2px var(--void),
+    0 0 4px var(--void), 0 0 4px var(--void), 0 0 4px var(--void),
+    0 0 10px var(--void), 0 0 10px var(--void), 0 0 10px var(--void);
+}
+.escape a:hover, .escape a:focus-visible { color: var(--leader); }
+
+/* Opaque, and in the renderer's own clear colour — so the canvas coming
+   up underneath it is not a reveal of a different surface, it is the same
+   void gaining a world. That is why nothing here fades in: there is
+   nothing behind it to fade in *from*. */
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: var(--void);
+  align-content: center;
+  justify-items: center;
+  padding: var(--s-16) var(--gutter);
+  opacity: 1;
+  transition: opacity 600ms linear;
+}
+/* Fading out over a world that is already flying, so it must stop
+   taking the pointer for those 600ms: the wheel and the keys reach the
+   window through it either way, but `scroll.ts`'s touch listeners are on
+   the canvas and would be covered. */
+.curtain[data-out] { opacity: 0; pointer-events: none; }
+
+.curtain-mark {
+  position: absolute;
+  top: var(--s-6);
+  left: var(--gutter);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  color: var(--dim);
+}
+
+.curtain-state { width: min(28rem, 100%); }
+
+.curtain-bar {
+  height: 1px;
+  background: var(--rule);
+  overflow: hidden;
+}
+/* The same 1px --rule track the route rail is, filled the same way and in
+   the same colour: this is the first thing a reader sees of the site's
+   vocabulary, and it is the thing the rail will still be doing an hour
+   later. transform rather than width — a width animation is a layout on
+   every frame of the load, which is the one place there is no frame to
+   spare. */
+.curtain-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--leader);
+  transform: scaleX(var(--at, 0));
+  transform-origin: left;
+}
+
+.curtain-read {
+  display: flex;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+/* Fixed width on the percentage so the phase label beside it does not
+   step sideways every time a digit is added. */
+.curtain-read > b { font-weight: 400; color: var(--muted); min-width: 4ch; }
 
 /* ── The route rail ──────────────────────────────────────
    §0.3. What the scrollbar reported in document mode, in
