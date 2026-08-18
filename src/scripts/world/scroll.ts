@@ -124,42 +124,52 @@ function capture(y: number): number | null {
 }
 
 /* ── Resistance at a station ────────────────────────────────────────────
-   The dwell's 600 units are the reading (§32), but the column runs out
-   before they do — 119 pixels of it at Basis against Homonoia's 476 — and
-   the moment it bottoms out the next notch departs. So one flick can carry
-   a reader through a whole station: in, past the writeup, and away, without
-   ever coming to rest at it.
+   The dwell is the reading (§32), and once it is finished the next notch
+   departs. So one flick can carry a reader through a whole station: in,
+   past the writeup, and away, without ever coming to rest at it.
 
-   Past the bottom of the column, forward input meets friction. **Not a
-   wall**: a deliberate continued gesture still leaves, and it leaves on the
-   frame it earns it. Backwards is never resisted at all — leaving the way
-   you came is free, and a reader scrolling up has already decided.
+   **One wall per direction, and it is the far end of the reading in that
+   direction.** Going down, forward movement stops at the bottom of the
+   column; going up, backward movement stops at the top — the dwell's first
+   unit, which is the arrival frame. Symmetric, because arriving from below
+   and arriving from above are the same act seen twice, and a reader who has
+   read the whole thing in reverse has read it. Nothing is walled on the way
+   *in*: that is what the settle is for.
 
    **The release condition is the end of the arriving gesture**, and that is
-   the whole idea: what separates "carried past" from "leaving" is not how
-   hard the reader scrolled but whether they have *stopped since arriving*.
-   A flick that carries you through a station is one continuous gesture that
-   began before it. A departure is a new gesture, started after. So the
-   friction lifts the moment the gesture that brought you here ends —
-   `GESTURE_END`'s own 0.35s of silence, the same one the settle uses — and
-   from then on the reader's next scroll leaves at once. **A reader who
-   pauses at all never meets this at all.** It costs a deliberate departure
-   nothing; it costs the flick exactly one more gesture.
+   the idea: what separates *carried past* from *leaving* is not how hard the
+   reader scrolled but whether they have stopped since arriving. A flick that
+   carries you through a station is one continuous gesture that began before
+   it; a departure is a new gesture, started after. The friction lifts after
+   `GESTURE_END`'s 0.35s of silence, so a reader who pauses at all never
+   meets it.
 
-   **A backstop at 1.5 seconds**, because a genuinely continuous gesture — a
-   scrub down the whole route — never ends and would otherwise be trapped.
-   That is the only case the timer ever fires for.
+   **And a trackpad never goes silent, which is what was wrong.** macOS emits
+   `wheel` events through the entire inertial tail at the display's rate, so
+   after a flick the gaps stay at a frame and `idle` never reaches 0.35 for
+   one to two seconds. The 1.5-second backstop — there for a scrub that never
+   ends — was therefore firing on *every* flick, mid-tail, and the remaining
+   momentum carried the reader straight out. The 0.35s condition never got to
+   run at all. A synthetic harness cannot show this: `Input.dispatchMouseEvent`
+   has no inertia, so every flick it makes ends when the script stops.
 
-   **An accumulated-delta threshold was built first and measured out.** With
-   any decay the accumulator converges to `rate × τ`, so it systematically
-   favours a *fast* gesture over a *sustained* one — a hard flick reaches a
-   higher figure than a deliberate scrub, which is exactly backwards — and
-   without decay it becomes a per-arrival tax that two accidental nudges
-   pay. Measured at 2,000 units and τ = 0.6: bursts of 600 through 3,000
-   units never reached it (a 3,000-unit burst delivered over a second peaks
-   at 1,800), so it did nothing at all and the timer was carrying the whole
-   mechanism. Duration is the honest signal here, not magnitude. */
+   **The fix is to tell momentum from a gesture by its shape.** Safari and
+   Chrome do not expose the phases AppKit knows about, so the signal has to
+   come out of the stream itself, and there is a clean one: momentum decays.
+   Six consecutive events whose magnitude does not grow is a coasting tail —
+   deliberate scrolling is noisy and does not produce that run — and the
+   backstop counts only time in which the reader is *pushing*. Momentum can
+   no longer buy a release; only a sustained gesture can, and when the tail
+   finally stops, the 0.35s of silence does what it was always meant to. */
 const HOLD = 1.5;
+
+/* Consecutive non-growing events that mean the fingers have left the glass.
+   Six is ~100ms at a 60Hz event rate — long enough that noise in a
+   deliberate scroll does not reach it, short enough to catch the tail
+   before the backstop could. The 6% tolerance is for the jitter in an
+   otherwise monotone decay. */
+const COAST_RUN = 6;
+const COAST_SLACK = 1.06;
 
 /** Which dwell a position is inside, or −1. */
 const dwellAt = (y: number) => stops.findIndex((s) => y >= s.y && y <= s.y + DWELL);
@@ -211,40 +221,43 @@ export function buildScroll(target: HTMLElement) {
   let station = -1;
   let held = 0;
   let released = false;
+  /** The decay run, and the last event's size that feeds it. */
+  let falling = 0;
+  let last = 0;
   const reads: number[] = stops.map(() => DWELL);
   const readEnd = (i: number) => stops[i]!.y + reads[i]!;
+
+  /** Where a step is allowed to end. One wall per direction, at the far end
+      of the reading: the bottom of the column going down, the dwell's first
+      unit going up. A step that would not cross one is untouched. */
+  function hold(at0: number, to: number): number {
+    for (let k = 0; k < stops.length; k++) {
+      const top = stops[k]!.y;
+      const bottom = readEnd(k);
+      if (to > at0) {
+        if (at0 <= bottom && to > bottom) return bottom;
+      } else if (at0 >= top && to < top) return top;
+    }
+    return to;
+  }
 
   const move = (raw: number) => {
     if (!live || raw === 0) return;
 
-    let delta = raw;
-    if (raw > 0 && !released) {
-      /* The first station this step would carry the reader past the bottom
-         of the reading of, and whose dwell they have not already left.
+    /* Is this a hand or a tail? Tracked on every event, before anything
+       else looks at it, because the answer decides whether the backstop is
+       allowed to count this frame at all. */
+    const size = Math.abs(raw);
+    falling = last > 0 && size <= last * COAST_SLACK ? falling + 1 : 0;
+    last = size;
 
-         **Not gated on how near the station the gesture started**, which is
-         the version that was written first and measured out: gating on the
-         same 350 units the settle uses made the friction device-dependent —
-         a burst of twenty wheel notches walks into the window and is caught
-         from the sixth, while one trackpad event carrying the same distance
-         is tested once, from outside it, and passes. Same gesture, same
-         distance, two answers. Without the gate a forward gesture stops at
-         the bottom of the next station's reading wherever it started, which
-         costs a reader deliberately skipping ahead one extra gesture per
-         station and is the same on every device. */
-      const target = want + raw;
-      const i = stops.findIndex((s, k) => target > readEnd(k) && want < s.y + DWELL);
-      // Fill the reading, absorb the rest. The column runs to its bottom
-      // and stops there, which is the feedback: the writeup scrolls under
-      // the gesture and then holds.
-      if (i >= 0) delta = Math.max(0, readEnd(i) - want);
-    }
-    if (delta !== 0) want = clamp(want + delta, 0, LENGTH);
+    const to = released ? want + raw : hold(want, want + raw);
+    if (to !== want) want = clamp(to, 0, LENGTH);
 
     /* The bookkeeping is on the *raw* delta either way. Absorbed input is
        still a gesture: the settle must not fire underneath it, and the rate
        estimate has to see a reader who is plainly still scrolling. */
-    pending += Math.abs(raw);
+    pending += size;
     forward = raw > 0;
     idle = 0;
     latched = false;
@@ -312,6 +325,8 @@ export function buildScroll(target: HTMLElement) {
     station = -1;
     held = 0;
     released = false;
+    falling = 0;
+    last = 0;
   }
 
   function update(dt: number) {
@@ -327,10 +342,18 @@ export function buildScroll(target: HTMLElement) {
       released = false;
     }
     if (station >= 0 && !released) {
-      held += dt;
-      // The arriving gesture has ended, or it is one that never will.
+      /* The backstop counts only time the reader is **pushing**: input
+         arriving, and not the decaying tail of a gesture that is already
+         over. That is the whole of the trackpad fix — momentum keeps the
+         gaps at a frame for a second or more, so a timer over *any* input
+         released every flick. */
+      if (idle < 0.12 && falling < COAST_RUN) held += dt;
+      else if (idle > 0.2) held = 0;
       if (idle >= GESTURE_END || held >= HOLD) released = true;
     }
+    // A gesture that is over cannot leave a decay run behind it for the
+    // next one to inherit.
+    if (idle >= GESTURE_END) { falling = 0; last = 0; }
 
     const raw = dt > 0 ? pending / dt : 0;
     pending = 0;

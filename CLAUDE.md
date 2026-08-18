@@ -44,10 +44,14 @@ a pose that is a pure function of a scroll position and one arrival clock.
 **It also settles and it resists**: a gesture that ends within 350 scroll
 units of a settle is carried to the dwell's first unit (forward only,
 approach side only, never from inside the dwell, never mid-scroll), and
-forward movement *stops* at the bottom of a station's reading until the
-arriving gesture ends — 0.35s of silence, with a 1.5s backstop. Both
-retarget or clamp `want`, so the ease, the cap and the interruption are the
-ones already there, and the settle can only ever move a reader forward.
+movement *stops* at the far end of a station's reading in whichever
+direction it is going — the bottom of the column going down, the dwell's
+first unit going up — until the arriving gesture ends. Both retarget or
+clamp `want`, so the ease, the cap and the interruption are the ones already
+there, and the settle can only ever move a reader forward. **"The gesture
+ended" is not a timer**: a trackpad emits through its whole inertial tail,
+so momentum is told by its shape (six consecutive non-growing deltas) and
+the 1.5s backstop counts only time the reader is pushing.
 `rail.ts` is the one thing that reports any of it: a 1px progress rail at
 the right edge, standing in for the scrollbar world mode does not have.
 `camera.ts` still owns the pose: the route hands one to `drive()`, the floor
@@ -62,9 +66,12 @@ and all — so the register cannot drift from document mode's, and it strips
 ids and inline styles because `projects.ts` leaves GSAP's `opacity: 0` on a
 headline for most of a pin. The three landmark states are **one number**,
 `bandAt()`'s weight — **damped once, upstream, at 0.30s**, and then read
-three times as a staggered cascade (the name, the lead, then the numbers and
-the writeup — the document's own order, and the last band ends at exactly 1,
-which is the settle keyframe). The address bar is
+twice — but only for the name. **Everything below the headline is a beat
+inside the dwell**, driven by scroll position within it the way
+`projects.ts` walks a pinned section: the summary, then the numbers and
+links, then the writeup, then the column, over 1,500 units. The approach
+resolves the headline and nothing else, which is the frame a reader lands
+on. The address bar is
 `replaceState` in one direction and a route jump on popstate in the other.
 **The dwell is the reading**: a station's column is taller than the frame,
 so the 600 scroll units in which the camera holds its pose move the column
@@ -748,6 +755,25 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   residual creep silently does not run. It shows up as a beat that does not
   happen rather than as a wrong number, and a snap-to-target makes it the
   common case. Close the last hundredth.
+- **A trackpad never goes silent, so no timer over "any input" can mean
+  "the gesture ended".** macOS emits wheel events through the entire
+  inertial tail at the display rate: measured on a modelled flick, 125
+  events over 1,991ms with a median gap of 0ms and **not one gap reaching
+  350ms**. Anything gated on silence therefore cannot fire inside a flick,
+  and whatever backstop sits behind it fires on every one. Neither Safari
+  nor Chrome exposes AppKit's wheel phases to JS; what is available is the
+  shape — momentum decays, so a run of consecutive non-growing deltas is the
+  tell, and a timer should count only the time the reader is *pushing*.
+- **`page.mouse.wheel` has no inertia**, so a synthetic flick ends when the
+  script stops and a harness built on it will pass a test the product fails.
+  Dispatch the stream from **inside the page** at a real 60Hz cadence: CDP
+  round-trips measured ~100ms here, six times too slow to make a tail at all.
+- **A speed cap on distance between poses does not bound apparent motion.**
+  §31's `fastest()` measures translation, so a keyframe that turns 155° while
+  moving 262 units is almost unconstrained by it — measured at 46.5° of yaw
+  per 100 scroll units against the route's next worst of 21.9, and it reads
+  as a cut. Rotation has to be authored inside the envelope; the cap will not
+  catch it.
 - **"When does a gesture end" is a question about the input, not about the
   motion it started.** A snap gated on the *flight's* velocity fires only
   after the damped chase has coasted to a stop, so the reader watches the
@@ -840,10 +866,10 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §32: **214.97 KiB** (216,881 + 3,250 worker), of
+  own merits. Measured at §32: **215.18 KiB** (217,091 + 3,250 worker), of
   which the worker is 0 — the content layer bakes nothing and the worker is
-  byte-identical. That is +448 for the rail, the friction and the column's
-  order, over 214.53 KiB (216,433) for the settle at the end of a gesture,
+  byte-identical. That is +210 for the beats moving into the dwell, over
+  214.97 KiB (216,881) for the rail, the friction and the column's order, over 214.53 KiB (216,433) for the settle at the end of a gesture,
   over 214.38 KiB (216,279) for the damping, the third phase and the last
   climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
   **1,541** on a §31 build in the same session at the same gzip level. CSS

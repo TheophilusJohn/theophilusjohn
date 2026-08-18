@@ -3861,6 +3861,182 @@ all unchanged.
 **Bundle** 216,881 + 3,250 worker = **214.97 KiB** of 400 (+448, worker
 byte-identical), CSS 2,548 → **2,662**, document 56,508 (55.18 KiB).
 
+### The dwell becomes the pin
+
+Five things, and the first four came out of a real browser on a trackpad
+rather than out of the harness — which is the headline finding, so it goes
+first.
+
+**How the verification changed.** `page.mouse.wheel` has no inertia: every
+flick the harness made ended the moment the script stopped, so `idle` always
+reached `GESTURE_END` and the backstop never mattered. It passed a test the
+product failed. Three changes:
+
+- flicks are **dispatched from inside the page** at a real 60Hz cadence.
+  CDP round-trips measured ~100ms here, which is six times too slow to make
+  a momentum tail at all — the first attempt produced a "flick" 12.5 seconds
+  long;
+- with a **momentum model**: a finger phase of steady deltas, then a
+  geometric decay, swept across four strengths;
+- and `scratchpad/h/probe/index.html` **captures the real stream** — flick
+  once in Safari and it prints the gap distribution, the decay run and
+  whether any gap reaches 0.35s. The model below is what to confirm against
+  it; I cannot operate a trackpad.
+
+### 1. The friction was releasing on every flick
+
+**Reproduced.** The modelled flick: **125 events over 1,991ms, gaps median
+0ms, max 37.7ms, and zero gaps at or over 350ms.** So `idle` never reaches
+`GESTURE_END` for the whole two seconds of a flick, the 0.35s condition can
+never fire inside one, and the **1.5-second backstop was the only condition
+left** — firing mid-tail, with the rest of the momentum carrying the reader
+out. Exactly the mechanism suspected.
+
+Swept at Basis, whose reading is the shortest and whose wall is therefore
+nearest the settle:
+
+| flick | units | tail | before | after |
+|---|---|---|---|---|
+| gentle 90 / 0.955 | 3,517 | 2.0s | +1119 | +1119 |
+| firm 180 / 0.970 | 9,041 | 3.3s | +1192 | +1119 |
+| hard 250 / 0.980 | 16,721 | 5.1s | **+1875, gone** | **+1119** |
+| throw 400 / 0.985 | 33,428 | 7.2s | **+2700, gone** | **+1119** |
+
+A 33,428-unit throw with a seven-second tail now moves nothing past the
+wall.
+
+**The fix is to tell momentum from a gesture by its shape.** Neither Safari
+nor Chrome exposes the phases AppKit knows about, so the signal has to come
+out of the stream, and there is a clean one: momentum decays. Six
+consecutive events whose magnitude does not grow (±6%) is a coasting tail —
+deliberate scrolling is noisy and does not produce that run — and **the
+backstop counts only time in which the reader is pushing**. Momentum can no
+longer buy a release; only a sustained gesture can; and when the tail finally
+stops, the 0.35s of silence does what it was always meant to.
+
+### 2. The friction is symmetric now
+
+**One wall per direction, at the far end of the reading in that direction.**
+Going down it is the bottom of the column; going up it is the dwell's first
+unit — which is the arrival frame, so a reader who came from beyond runs the
+beats backwards and is stopped on the same picture someone arriving from
+below lands on. Same release condition, both ways. Nothing is walled on the
+way *in*: that is what the settle is for.
+
+### 3. The cut, and it was not where it looked
+
+Dumped all 22 keyframes and every segment's rate before touching anything.
+**The leg into Basis is the smoothest of the three** — 6.87 / 2.53 / 4.64 /
+2.61 degrees of yaw per 100 scroll units — against the leg into Homonoia's
+18.0 / 21.9 / 6.88 / 0.94. Neither the third station's climb-away nor the
+fourth's approach is unusual.
+
+The outlier is one segment and it is **the climb-away added after Basis last
+session: 154.9° of yaw in 500 scroll units, 46.5° per 100 units**, more than
+double anything else on the route. At the route's own speed that is 155° in
+about six tenths of a second — a whip-pan, and the only discontinuity the
+sampled pose function finds anywhere.
+
+Fixed by giving the final key its own span: **1,200 units instead of 500**,
+which puts it at 19.4°/100u, inside the envelope the rest of the route
+already sets. The worst yaw rate anywhere drops from **46.46 to 21.89**, and
+21.89 is pre-existing. Least clearance is unchanged at 13.00 and the peak
+translation rate at 1.130.
+
+**And a finding to keep: §31's speed cap cannot catch this.** `fastest()`
+measures the distance between two poses, so a keyframe that turns 155° while
+moving 262 units is barely constrained by it. The cap is a bound on
+translation, not on apparent motion.
+
+### 4. The beats are inside the dwell
+
+The beats played across the *approach*, so everything was up before the
+camera arrived and the dwell had only the column left to spend. Document
+mode works the other way: the section pins and the reader's own scroll walks
+the beats. **The dwell is this world's pin** — the camera holds one pose for
+every unit of it — so the beats belong in it.
+
+**The dwell is 1,500 units and here is how they are spent:**
+
+| | scroll units into the dwell |
+|---|---|
+| arrive — machine ID row and headline, nothing else | 0 |
+| the summary | 0 → 240 |
+| the metric strip and the links | 380 → 620 |
+| the writeup | 760 → 1000 |
+| the column scrolls | 1000 → 1500 |
+
+380 between beats with a 240-unit fade, so each holds alone for 140 and
+nothing is mid-fade for more than a fifth of the dwell. Against document
+mode's own pin, which is 1,769px for three beats, this is 1,000 for three
+and then 500 for the column. Measured at Homonoia: at +0 the name is 1.000
+and the other three are 0; at +300 the summary is up; at +620 the numbers;
+at +1000 the writeup; at +1500 the column has travelled its full 399px.
+
+**Homonoia's overrun is gone, and item 5 is what fixed it.** At 45ch its
+column ran 476px past the frame; at 54ch it runs **399**, which fits the
+500 units with 101 to spare — so at 1512×804 no station needs the rate
+clamp at all (Enargeia 204, Philoi 348, Basis 68). The clamp still exists
+for short windows: the worst measured is 586 at 1024×560, where the column
+runs at 1.17px per scroll unit.
+
+**What it costs the route.** `DWELL` 600 → 1,500 is +900 at each of four
+stations, and the final turn is +700: **LENGTH 12,567 → 16,867**, up 34%.
+The settles move from 18.3 / 41.4 / 68.2 / 91.2% to **13.6 / 36.2 / 61.5 /
+84.0%**. It costs no *flight* time — the dwell is scroll the camera does not
+move through — so a fly-past is exactly as long as it was.
+
+**The interactions, which are the part worth reading.**
+
+- The friction's wall moved with the beats. `readEnd` is the end of the
+  **reading** now — the last beat plus the column — not the column alone, so
+  the friction holds a reader after the writeup has arrived rather than
+  before it.
+- **A gesture that ends inside the settle's 350-unit window lands on beat
+  1**, which is the arrival frame item 4 asks for. A gesture that overshoots
+  plays all four beats in one go and is held at the bottom of the reading.
+  That is the same as document mode, where a flick through a pin skips its
+  beats — the settle is the mechanism that makes the intended arrival
+  happen, and the friction is what stops the overshoot going any further.
+- The up-wall is the dwell's first unit, which *is* beat 1. So the two
+  directions land a reader on the same frame, which is what made the
+  symmetry in item 2 easy rather than arbitrary.
+- **At beat 1 there is nothing focusable in world mode** — nothing is open,
+  so there is no Close and the Live link has not arrived. Scrolling reveals
+  them, `Esc` still leaves, axe is still clean, and every fact is still in
+  document mode. `Esc` at beat 1 leaves the world rather than closing,
+  because there is nothing to close; the harness had to be corrected for
+  that rather than the product.
+
+### 5. The column takes more of the frame
+
+**45ch → 54ch, and the scrim 60vw → 68vw.** Compared 45, 54 and 62 at one
+pose in one session. 62ch (634px, ending at 698) dims the near ground enough
+that the landscape stops reading as a world and starts reading as a
+backdrop, which is the constraint that binds. 54ch ends at 616, the scrim is
+solid to 617, and §34's structure at 67% of the width — the band from 824 to
+1,202 — sits past that in the fade's outer half, with the ranges, the
+treeline and the clouds all still legible.
+
+It pays for itself twice: the measure is a comfortable ten words a line
+rather than eight, and **the metric strip no longer has to break out of the
+column**. At 264px per track the widest value, `334.9 MiB`, is 216 — so
+§29's first constraint is now satisfied inside the measure, and one thing
+that reached past it is gone.
+
+### Verified
+
+Three speeds over the whole 16,867-unit route on a 30 Hz session (rAF median
+33.3): worst single-frame change 0.070 / 0.132 / 0.101 in the first block,
+0.079 / 0.163 / 0.176 in the last, 13.7 / 26.0 / 16.6px in the reading.
+
+**Layouts stay at zero** in all three configurations, one style recalc a
+frame at 0.099 / 0.083 / 0.087ms. Twelve deep links land, axe **clean in
+both modes**, back and forward, the stick round trip and both escapes.
+
+**Bundle** 217,091 + 3,250 worker = **215.18 KiB** of 400 (+210), CSS
+**2,658**, document 56,508 (55.18 KiB).
+
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 

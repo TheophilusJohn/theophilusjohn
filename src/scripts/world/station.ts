@@ -46,9 +46,34 @@ import { DWELL, STATIONS, bandAt, stops } from './route';
    composition is judged at that pose. The order is §0.3's route table read
    literally — the ID and the headline resolve *as you close*, then the
    numbers, then the reading. */
-const NAME_IN = [0.10, 0.50];
-const LEAD_IN = [0.35, 0.75];
-const DETAIL_IN = [0.60, 1.0];
+const NAME_IN = [0.10, 0.60];
+
+/* ── The dwell is the pin ───────────────────────────────────────────────
+   The beats used to play across the *approach*, so by the time the camera
+   reached the settle everything was already up and the dwell had only the
+   column left to spend. Document mode does not work that way: `projects.ts`
+   pins a section and the reader's own scroll walks the three beats through
+   the pin. The dwell is this world's pin — the camera holds one pose for
+   every unit of it — so the beats belong in it.
+
+   Arriving therefore shows the machine ID row and the headline and nothing
+   else: that is the frame the reader lands on, and it is the frame §29
+   judged. Each beat after it is a range of **scroll position inside the
+   dwell**, in units, and scrolling back runs them backwards.
+
+   380 units between beats with a 240-unit fade — so each beat holds alone
+   for 140 before the next begins, and nothing is ever mid-fade for more
+   than a fifth of the dwell. Against document mode's pin, which is 1,769px
+   for three beats, this is 1,000 for three and then 500 for the column. */
+const LEAD_AT = [0, 240];
+const FACTS_AT = [380, 620];
+const TEXT_AT = [760, 1000];
+/** Where the beats end and the column starts moving. */
+const COLUMN_AT = 1000;
+/** What is left of the dwell for it. */
+const COLUMN_SPAN = DWELL - COLUMN_AT;
+
+const span = (p: number, [a, b]: number[]) => smoothstep(clamp01((p - a!) / (b! - a!)));
 
 /* Closing is a fade rather than a cut, and it is the same exponential
    everything else in the world eases on. Short: this one is a reader's
@@ -169,7 +194,8 @@ type Panel = {
   name: HTMLElement;
   body: HTMLElement;
   lead: HTMLElement | null;
-  detail: HTMLElement | null;
+  facts: HTMLElement | null;
+  text: HTMLElement | null;
   act: HTMLButtonElement;
   /** Displayed at all — kept until the damped weight reaches 0, so a panel
       is never cut off mid-fade by the reader leaving its band. */
@@ -179,6 +205,10 @@ type Panel = {
   fade: number;
   /** The damped reading offset, in pixels. Its own, much shorter, τ. */
   off: number;
+  /** The damped position inside the dwell, in scroll units, which is what
+      the beats are a function of. Damped at the fades' own τ, not the
+      column's: a beat is a cross-fade and wants the lag. */
+  pos: number;
   /** The reader's own decision, and it resets when they leave. */
   shut: boolean;
   /** Eased toward `shut`, so closing is a fade. */
@@ -264,9 +294,10 @@ export function buildStation(
     body.className = 'body';
     body.id = `world-${station.slug}`;
     const lead = block(section, 'lead', ['.summary']);
-    const detail = block(section, 'detail', ['.stats', '.links', '.prose']);
-    if (lead) body.append(lead);
-    if (detail) body.append(detail);
+    const facts = block(section, 'facts', ['.stats', '.links']);
+    // Not `.prose`: that is the cloned class inside it.
+    const text = block(section, 'text', ['.prose']);
+    for (const part of [lead, facts, text]) if (part) body.append(part);
 
     stack.append(name, body);
     col.append(stack);
@@ -283,8 +314,8 @@ export function buildStation(
     root.append(el);
 
     const panel: Panel = {
-      slug: station.slug, el, col, stack, name, body, lead, detail, act,
-      on: false, fade: 0, off: 0, shut: false, k: 0, over: 0,
+      slug: station.slug, el, col, stack, name, body, lead, facts, text, act,
+      on: false, fade: 0, off: 0, pos: 0, shut: false, k: 0, over: 0,
     };
     act.addEventListener('click', () => {
       panel.shut = !panel.shut;
@@ -308,7 +339,10 @@ export function buildStation(
     /* One scroll unit is one pixel unless the column is longer than the
        dwell, so the reading is `over` units of scroll — capped at the dwell,
        which is the case where it fills the whole of it. */
-    reading(panels.indexOf(panel), Math.min(panel.over, DWELL));
+    /* What `scroll.ts` needs is where **the reading** ends, which is the
+       last beat plus however far the column has to travel — not the column
+       alone. Capped at the dwell, which is the case where it fills it. */
+    reading(panels.indexOf(panel), Math.min(COLUMN_AT + panel.over, DWELL));
   }
 
   let here = -1;
@@ -343,9 +377,10 @@ export function buildStation(
     panel.shut = false;
     panel.k = 0;
     panel.off = 0;
+    panel.pos = 0;
     panel.act.textContent = 'Close';
     panel.act.setAttribute('aria-expanded', 'true');
-    for (const el of [panel.body, panel.lead, panel.detail, panel.act]) {
+    for (const el of [panel.body, panel.lead, panel.facts, panel.text, panel.act]) {
       el?.removeAttribute('data-out');
     }
   }
@@ -392,41 +427,53 @@ export function buildStation(
       panel.k += ((panel.shut ? 1 : 0) - panel.k) * shutK;
       const open = 1 - panel.k;
 
+      /* How far into the dwell the reader has scrolled — negative on the
+         approach, past the end on the climb away. The beats read it and
+         `w` closes them again on the way out, so the same expression
+         covers all three regions: 0 before the dwell because the beat has
+         not started, its own value inside it, and `w` fading to 0 after. */
+      if (i === live) panel.pos += (((y ?? 0) - stops[i]!.y) - panel.pos) * fadeK;
+      const p = panel.pos;
+
       const named = ramp(w, NAME_IN);
-      const lead = ramp(w, LEAD_IN);
-      const detail = ramp(w, DETAIL_IN);
+      const lead = span(p, LEAD_AT) * w;
+      const facts = span(p, FACTS_AT) * w;
+      const text = span(p, TEXT_AT) * w;
 
       put(panel.name, '--in', named);
       // The wrapper carries the dismissal alone; the blocks carry the
       // arrival. Nested opacity multiplies, so the two never contend.
       put(panel.body, '--in', open);
       if (panel.lead) put(panel.lead, '--in', lead);
-      if (panel.detail) put(panel.detail, '--in', detail);
+      if (panel.facts) put(panel.facts, '--in', facts);
+      if (panel.text) put(panel.text, '--in', text);
       // The way out appears with the first thing there is to close.
       put(panel.act, '--in', lead);
 
       /* The scrim is §17's and it is the reading half of the frame held
          still — so it is up whenever there is type in front of it, and it
-         is up further when there is more. Three rungs for three phases. */
-      lit = Math.max(lit, named * 0.45, lead * 0.7 * open, detail * open);
+         is up further when there is more. A rung per beat. */
+      lit = Math.max(lit, named * 0.45, lead * 0.6 * open, facts * 0.8 * open, text * open);
 
       // Out of the tab order and out of the tree when it is not on screen,
       // rather than transparent and still focusable behind an opaque canvas.
-      hide(panel.body, open * Math.max(lead, detail) < 0.004);
+      const most = Math.max(lead, facts, text);
+      hide(panel.body, open * most < 0.004);
       hide(panel.act, lead < 0.004);
       if (panel.lead) hide(panel.lead, lead < 0.004);
-      if (panel.detail) hide(panel.detail, detail < 0.004);
+      if (panel.facts) hide(panel.facts, facts < 0.004);
+      if (panel.text) hide(panel.text, text < 0.004);
 
-      /* The dwell, spent as reading. One scroll unit is one pixel of column
-         unless the column is longer than the dwell, in which case the whole
-         of it still arrives by the end — a reader who scrolls off a station
-         has finished it either way. The rate is the same at every station on
-         purpose: a wheel notch that moved Basis's short column at a fifth of
-         Homonoia's speed is the thing that reads as broken. */
+      /* And then the column, over what the beats leave of the dwell. One
+         scroll unit is one pixel unless the column is longer than that
+         remainder, in which case the whole of it still arrives by the end.
+         The rate is the same at every station on purpose: a wheel notch
+         that moved Basis's short column at a fifth of Homonoia's speed is
+         the thing that reads as broken. */
       if (i === live) {
-        const rate = Math.max(1, panel.over / DWELL);
-        const span = Math.min(Math.max(((y ?? 0) - stops[i]!.y) * rate, 0), panel.over);
-        panel.off += (span * open - panel.off) * readK;
+        const rate = Math.max(1, panel.over / COLUMN_SPAN);
+        const run = Math.min(Math.max(((y ?? 0) - stops[i]!.y - COLUMN_AT) * rate, 0), panel.over);
+        panel.off += (run * open - panel.off) * readK;
       }
       put(panel.col, '--up', -panel.off);
     }

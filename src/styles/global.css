@@ -201,7 +201,7 @@ html[data-world] { overflow: hidden; }
    measured that it stays invisible as an object over a lit
    landscape rather than reading as a panel. */
 .stations > .scrim {
-  position: absolute; inset-block: 0; left: 0; width: 60vw;
+  position: absolute; inset-block: 0; left: 0; width: 68vw;
   background: linear-gradient(to right, var(--scrim) 0 60%, transparent 100%);
   opacity: 0;
 }
@@ -215,7 +215,7 @@ html[data-world] { overflow: hidden; }
    and station.ts spends the dwell's 600 scroll units on it. */
 .station .col {
   position: absolute; inset-block: 0; left: var(--s-16);
-  width: 45ch; max-width: calc(100% - 2 * var(--s-16));
+  width: 54ch; max-width: calc(100% - 2 * var(--s-16));
   padding-block: var(--s-16) var(--s-12);
   display: grid; align-content: center;
   transform: translateY(calc(var(--up, 0) * 1px));
@@ -228,16 +228,20 @@ html[data-world] { overflow: hidden; }
    pushes the meta row's far end 160px past the column it belongs to. */
 .station .col .stack { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
 
-/* Three blocks, three bands, one cascade: the name, then
-   the lead, then the numbers and the writeup — which is
-   the document's own order. Each carries its own
+/* Four blocks in the document's own order: the machine ID
+   row and the headline, the lead, the numbers and links,
+   the writeup. The first resolves on the approach; the
+   other three are beats the reader walks through with the
+   scroll, inside the dwell, the way `projects.ts` walks a
+   pinned section's three. Each carries its own
    arrival, and the travel is small for the same reason
    §17's beats keep theirs small — a long one under a scrub
    turns a cross-fade into two things sliding past each
    other. */
 .station .col .name,
 .station .col .lead,
-.station .col .detail {
+.station .col .facts,
+.station .col .text {
   opacity: var(--in, 0);
   transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
 }
@@ -250,7 +254,8 @@ html[data-world] { overflow: hidden; }
 
 .station .col .body,
 .station .col .lead,
-.station .col .detail {
+.station .col .facts,
+.station .col .text {
   display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6);
 }
 
@@ -263,7 +268,8 @@ html[data-world] { overflow: hidden; }
    not on screen. */
 .station .col .body[data-out],
 .station .col .lead[data-out],
-.station .col .detail[data-out],
+.station .col .facts[data-out],
+.station .col .text[data-out],
 .station .act[data-out] { visibility: hidden; }
 
 /* Selectable and clickable, unlike the layer around it. */
@@ -286,18 +292,18 @@ html[data-world] { overflow: hidden; }
    stands, at 67% of the width. */
 .station .col .name .headline { width: max-content; max-width: 52vw; }
 
-/* §29's first constraint, and the only thing in that frame
-   that was visibly laid out *wrong*: four metrics at --t-xl
-   in a 45ch column wrap to two ragged rows with a stranded
-   fourth. The document gives the strip a full-width row and
-   the world gives it a column, so here it takes its own
-   width outside the column and an even two tracks — three
-   metrics leave one cell empty instead of stranding one,
-   and the gap comes in from --s-8 to match. It stops short
-   of the subject, which stands at 67% of the frame. */
+/* §29's first constraint: four metrics at --t-xl in a 45ch
+   column wrap to two ragged rows with a stranded fourth.
+   Two even tracks fix the raggedness — three metrics leave
+   one cell empty rather than stranding one — and at 54ch
+   the strip no longer has to break out of the column to do
+   it: the widest value, 334.9 MiB, is 216px against a
+   264px track. It was `min(64ch, 50vw)` when the column was
+   45ch and that breakout is gone, which is one fewer thing
+   reaching past the measure. */
 .station .col .body .stats {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(64ch, 50vw); column-gap: var(--s-6); row-gap: var(--s-4);
+  column-gap: var(--s-6); row-gap: var(--s-4);
   margin-top: 0;
 }
 .station .col .body .summary,

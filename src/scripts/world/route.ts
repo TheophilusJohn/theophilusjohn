@@ -91,10 +91,26 @@ const PACE = 1.0;
 const MIN_TRAVEL = 1100; // a short leg still gets a flight
 const LEAD_IN = 500;     // the opening pose holds before the route leaves it
 const SETTLE_IN = 700;   // approach → settle
-/** The settle holds. Exported because §32 spends it: the camera is still
-    for these units and the reading moves instead. */
-export const DWELL = 600;
+/** The settle holds, and **this is the pin**. §32 spends every one of these
+    units: the camera does not move at all through them, and the reader's own
+    scroll walks the beats and then the column, exactly as `projects.ts` walks
+    document mode's three beats through a 220% pin. 600 was enough when the
+    beats played on the approach and the dwell only had the column to carry;
+    it is not enough to hold four beats *and* the column, so it is 1,500 —
+    which is still less per station than the document's own 1,769. */
+export const DWELL = 1500;
 const CLIMB_OUT = 500;   // settle → the climb away
+/* The last one, which turns rather than travels. It swings 155° to look back
+   at the massif, and at CLIMB_OUT's 500 units that is 46.5° of yaw per 100
+   scroll units — more than double the worst anywhere else on the route
+   (21.9 on the leg into Homonoia) and a visible whip. 1,200 puts it at 19.4,
+   inside the envelope the rest of the route already sets.
+
+   Worth writing down beside it: **§31's speed cap cannot catch this.**
+   `fastest()` measures the distance between two poses, and a keyframe that
+   turns 155° while moving 262 units is barely constrained by it — the cap
+   is a bound on translation, not on apparent motion. */
+const FINAL_OUT = 1200;
 
 /* How far back the approach stands, and how high the travel flies. The
    approach is on the settle's own view axis, so closing on a station
@@ -271,7 +287,7 @@ function build() {
     const px = settle.x + ((toward.x - s.site.x) / on) * DEPART_ON;
     const pz = settle.z + ((toward.z - s.site.z) / on) * DEPART_ON;
     keys.push({
-      y: (y += CLIMB_OUT),
+      y: (y += STATIONS[i + 1] ? CLIMB_OUT : FINAL_OUT),
       pose: {
         x: px, y: Math.max(height(px, pz), s.ground) + DEPART_UP, z: pz,
         yaw: Math.atan2(-(toward.x - px), -(toward.z - pz)) / DEG,

@@ -610,12 +610,12 @@ curve. `curve.ts`'s discipline applies and it is why that module was written
 the way it was: the pose is a pure function of its input and lives in one
 module with no three and no DOM in it (§4.7's camera).
 
-**Built at §31, and the route is 22 keyframes over 12,567 scroll units**,
-with the settles at 18.3%, 41.4%, 68.2% and 91.2%. (21 over 12,067 as §31
-shipped it; §32 gave the last station the climb-away every other station
-already had, because without one the writeup never ramps out, every
-overshoot lands on the tail of the reading, and there is no pose for §35's
-offer of the stick to be made from.) Travel is paced at one scroll unit
+**Built at §31, and the route is 22 keyframes over 16,867 scroll units**,
+with the settles at 13.6%, 36.2%, 61.5% and 84.0%. (21 over 12,067 as §31 shipped
+it; §32 gave the last station the climb-away every other station already
+had, then gave the dwell the room to hold the beats — 600 units to 1,500 —
+and the final turn 1,200 rather than 500, because 155° of yaw in 500 units
+is a whip-pan and the speed cap bounds translation, not apparent motion.) Travel is paced at one scroll unit
 per world unit, so a long leg takes longer to fly than a short one, and the
 opening pose owns the first 500 so that arrival is a beat rather than the
 first wheel notch — drifting twelve units through them rather than holding,
@@ -650,15 +650,21 @@ and takes no pointer: a scrollbar you can grab would be a second way to move
 the camera. Hidden with the stick out, like the writeup, because off the
 route there is no route position to report.
 
-**A station resists being left.** The dwell is the reading and the column
-runs out before the dwell does, so one flick could carry a reader in, past
-the writeup and away. Forward movement stops at the bottom of the reading;
-backwards is free; and the friction lifts the moment the *arriving gesture*
-ends — 0.35s of silence, with a 1.5s backstop for a gesture that never does.
-What separates being carried past from leaving is not how hard the reader
-scrolled but whether they have stopped since arriving, so a deliberate
-departure pays nothing and a flick pays exactly one more gesture. Measured:
-a single wheel event of up to 6,000 units departs no station.
+**A station resists being left, in both directions.** One wall per direction
+at the far end of the reading — the bottom of the column going down, the
+dwell's first unit going up, which is the arrival frame either way. Nothing
+is walled on the way *in*: that is the settle's job. The friction lifts the
+moment the *arriving gesture* ends — 0.35s of silence — with a 1.5s backstop
+for a gesture that never does.
+
+**And "the gesture ended" cannot be a timer, because a trackpad never goes
+silent.** macOS emits wheel events through the whole inertial tail at the
+display rate: measured, 125 events over 1,991ms with **no gap reaching
+0.35s**, so the backstop was the only condition that could fire and it fired
+on every flick, mid-tail. Momentum is told from a gesture by its shape
+instead — six consecutive events whose magnitude does not grow — and the
+backstop counts only time the reader is *pushing*. Measured after: a
+33,428-unit throw with a seven-second tail departs no station.
 
 **The route has a top speed and it is 420 units a second.** Scroll is not
 paced by the hand the way a document is: a 1,500px/s scrub put the camera at
@@ -832,12 +838,12 @@ units a second and the nearest visible ground at cruise is 315 units out
 **Three states**, as §4.8 already had them: distant silhouette, approaching
 (name and machine ID resolve), arrived (the writeup opens).
 
-**Built at §32, and the three states are one number** — `bandAt()`'s own
-weight, which §31 already computes for the route, **damped once at 0.30s and
-then read three times**. Three ramps of 0.40 of the band staggered by 0.25:
-the name over 0.10–0.50, the metric strip over 0.35–0.75, the reading over
-0.60–1.00, so the column arrives as a cascade and the last of it reaches 1
-exactly at the settle keyframe. The reading's own scroll is damped much less
+**Built at §32, and the dwell is the pin.** The approach resolves the machine
+ID row and the headline and nothing else — that is the frame the reader lands
+on — and everything below it is a beat driven by scroll position *inside* the
+dwell, the way `projects.ts` walks a pinned section's three beats. 1,500
+units: the summary at 0–240, the numbers and links at 380–620, the writeup at
+760–1000, and the column from 1000. Scrolling back runs it backwards. The reading's own scroll is damped much less
 (0.09s) — it is the reader's wheel moving text, and lag there is what feels
 broken. A jump is exempt from both, which is §31's rule one level up.
 "Distant" is the absence of the panel: nothing stands at a station until
