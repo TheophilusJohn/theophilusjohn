@@ -4037,6 +4037,132 @@ both modes**, back and forward, the stick round trip and both escapes.
 **Bundle** 217,091 + 3,250 worker = **215.18 KiB** of 400 (+210), CSS
 **2,658**, document 56,508 (55.18 KiB).
 
+### The cut between Philoi and Basis, found
+
+**The previous diagnosis was blind to this by construction, not by
+resolution.** It sampled `poseAt(y, 0)` between keyframes. The residual
+creep is the *second argument*, and at 0 the entire term vanishes — so the
+measurement was of a different function from the one that is flown. The
+keyframe-to-keyframe part of the criticism is true too, but secondary: the
+creep is not in any keyframe, so no keyframe measure could have found it at
+any resolution.
+
+**What came back clean, in order.**
+
+- **Dense sampling of the pose function**, every 0.25 scroll units across the
+  whole leg, all five channels, first and second derivatives. Worst first
+  derivative 88.87 per 100 units (z), worst second 64.6 per 100 units² (z, at
+  12,368). Both are the smoothstep's own acceleration break at a keyframe,
+  which every segment on the route has.
+- **The easing across keyframe boundaries.** Per-segment smoothstep has zero
+  derivative at both ends, so velocity is continuous — it goes to zero at
+  *every* key by construction — and acceleration is discontinuous at every
+  key. Speed profile measured along the leg: 0 at each key, peaking 0.913
+  world units per scroll unit mid-segment. The same shape on every leg.
+- **The clearance clamp — and the first check of it was wrong in the same
+  way the original diagnosis was.** `poseAt(y).y − height(x, z)` gives a leg
+  minimum of 36.42 units, but that is not what `camera.ts` clamps against:
+  `floorAt()` takes the highest ground under the camera **and along
+  `velocity × 0.35s` ahead of it**. Recomputed properly at three scroll
+  rates, the margin is 29.82 / 28.09 / 16.10 units at 200 / 420 / 900 scroll
+  units a second and **no sample is clamped at all**.
+- **The bound and the ceiling.** `BOUND` 2,600 + 600 against a maximum route
+  radius of 2,093; `CEILING` 360 + 200 against a maximum route altitude of
+  240. Neither can fire.
+
+**What was not clean: the flown frame.** Sampled every frame in the browser
+— camera quaternion and position, terrain chunk count, layer visibility —
+across the leg: **26.85° of camera rotation in a single 16.6ms frame at
+scroll 12,246**, which is 1,617° a second.
+
+### The cause
+
+The creep re-aims the camera at the station so the subject holds its place
+while the near ground slides, and it does that as `aimAt(p + shift)` where
+`p` is the interpolated route pose. **Inside the dwell that is right** — `p`
+*is* the settle and the shift is fourteen units, so the correction is a
+fraction of a degree. On the climb-out the band weight is still ramping down
+but `p` has flown hundreds of units, so `aimAt` computes a bearing to the
+station from a camera that is passing over it — and **Philoi's departure
+path passes 13 units from its own site**, where that bearing swings through
+180°.
+
+Worst yaw rate across Philoi's climb-out, by the value of the arrival clock:
+
+| arrive | worst °/100 units |
+|---|---|
+| 0.00 | 6.9 |
+| 0.25 | 6,009 |
+| 0.50 | 12,221 |
+| 0.75 | 18,579 |
+| **1.00** | **25,191** |
+
+The yaw at `arrive = 1` runs 173.2 → 176.0 → 179.6 → **201.6** → 215.2 →
+193.5 → **134.3** → 146.1 → 150.3 — an 81° excursion inside 200 scroll units
+— and the pitch swings 2.4 → **−40.8** → −8.0 with it. It is one station's
+geometry, not the leg's:
+
+| | worst °yaw/100u | worst °pitch/100u | nearest pass to its own site |
+|---|---|---|---|
+| Enargeia | 34 | 11 | 118 |
+| Homonoia | 7 | 4 | 278 |
+| **Philoi** | **25,191** | **34** | **13** |
+| Basis | 14 | 3 | 130 |
+
+### The fix, and why it is safe
+
+Measure the re-aim as the difference between two **fixed** poses — the
+settle's own aim, and the aim from the settle displaced by the creep —
+rather than as an absolute aim taken from the flown pose. Neither depends on
+where the camera has got to, so it cannot go singular; and inside the dwell
+it is provably the old expression, because there `p` *is* the settle.
+Measured across every dwell at four values of the arrival clock, the worst
+difference between the old creep and the new is **0.00e+0**.
+
+| | before | after |
+|---|---|---|
+| Enargeia | 34 | 18 |
+| Homonoia | 7 | 5 |
+| **Philoi** | **25,191** | **7** |
+| Basis | 14 | 19 |
+
+**Flown, sampling every frame across the whole leg from before Philoi's
+settle to past Basis's: worst single-frame rotation 26.85° → 0.332°.** The
+worst single-frame translation is 7.05 world units in a 16.8ms frame, which
+is the 420-a-second speed cap rather than a discontinuity. Least clearance
+and peak translation rate are unchanged at 13.00 and 1.130. Flown out of
+Philoi with the clock fully up, the yaw now runs 171.9 → 161.6 → 154.0 →
+150.3 → 151.3 → 155.3 and the pitch 0.7 → −3.7 → −6.6 → −8.0 → −7.9 → −7.5.
+
+### Two things the scan found that I am not claiming to have cleared
+
+- **85 terrain chunks retiring in one frame at scroll 10,774**, inside
+  Philoi's dwell where the camera is stationary. The pool churns between 145
+  and 383 chunks across the leg as the camera descends from 157 to 36 units
+  over the ground, and a retirement is of chunks already superseded, which
+  §25's morph makes invisible by construction. That is an argument, not a
+  measurement, and I did not make the measurement.
+- **The blade and mote discs toggle `visible` six times on the leg** (12,025
+  / 12,202 / 13,088 / 13,707 / 13,825 / 13,852, including a 27-unit
+  flicker). The gate flips when the nearest ground reaches `REACH` = 58, at
+  which point every blade is at `smoothstep(58, 46, ≥58)` = 0 scale, so the
+  toggle is invisible by construction. **My attempt to check that empirically
+  was invalid** — I compared two screenshots byte-for-byte with the site's
+  own render loop still running, so the frames differ for reasons that have
+  nothing to do with the flag. The argument stands; the measurement does not.
+
+**And the correction to the previous session.** Lengthening the climb-away
+after Basis was right on its own terms — 155° of yaw in 500 units is a
+whip-pan and it is 1,200 units now — but it was not what was being seen, and
+the honest report at the time would have been "every measurement on this leg
+comes back clean" rather than a fix applied to the nearest plausible
+outlier.
+
+**Verified after:** layouts **zero** in all three configurations, one style
+recalc a frame; twelve deep links; axe clean in both modes; back and
+forward; the stick round trip; both escapes. **Bundle** 217,123 + 3,250
+worker = **215.21 KiB** of 400 (+32), CSS 2,658 unchanged.
+
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 

@@ -720,7 +720,13 @@ rather than notes:
    arriving. A slow drift, a parallax, or a few last units of travel after
    the type is up. **This is the beat the whole route is judged on** — get
    it wrong and four stations are a slideshow.
-   **Answered at §31: the last few units of travel, on a clock.** The camera
+   **Answered at §31: the last few units of travel, on a clock.** (And
+   corrected at §32: the re-aim is the difference between two *fixed* poses,
+   the settle's and the settle displaced by the creep, rather than an aim
+   taken from the flown pose. Taken the second way it is right across the
+   dwell and singular on the climb-out, where the camera passes over the
+   station it is still aiming at — Philoi's departure misses its own site by
+   13 units and whipped 26.85° in one frame.) The camera
    creeps 14.3 units toward the subject over an exponential with τ = 4.5s,
    leaving the settle at 3.15 units a second and still moving ten seconds
    after the reader has stopped scrolling — which is what a residual keyed to

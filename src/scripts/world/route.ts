@@ -360,16 +360,37 @@ export function poseAt(y: number, arrive = 0): Pose {
   const s = STATIONS[band.station]!;
   const rest = restOf(s);
   const settle = settleOf(s);
-  const moved = {
-    x: p.x + (rest.x - settle.x) * k,
-    y: p.y + (rest.y - settle.y) * k,
-    z: p.z + (rest.z - settle.z) * k,
-  };
-  const aimed = aimAt(moved, s);
+  const shift = { x: (rest.x - settle.x) * k, y: (rest.y - settle.y) * k, z: (rest.z - settle.z) * k };
+
+  /* **The re-aim is a delta measured at the settle, not an aim taken from
+     wherever the route has flown to**, and that distinction is the whole of
+     a bug that shipped from §31 to §32.
+
+     The creep exists to hold the subject at 67% of the frame while the near
+     ground slides, so the aim has to follow the fourteen units it moves.
+     Taken as `aimAt(p + shift)` that is correct *inside the dwell*, where
+     `p` is the settle and the shift is those fourteen units — and nonsense
+     outside it, where the band weight is still ramping down but `p` is
+     hundreds of units away on the climb-out. Aiming at a station from a
+     camera that is flying over it is a bearing that swings through 180°:
+     Philoi's departure passes **13 units** from its own site, and the yaw
+     rate there measured **25,191° per 100 scroll units** against 34, 7 and
+     14 at the other three, whose paths miss by 118, 278 and 130.
+
+     Measured as the difference between two *fixed* poses — the settle's own
+     aim and the aim from the settle displaced by the creep — it is the same
+     number inside the dwell (there `p` **is** the settle, so this reduces to
+     exactly the old expression) and a bounded fraction of a degree
+     everywhere else. It cannot go singular because neither pose depends on
+     where the camera has got to. */
+  const base = aimAt(settle, s);
+  const aimed = aimAt({ x: settle.x + shift.x, y: settle.y + shift.y, z: settle.z + shift.z }, s);
   return {
-    ...moved,
-    yaw: mixAngle(p.yaw, aimed.yaw, k),
-    pitch: p.pitch + (aimed.pitch - p.pitch) * k,
+    x: p.x + shift.x,
+    y: p.y + shift.y,
+    z: p.z + shift.z,
+    yaw: p.yaw + (((aimed.yaw - base.yaw + 540) % 360) - 180) * k,
+    pitch: p.pitch + (aimed.pitch - base.pitch) * k,
   };
 }
 

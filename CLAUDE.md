@@ -768,6 +768,28 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   script stops and a harness built on it will pass a test the product fails.
   Dispatch the stream from **inside the page** at a real 60Hz cadence: CDP
   round-trips measured ~100ms here, six times too slow to make a tail at all.
+- **A pose function with a defaulted second argument is two functions, and
+  sampling it at the default measures the wrong one.** `poseAt(y, arrive)`
+  carries §29's residual creep in `arrive`; every diagnostic that called
+  `poseAt(y, 0)` was blind to the creep entirely — not under-resolved, but
+  measuring a different function. Measured: 6.9°/100 units at `arrive = 0`
+  against **25,191** at `arrive = 1`, in the same place.
+- **`atan2` toward a point the camera passes *through* is a singularity.**
+  Re-aiming at a station from the flown pose is a bearing that swings 180°
+  when the path passes near the site: Philoi's departure misses its own site
+  by **13 units** where the other three miss by 118, 278 and 130, and it is
+  the only one that whips. An aim correction has to be the difference between
+  two *fixed* poses, never an absolute aim taken from wherever the camera got
+  to — then it is bounded, and inside the dwell it is the same number.
+- **The camera's floor is not `height()` under it.** `floorAt()` takes the
+  highest ground under the camera *and along `velocity × 0.35s` ahead of it*,
+  so `pose.y − height(pose.x, pose.z)` is not the margin the clamp uses and a
+  clearance check built on it can miss a clamp entirely. Recompute with the
+  look-ahead, at the speeds the route actually reaches.
+- **Comparing two screenshots for identity while a render loop is running
+  measures the loop.** The site's own rAF keeps advancing `uTime`, so frames
+  taken either side of a change differ whatever the change was. Stop the
+  loop, or measure something that is not the pixels.
 - **A speed cap on distance between poses does not bound apparent motion.**
   §31's `fastest()` measures translation, so a keyframe that turns 155° while
   moving 262 units is almost unconstrained by it — measured at 46.5° of yaw
@@ -866,9 +888,10 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §32: **215.18 KiB** (217,091 + 3,250 worker), of
+  own merits. Measured at §32: **215.21 KiB** (217,123 + 3,250 worker), of
   which the worker is 0 — the content layer bakes nothing and the worker is
-  byte-identical. That is +210 for the beats moving into the dwell, over
+  byte-identical. That is +32 for the creep's re-aim, over 215.18 KiB
+  (217,091) for the beats moving into the dwell, over
   214.97 KiB (216,881) for the rail, the friction and the column's order, over 214.53 KiB (216,433) for the settle at the end of a gesture,
   over 214.38 KiB (216,279) for the damping, the third phase and the last
   climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
