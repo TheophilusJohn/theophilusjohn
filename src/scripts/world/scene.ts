@@ -40,6 +40,7 @@ import { buildCamera } from './camera';
 import { buildClouds } from './clouds';
 import { buildMotes } from './motes';
 import { buildPalette, token } from './palette';
+import { buildRail } from './rail';
 import { poseAt, nearest } from './route';
 import { buildScroll } from './scroll';
 import { buildSky } from './sky';
@@ -193,7 +194,17 @@ export async function mount(arrived?: Where) {
      landmark states and the address bar in both directions; what it needs
      from here is the route position each frame and a way to jump, which is
      the same `ride` the wheel drives. */
-  const place = buildStation((y) => ride.jump(y));
+  const place = buildStation(
+    (y) => ride.jump(y),
+    (i, units) => ride.reading(i, units),
+  );
+
+  /* And the one indicator the world has, which is the scrollbar the
+     document gets for free: how far along the route you are, where the four
+     stations sit on it, and which one you are at. It reports and does
+     nothing else. */
+  const rail = buildRail();
+
   ride.jump(entryAt(arrived));
 
   /* ── The loop ──────────────────────────────────────────────────────────
@@ -226,6 +237,7 @@ export async function mount(arrived?: Where) {
        somewhere the route has no position for, and a writeup hanging over
        a free flight is a claim about where they are that is not true. */
     place.update(view.flying() ? null : ride.at(), dt);
+    rail.update(view.flying() ? null : ride.at());
     // After the camera and before the render: which squares of ground exist
     // is a function of where the camera is *this* frame, and asking a frame
     // late is a hole in the ground on every LOD boundary crossed at speed.
@@ -330,21 +342,23 @@ export async function mount(arrived?: Where) {
   holdScroll();
 
   document.documentElement.dataset.world = '';
-  document.body.append(place.root, canvas);
+  document.body.append(place.root, rail.root, canvas);
   /* Attached before it is measured: `station.ts` reads the column's own
      height to decide how much of it the dwell has to carry, and a detached
      subtree measures zero. A deep link arrives at a settle, so this is the
      load that has a writeup open in its first frame. */
   place.update(ride.at(), 0);
+  rail.update(ride.at());
   requestAnimationFrame(() => {
     canvas.setAttribute('data-ready', '');
     place.root.setAttribute('data-ready', '');
+    rail.root.setAttribute('data-ready', '');
   });
 
   run();
 
   return {
-    renderer, scene, camera, view, ride, place,
+    renderer, scene, camera, view, ride, place, rail,
     sky, stars, terrain, water, blades, stands, clouds, motes,
   };
 }

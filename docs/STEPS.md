@@ -3700,6 +3700,167 @@ back and forward, the stick round trip, both escapes.
 **Bundle** 216,433 + 3,250 worker = **214.53 KiB** (+154, worker
 byte-identical, CSS unchanged).
 
+### A rail, friction at a station, and the document's order back
+
+**The rail replaces the scrollbar, not §4.3's rail.** Worth being exact,
+because the two are different objects: `ProjectSection.astro`'s `.rail` is
+on the *left* of each section and reports progress through one pin, and it
+is behind the canvas in world mode with the rest of the document. The thing
+on the right that world mode actually loses is the browser's own scrollbar
+— `html[data-world]` is `overflow: hidden` and there is no document scroll
+to report — so a reader has no idea how far along the route they are. This
+is that, drawn in `.rail`'s language: 1px, `--rule` track, `--leader` fill
+from the top, inset from top and bottom. It is on the right because that is
+where the thing it stands in for was.
+
+`rail.ts`, 676px tall at 1512×804, `--s-6` in from the edge. Measured out of
+the page: the fill is a `scaleY` of `at / LENGTH` — 280px of 676 at
+Homonoia's settle, which is 0.4138 — and the four marks sit at **18.3 /
+41.4 / 68.2 / 91.3%**, the settle percentages. They are placed once, in
+percent, and never move; the live one is `--leader` and 16px against
+`--dim` and 8px, which is what §5 allows the accent to mean. One custom
+property a frame, guarded at 0.0005 — a third of a pixel of that track —
+and **no layout, ever**: nothing in the file reads geometry.
+
+Not interactive, and that is a decision rather than an omission: a scrollbar
+you can grab is a second way to move the camera, and §31's whole
+construction is that the gesture is the only one.
+
+**Hidden with the stick out**, for the reason the writeup is: off the route
+there is no route position, and a progress rail over a free flight reports
+one that has not moved since the reader left it. The number is not wrong, it
+has just stopped being about them, and an indicator that quietly stops
+meaning what it says is worse than one that goes away.
+
+One thing to hand to §38: the track and the marks cover each other by
+accident rather than by design. `--rule` reads as a dark line over lit
+ground and disappears against the sky; `--dim` marks do the opposite. So
+something is always visible, and neither is *comfortably* visible over the
+bright half of the frame.
+
+### Friction at a station
+
+The dwell's 600 units are the reading, but the column runs out before they
+do — 119 pixels of it at Basis against Homonoia's 476 — and the moment it
+bottoms out the next notch departs. One flick could carry a reader in, past
+the writeup and away without ever coming to rest.
+
+**The rule:** forward movement stops at the bottom of the reading of any
+station whose dwell it would carry past and which the reader has not already
+left. The column fills under the gesture and holds there, which is the
+feedback. Backwards is never touched.
+
+**The release condition is the end of the arriving gesture**, and that is
+the whole idea: what separates *carried past* from *leaving* is not how hard
+the reader scrolled but whether they have **stopped since arriving**. A
+flick that carries you through a station is one continuous gesture that
+began before it; a departure is a new gesture, started after. So the
+friction lifts after `GESTURE_END`'s own 0.35s of silence — the same
+constant the settle uses — with a **1.5-second backstop** for a gesture that
+never ends, which is the only case the timer ever fires for. **What a reader
+physically has to do to leave is stop scrolling for a third of a second and
+then scroll**, which is what everyone does anyway; it costs a deliberate
+departure nothing and costs the flick exactly one more gesture.
+
+**Two other designs were built and measured out.**
+
+- **Accumulated delta.** With any decay the accumulator converges to
+  `rate × τ`, so it systematically favours a *fast* gesture over a
+  *sustained* one — a hard flick reaches a higher figure than a deliberate
+  scrub, which is exactly backwards. Measured at 2,000 units and τ = 0.6:
+  bursts of 600 through 3,000 never reached it at all (3,000 delivered over
+  a second peaks at 1,800), so it did nothing and the timer was carrying the
+  whole mechanism. Duration is the honest signal here, magnitude is not.
+- **Gating it on the settle's own 350-unit window.** It made the friction
+  device-dependent: a burst of twenty wheel notches walks into the window
+  and is caught from the sixth, while one trackpad event carrying the same
+  distance is tested once, from outside it, and passes. Same gesture, same
+  distance, two answers. Without the gate a forward gesture stops at the
+  next station's reading wherever it started — the same on every device, at
+  the cost of one extra gesture per station to a reader deliberately
+  skipping ahead.
+
+**One flick does not depart any station.** A flick is one event, which is
+what a trackpad delivers; the harness's notch-by-notch burst tops out at a
+measured **1,200 scroll units a second**, so it cannot reproduce one. As a
+single event, every size tested lands exactly on the bottom of the column:
+
+| one wheel event | Enargeia | Homonoia | Philoi | Basis |
+|---|---|---|---|---|
+| 1,200 units | 255 | 476 | 373 | 119 |
+| 2,400 | 255 | 476 | 373 | 119 |
+| 3,000 | 255 | 476 | 373 | 119 |
+| **6,000** | **255** | **476** | **373** | **119** |
+
+Those four numbers are the columns' own lengths in scroll units, so the
+friction engages exactly at the bottom of the reading and not a unit before.
+A 6,000-unit throw — ten times the dwell — leaves nobody.
+
+A *burst* of notches is a scroll of a given duration, and the rule is a
+duration, so this is the same table read the other way:
+
+| burst | as seconds | leaves the dwell? |
+|---|---|---|
+| 600 units | 0.50s | no, at all four |
+| 1,200 | 1.00s | no, at all four |
+| 1,800 | 1.50s | no, at all four |
+| 2,400 | 2.00s | yes — the backstop fires mid-gesture |
+| 3,000 | 2.50s | yes |
+
+Which is correct: two seconds of continuous scrolling is not a flick. The
+backstop, timed: into the dwell at 93ms, released at 1.5s, out at 2,294ms.
+
+The rest, measured: **backwards from the bottom of Basis's column, one notch
+up moves −1** — free. After the gesture ends, five notches (600 units) leave
+the dwell, which is the route's own dwell length and not the friction. And a
+2,400-unit burst from 900 short of Homonoia rests at its column's bottom
+rather than flying through, which is the ungated rule doing what it says.
+
+### A bug the friction found: the chase never landed
+
+`at` chases `want` on an exponential, and an exponential never arrives — so
+a reader eased *up* to a settle sits a vanishing fraction below it for ever,
+and everything that asks "are we at the station" asks with `>=`.
+`atSettle()` stays false, so **§29's residual creep never runs**; `dwellAt()`
+returns −1, so the friction never arms. Neither shows up as a wrong number,
+only as a beat that quietly does not happen — and the settle added last
+session made it the common case, because a snapped arrival lands on
+`stop.y` exactly from below.
+
+Closed at a hundredth of a scroll unit, which is five thousandths of a world
+unit. Measured after: eased in from 300 short of Enargeia, `at` is **2300
+exactly** and the arrival clock reads **0.522 and climbing** where it was
+pinned at 0.
+
+### The column is in the document's order again
+
+The three-phase split moved the metric strip above the summary. It is back:
+phase 2 is the lead paragraph, phase 3 is the numbers, the links and the
+writeup, so the DOM order is the document's — headline, summary, stats,
+links, prose. Same three bands and the same stagger (0.10–0.50, 0.35–0.75,
+0.60–1.00), so the last still ends at exactly 1.0, which is the settle
+keyframe. Measured 370 units short of Enargeia's settle, the three read
+**0.968 / 0.175 / 0** — the cascade, in the new order — and at the settle
+all three are up. **Column height is 1,168px at Homonoia**, the same as it
+was before the split and after it: `visibility`, never `display`.
+
+### Verified
+
+Three speeds over the whole route on a 30 Hz session (rAF median 33.3, so
+these per-frame figures are not comparable with the 60 Hz ones above):
+worst single-frame change 0.109 / 0.135 / 0.189 in the first block,
+0.098 / 0.131 / 0.131 in the last, and 14.8 / 31.1 / 66.6px in the reading.
+
+**Layouts stay at zero** in all three configurations — one style recalc a
+frame at 0.095 / 0.082 / 0.070ms, against 0.072 / 0.055 / 0.050 in the
+previous session; the rail adds one guarded custom property and reads no
+geometry. Twelve deep links land, axe is **clean in both modes** with the
+rail on the page, back and forward, the stick round trip and both escapes
+all unchanged.
+
+**Bundle** 216,881 + 3,250 worker = **214.97 KiB** of 400 (+448, worker
+byte-identical), CSS 2,548 → **2,662**, document 56,508 (55.18 KiB).
+
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.
 

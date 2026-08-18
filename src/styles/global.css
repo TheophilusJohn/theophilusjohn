@@ -127,6 +127,51 @@ html[data-world] :is(.site-head, main, .site-foot, .skip) {
 }
 html[data-world] { overflow: hidden; }
 
+/* ── The route rail ──────────────────────────────────────
+   §0.3. What the scrollbar reported in document mode, in
+   the visual language of §4.3's own rail: 1px, --rule
+   track, --leader fill from the top. It reports and takes
+   no pointer — a scrollbar you can grab would be a second
+   way to move the camera.
+
+   Inset from the edge rather than flush to it: a 1px line
+   hard against the window reads as a browser artefact, and
+   this is the site's. */
+.route {
+  position: fixed; z-index: 60;
+  right: var(--s-6); top: var(--s-16); bottom: var(--s-16);
+  width: 1px;
+  background: var(--rule);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms linear;
+}
+.route[data-ready] { opacity: 1; }
+/* With the stick out there is no route position to report. */
+.route[data-ready][data-off] { opacity: 0; }
+
+.route .fill {
+  position: absolute; inset: 0;
+  background: var(--leader);
+  transform: scaleY(var(--at, 0));
+  transform-origin: top;
+}
+
+/* The four stops, placed once in percent and never moved.
+   They sit outside the 1px track so the fill never runs
+   over them. --dim rather than --rule: the track can
+   afford to disappear over bright ground, four stops
+   cannot. */
+.route .stop {
+  position: absolute; right: 0;
+  width: var(--s-2); height: 1px;
+  background: var(--dim);
+}
+.route .stop[data-live] {
+  width: var(--s-4);
+  background: var(--leader);
+}
+
 /* ── Content at a station ────────────────────────────────
    §0.4 / §32. The column is built by station.ts out of the
    document's own elements, so almost everything here is
@@ -184,14 +229,15 @@ html[data-world] { overflow: hidden; }
 .station .col .stack { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
 
 /* Three blocks, three bands, one cascade: the name, then
-   the numbers, then the reading. Each carries its own
+   the lead, then the numbers and the writeup — which is
+   the document's own order. Each carries its own
    arrival, and the travel is small for the same reason
    §17's beats keep theirs small — a long one under a scrub
    turns a cross-fade into two things sliding past each
    other. */
 .station .col .name,
-.station .col .facts,
-.station .col .read {
+.station .col .lead,
+.station .col .detail {
   opacity: var(--in, 0);
   transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
 }
@@ -203,8 +249,8 @@ html[data-world] { overflow: hidden; }
 .station .col .body { opacity: var(--in, 1); }
 
 .station .col .body,
-.station .col .facts,
-.station .col .read {
+.station .col .lead,
+.station .col .detail {
   display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6);
 }
 
@@ -216,8 +262,8 @@ html[data-world] { overflow: hidden; }
    accessibility tree, so Tab cannot reach a link that is
    not on screen. */
 .station .col .body[data-out],
-.station .col .facts[data-out],
-.station .col .read[data-out],
+.station .col .lead[data-out],
+.station .col .detail[data-out],
 .station .act[data-out] { visibility: hidden; }
 
 /* Selectable and clickable, unlike the layer around it. */

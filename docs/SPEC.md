@@ -641,6 +641,25 @@ the cap and the interruption are the ones that already exist; any input
 cancels it on the frame it lands; and it only ever moves a reader forward,
 never short of where they scrolled to.
 
+**A rail reports where you are on it.** Document mode has the browser's own
+scrollbar and world mode does not, because there is no document scroll to
+report — so a 1px rail stands at the right edge in §4.3's own language:
+`--rule` track, `--leader` fill from the top, the four settles marked at
+18.3 / 41.4 / 68.2 / 91.3%, the live one wider and in the accent. It reports
+and takes no pointer: a scrollbar you can grab would be a second way to move
+the camera. Hidden with the stick out, like the writeup, because off the
+route there is no route position to report.
+
+**A station resists being left.** The dwell is the reading and the column
+runs out before the dwell does, so one flick could carry a reader in, past
+the writeup and away. Forward movement stops at the bottom of the reading;
+backwards is free; and the friction lifts the moment the *arriving gesture*
+ends — 0.35s of silence, with a 1.5s backstop for a gesture that never does.
+What separates being carried past from leaving is not how hard the reader
+scrolled but whether they have stopped since arriving, so a deliberate
+departure pays nothing and a flick pays exactly one more gesture. Measured:
+a single wheel event of up to 6,000 units departs no station.
+
 **The route has a top speed and it is 420 units a second.** Scroll is not
 paced by the hand the way a document is: a 1,500px/s scrub put the camera at
 4,512 units a second against a cruise of 45, which is a smear rather than

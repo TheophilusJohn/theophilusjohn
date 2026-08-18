@@ -47,8 +47,8 @@ import { DWELL, STATIONS, bandAt, stops } from './route';
    literally — the ID and the headline resolve *as you close*, then the
    numbers, then the reading. */
 const NAME_IN = [0.10, 0.50];
-const FACTS_IN = [0.35, 0.75];
-const READ_IN = [0.60, 1.0];
+const LEAD_IN = [0.35, 0.75];
+const DETAIL_IN = [0.60, 1.0];
 
 /* Closing is a fade rather than a cut, and it is the same exponential
    everything else in the world eases on. Short: this one is a reader's
@@ -168,8 +168,8 @@ type Panel = {
       reading. A phase with nothing in it is not built. */
   name: HTMLElement;
   body: HTMLElement;
-  facts: HTMLElement | null;
-  read: HTMLElement | null;
+  lead: HTMLElement | null;
+  detail: HTMLElement | null;
   act: HTMLButtonElement;
   /** Displayed at all — kept until the damped weight reaches 0, so a panel
       is never cut off mid-fade by the reader leaving its band. */
@@ -205,7 +205,13 @@ export function entryAt(where: Where = { hash: location.hash, path: location.pat
   return slug ? stops.find((s) => s.slug === slug)!.y : 0;
 }
 
-export function buildStation(jump: (y: number) => void) {
+export function buildStation(
+  jump: (y: number) => void,
+  /** How much of the dwell this station's column occupies, in scroll units.
+      `scroll.ts` needs it to know where the reading ends and its friction
+      begins, and only this module has measured the column. */
+  reading: (i: number, units: number) => void = () => {},
+) {
   const root = document.createElement('div');
   root.className = 'stations';
 
@@ -248,18 +254,19 @@ export function buildStation(jump: (y: number) => void) {
        the last two phases of the arrival. Opacity nests, so the dismissal
        and the arrival multiply rather than fighting over one number.
 
-       **The numbers sit above the summary**, which is a change from the
-       document's order and is what having three contiguous phases costs —
-       and it is not a loss: it is §29's own judged frame, which was the
-       machine ID, the headline at display size, the metric strip, and then
-       a paragraph. */
+       **The order is the document's**, and the split is chosen to keep it
+       that way: the lead paragraph is a phase on its own and the numbers,
+       the links and the writeup are the third. An earlier arrangement put
+       the metric strip in the second phase, which read well — it is §29's
+       own judged frame — but only by moving the strip above the summary,
+       and the two modes are meant to be the same page. */
     const body = document.createElement('div');
     body.className = 'body';
     body.id = `world-${station.slug}`;
-    const facts = block(section, 'facts', ['.stats', '.links']);
-    const read = block(section, 'read', ['.summary', '.prose']);
-    if (facts) body.append(facts);
-    if (read) body.append(read);
+    const lead = block(section, 'lead', ['.summary']);
+    const detail = block(section, 'detail', ['.stats', '.links', '.prose']);
+    if (lead) body.append(lead);
+    if (detail) body.append(detail);
 
     stack.append(name, body);
     col.append(stack);
@@ -276,7 +283,7 @@ export function buildStation(jump: (y: number) => void) {
     root.append(el);
 
     const panel: Panel = {
-      slug: station.slug, el, col, stack, name, body, facts, read, act,
+      slug: station.slug, el, col, stack, name, body, lead, detail, act,
       on: false, fade: 0, off: 0, shut: false, k: 0, over: 0,
     };
     act.addEventListener('click', () => {
@@ -298,6 +305,10 @@ export function buildStation(jump: (y: number) => void) {
     const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     panel.over = Math.max(0, Math.round(panel.stack.offsetHeight + pad - innerHeight));
     panel.el.toggleAttribute('data-tall', panel.over > 0);
+    /* One scroll unit is one pixel unless the column is longer than the
+       dwell, so the reading is `over` units of scroll — capped at the dwell,
+       which is the case where it fills the whole of it. */
+    reading(panels.indexOf(panel), Math.min(panel.over, DWELL));
   }
 
   let here = -1;
@@ -334,7 +345,7 @@ export function buildStation(jump: (y: number) => void) {
     panel.off = 0;
     panel.act.textContent = 'Close';
     panel.act.setAttribute('aria-expanded', 'true');
-    for (const el of [panel.body, panel.facts, panel.read, panel.act]) {
+    for (const el of [panel.body, panel.lead, panel.detail, panel.act]) {
       el?.removeAttribute('data-out');
     }
   }
@@ -382,29 +393,29 @@ export function buildStation(jump: (y: number) => void) {
       const open = 1 - panel.k;
 
       const named = ramp(w, NAME_IN);
-      const facts = ramp(w, FACTS_IN);
-      const read = ramp(w, READ_IN);
+      const lead = ramp(w, LEAD_IN);
+      const detail = ramp(w, DETAIL_IN);
 
       put(panel.name, '--in', named);
       // The wrapper carries the dismissal alone; the blocks carry the
       // arrival. Nested opacity multiplies, so the two never contend.
       put(panel.body, '--in', open);
-      if (panel.facts) put(panel.facts, '--in', facts);
-      if (panel.read) put(panel.read, '--in', read);
+      if (panel.lead) put(panel.lead, '--in', lead);
+      if (panel.detail) put(panel.detail, '--in', detail);
       // The way out appears with the first thing there is to close.
-      put(panel.act, '--in', facts);
+      put(panel.act, '--in', lead);
 
       /* The scrim is §17's and it is the reading half of the frame held
          still — so it is up whenever there is type in front of it, and it
          is up further when there is more. Three rungs for three phases. */
-      lit = Math.max(lit, named * 0.45, facts * 0.7 * open, read * open);
+      lit = Math.max(lit, named * 0.45, lead * 0.7 * open, detail * open);
 
       // Out of the tab order and out of the tree when it is not on screen,
       // rather than transparent and still focusable behind an opaque canvas.
-      hide(panel.body, open * Math.max(facts, read) < 0.004);
-      hide(panel.act, facts < 0.004);
-      if (panel.facts) hide(panel.facts, facts < 0.004);
-      if (panel.read) hide(panel.read, read < 0.004);
+      hide(panel.body, open * Math.max(lead, detail) < 0.004);
+      hide(panel.act, lead < 0.004);
+      if (panel.lead) hide(panel.lead, lead < 0.004);
+      if (panel.detail) hide(panel.detail, detail < 0.004);
 
       /* The dwell, spent as reading. One scroll unit is one pixel of column
          unless the column is longer than the dwell, in which case the whole
