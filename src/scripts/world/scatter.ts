@@ -27,7 +27,7 @@
    drawn in another, and a disagreement between them is a pool of shade with
    nothing standing in it. */
 
-import { coverAt, hash3, ramp } from './cover';
+import { coverAt, hash3, paved, ramp } from './cover';
 import { CLUSTER_SITE, SWELL_REACH, WATER, height, landform, rangeMask, noise2, uplift } from './height';
 
 /* One cell is sixteen units and holds up to two of each. At full density
@@ -197,7 +197,7 @@ export function treeClump(x: number, z: number): number {
      nothing standing in it. This one they cannot forget — it is inside the
      number they both already read. */
   const bare = ramp(BARE_IN, BARE_OUT, Math.hypot(x - CLUSTER_SITE.x, z - CLUSTER_SITE.z));
-  return bare * ramp(
+  return bare * paved(x, z) * ramp(
     TREE_CLUMP_LOW,
     TREE_CLUMP_HIGH,
     noise2((x + TREE_CLUMP_OFF_X) / TREE_CLUMP, (z + TREE_CLUMP_OFF_Z) / TREE_CLUMP),
@@ -205,7 +205,7 @@ export function treeClump(x: number, z: number): number {
 }
 
 export function rockClump(x: number, z: number): number {
-  return ramp(
+  return paved(x, z) * ramp(
     ROCK_CLUMP_LOW,
     ROCK_CLUMP_HIGH,
     noise2((x + ROCK_CLUMP_OFF_X) / ROCK_CLUMP, (z + ROCK_CLUMP_OFF_Z) / ROCK_CLUMP),

@@ -9,10 +9,11 @@
    needs a physics engine.
 
    **The sixth module with no three and no DOM in it**, after `height.ts`,
-   `route.ts`, `cover.ts`'s family and `scenes.ts` — which is what lets a
-   Node harness flood-fill the space around a scene and answer "can a sphere
-   of radius four reach the inside of anything built" without a GPU. Every
-   number in the §35 report is this file's own output.
+   `route.ts`, `cover.ts`'s family and `scenes.ts` (and `city.ts` since §36)
+   — which is what lets a Node harness flood-fill the space around a scene
+   and answer "can a sphere of radius four reach the inside of anything
+   built" without a GPU. Every number in the §35 and §36 reports is this
+   file's own output.
 
    ── Which of §35's three architectures, and why ─────────────────────────
    **A static table, independent of chunk streaming.** Every proxy in one
@@ -20,12 +21,15 @@
 
    The objection to it is memory: it holds every box whether or not that
    ground is loaded, and §36 takes the world to 10km. Measured, that
-   objection does not survive contact with the numbers — the four scenes are
+   objection does not survive contact with the numbers — the four scenes were
    **48 boxes: a 1,728-byte Float32Array and an index of 81 entries over 25
-   cells, 2,376 bytes all told**, and §36's two cities and §37's ten
-   landmarks at the same authoring density would be a few hundred more. A
-   residency scheme that saves two kilobytes and costs a second lifetime to
-   reason about is a bad trade at any world size.
+   cells, 2,376 bytes all told**, and §35 guessed that §36's two cities and
+   §37's ten landmarks would be "a few hundred more". **§36 built them and it
+   is 294 boxes over 467 cells: 18,560 bytes**, which is the whole of what a
+   residency scheme would be saving. It is a bad trade at any world size, and
+   it is a *worse* one now that the table has to answer a query inside a
+   city: the two cities are the densest part of it and a query there tests
+   0.7 to 8 boxes at 0.05 to 0.17µs, against a mast's 0.98.
 
    The other two were rejected on correctness rather than on cost:
 
@@ -39,9 +43,9 @@
      that and keeps the residency win, at the cost of a second lifetime.
      There is nothing to spend it on until the table is large enough to
      matter, and this file is the only place that would have to change when
-     it is: `SOLIDS` is built from `SCENES` here and read through one
-     function, so a residency scheme is a change to how the table is filled
-     and to nothing else.
+     it is: `BUILT` is assembled here and read through one function, so a
+     residency scheme is a change to how the table is filled and to nothing
+     else. §36 exercised that: adding two cities is one array spread.
 
    **Placement is already pure** (§28's rule) — a proxy is a function of
    where a thing is and nothing about it depends on which chunk is resident,
@@ -55,8 +59,15 @@
    a flag on the box rather than a second table. It is a vertical offset, so
    the hash never has to be rebuilt. */
 
+import { CITIES } from './city';
 import { swell } from './height';
 import { SCENES } from './scenes';
+
+/** Everything in the world that carries a proxy. §36's cities are read
+    exactly as the four scenes are — a city's `pad` is zero and its parts
+    carry world heights, which is the only difference and it is arithmetic
+    rather than a case. */
+const BUILT = [...SCENES, ...CITIES];
 
 /** The camera's radius (§0.3). Four units, so it stops a little short of a
     surface rather than touching it. */
@@ -66,7 +77,9 @@ export const RADIUS = 4;
    52 units across — spans four cells rather than sixteen, small enough that
    a query at a station reads two or three buckets rather than the scene.
    Nothing is tuned to it: it is a bucket size, and the query is exact
-   whatever it is. */
+   whatever it is. §36 left it alone and measured what happened: Delhi's
+   buildings stand on a 54-unit pitch, so a cell holds about four of them and
+   a query in the densest street tests eight. */
 const CELL = 48;
 
 /* One box, flat: x, y, z, w, h, d, cos(yaw), sin(yaw), ride.
@@ -88,7 +101,7 @@ const STRIDE = 9;
        wz = lz·c − lx·s      lz = wx·s + wz·c                               */
 
 const boxes = new Float32Array(
-  SCENES.reduce((n, s) => n + s.proxy.length, 0) * STRIDE,
+  BUILT.reduce((n, s) => n + s.proxy.length, 0) * STRIDE,
 );
 const COUNT = boxes.length / STRIDE;
 
@@ -100,7 +113,7 @@ const key = (cx: number, cz: number) => cx * 1e6 + cz;
 
 {
   let i = 0;
-  for (const scene of SCENES) {
+  for (const scene of BUILT) {
     for (const p of scene.proxy) {
       const rad = (p.yaw * Math.PI) / 180;
       const c = Math.cos(rad);

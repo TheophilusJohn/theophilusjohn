@@ -4817,6 +4817,235 @@ stop you.
 **Report:** ms/frame and draw calls inside a city and from outside it, the
 bound change measured against §24's flight tests.
 
+*Done.* **Two cities, 250 boxes, and not one new draw call** — they go into
+`built.ts`'s existing instanced mesh, which is `stands.ts`'s construction for
+the fourth time and is what still holds everything built in the world at two
+draws. `city.ts` is the **seventh module with no three and no DOM in it**: it
+imports the field and `cover.ts`'s hash and nothing else, so Node runs the
+`.ts` and every count below is that file's own output.
+
+### The contrast is a plan as well as a skyline
+
+§0.2 asks for two cities that read differently and gives their heights. Height
+alone does not do it — two grids of boxes at two scales are one idea drawn
+twice — so the *rule that decides where a building stands* differs too, and it
+is the ground that makes them differ.
+
+| | Houston | Delhi |
+|---|---|---|
+| boxes | **71** | **179** |
+| what they are | 20 towers × 3 (shaft, setback at 0.62, crown at 0.86), 9 podiums, 2 masts | 162 buildings + 17 monument boxes |
+| plan | 5 × 5 with the corners cut, 128-unit pitch, turned 18° off the axes | 54-unit plots over a disc of 620, every fifth row and column open, turned −9° |
+| edge | **hard.** No thinning, no outskirts; the empty plots are empty *inside* the grid | **the terrain's.** Slope test, water line, and a hash thinning to the rim |
+| extent | 572 across | 1,216 across |
+| height above its own ground | **190 to 300** (authored 186–320; only the centre plot reaches the top of the range) | 6 to 69, **median 22**; monuments to **121** |
+| footprints | 48 to 65 across | 28 to 48 across |
+| gaps | streets **65.5 to 77.0** (§0.2 asks 60–80) | alleys 6 to 22, avenues 66 |
+
+**That difference is forced rather than chosen.** The flattest 1,240-across
+patch of ground *anywhere in this world* has **71 units of relief**, against
+buildings 15 to 40 tall. A low city laid out on a grid there is a blanket over
+a hill; the only honest way to spread one over four times Houston's footprint
+is to let the terrain say where it goes. Measured at Delhi's site, the rule
+takes sixteen plots off the north-west flank and twenty-one out of the south
+where a lake is, and what is left has an outline nobody authored.
+
+Delhi's three monuments stand in avenue crossings, which is the only open
+ground in it: an **arch** whose 28 × 52 opening you fly through, a **tapering
+tower** with three balcony rings, and a **stepped tank**. The tower is not
+fluted, and that is §34's aliasing lesson rather than a shortcut — ribs at the
+pitch a flute needs put two edges in one pixel from anywhere outside the city,
+which is the failure that took Enargeia from 350 cells to 90. What carries the
+silhouette at that distance is the taper and the rings.
+
+### Siting, and Houston's search has a second objective
+
+The stick is offered at the end of Basis's dwell (§35). A reader handed a
+control with nothing in frame to point it at has been handed nothing — so
+Houston is sited on the flattest ground of its own footprint **that the offer
+frame can see**. Relief **40.0 units over the 480 it stands on**, against 26.5
+for the flattest patch of that size anywhere in the quadrant; the Pareto front
+of flatness against visibility has five points on it and this is the knee.
+
+Measured off the built geometry at Basis's settle: the city is **842 to 1,377
+units away**, the fog leaves it **0.10 to 0.42** of its light, and it runs from
+**63% of the frame's width off the right edge** between 31% and 59% of its
+height. Basis's own graph is at 67% of the width and eight times nearer, so
+what the reader gets is a scene in the foreground and a hazed skyline behind
+and above it — on the opposite side of the frame from the reading column.
+
+Delhi is 15 to 40 units tall and would be a texture at any distance, so it is
+sited for *ground* instead: **90% of its plots pass the slope test**, the
+highest in the world for a footprint that size, and it stands 861 units off the
+route where somebody who has taken the stick will fly over it. From the arrival
+its near corner is at 83% of the width at **fog 0.02**, which is nothing.
+The two are **4,802 apart** — 107 seconds at cruise, 27 at boost — which is two
+places rather than one conurbation.
+
+### Nothing grows in a street
+
+The cities are the first thing in this world that *replaces* the ground rather
+than standing on it. `cover.ts` gains `paved()`, one ramped disc per city, and
+both ends read it — the conifers and stone `scatter.ts` places, and the cover
+the worker bakes as a tint and `blades.ts` stands blades in. It is why
+`height.ts` carries the two centres and `city.ts` does not own them: the worker
+has to be able to ask *where* a city is without importing what one is made of,
+and a worker that built 250 boxes to answer a question about two circles would
+be three copies of `city.ts`.
+
+Measured, interleaved over three runs in fresh processes: **1.63–1.66 ms a
+level-0 chunk with it and 1.63–1.65 without**, and 1.15 against 1.14 at level
+3. Two hypotenuses per vertex is nothing against a 1.6ms chunk.
+
+### The done-when, and both halves of it
+
+**You cannot get inside anything.** The proxy *is* the geometry here — every
+box is pushed to both lists in one call, so a city cannot acquire §35's
+placement bug because there is no second expression for where a box is. Flood
+the free space around each city from outside on a 2.5-unit lattice, free being
+`resolve()`'s own answer, then ask of every cell it reaches whether it is
+inside a *drawn* part using `built.ts`'s own transform:
+
+| city | lattice | free | reached | sealed | deepest reach into drawn geometry |
+|---|---|---|---|---|---|
+| Houston | 300×178×291 = 15.54M | 14,489,784 | all | **0** | **−4.00** (touching, exactly) |
+| Delhi | 524×89×495 = 23.08M | 22,277,988 | all | **0** | **−4.00** |
+
+**And you can fly down a street between two towers.** At six units over the
+ground — §24's own floor, the lowest a camera can ever be — 401 poses along
+each, with the clearance bisected out of the shipped `resolve`:
+
+| flight | poses inside something | narrowest clearance |
+|---|---|---|
+| Houston, the street at v = +64 | 0 of 401 | **23.99** |
+| Houston, the street at v = −64 | 0 of 401 | 23.99 |
+| Houston, the street at u = +64 | 0 of 401 | 25.75 |
+| **Houston, straight through the middle** | **216 of 401** | 0.00 |
+| Delhi, the avenues at u = ±540 and v = +540 | 0 of 401 | 35.26 / 36.61 / 40.45 |
+| **Delhi, the three avenues with a monument in them** | 14 to 24 of 401 | 0.00 |
+| Delhi, through the arch | 0 of 241 | **14.00** — half of 28, exactly |
+
+The two blocked rows are the other half of the claim: the line straight through
+the middle of Houston runs through the towers, and each of Delhi's three
+monuments stops the avenue it stands in. Pressed into a tower, `resolve` pushes
+28.7 units out along the shallowest axis.
+
+**And once in the live build, because "the towers stop you" is not "the camera
+stops".** Resolution is a push (§0.3), so a boosted flight aimed at the middle
+of Houston slides round the towers and comes out the other side having
+travelled 1,974 units of a possible 1,899 straight-line — which, read as
+distance, looks like no collision at all. The honest question is whether any
+frame *ended* inside something. Over **633 frames at 180 units a second**:
+**zero**, and the closest the camera came to a wall was **4.00** — its own
+radius, pressed against one and sliding. Down the street beside it, from the
+same start: 31.89.
+
+### What it cost the frame, and the answer is nothing or less than nothing
+
+One forced pose driven into both builds (§34's rule), both orders (§28's), the
+loop stopped, batches of 240 timed between two `onSubmittedWorkDone`:
+
+| pose | draws | Δ triangles | Δ ms at DPR 1 | Δ ms at DPR 1.5 |
+|---|---|---|---|---|
+| **Houston, down a street** | 60 → 60 | +3,000 | +0.022 / +0.001 | **−0.543 / −0.559** |
+| Houston, from 700 outside | 55 → 55 | +3,000 | +0.009 / +0.010 | +0.023 / −0.065 |
+| Delhi, down an avenue | 62 → 62 | +3,000 | −0.017 / −0.023 | −0.005 / −0.090 |
+| Delhi, from 900 outside | 60 → 60 | +3,000 | +0.007 / −0.007 | −0.008 / −0.038 |
+| the arrival | 47 → 47 | +3,000 | +0.014 / +0.002 | +0.102 / +0.011 |
+| Basis's settle (the offer) | 59 → 59 | +3,000 | −0.265 / +0.016 | −0.047 / −0.015 |
+
+**Draw calls do not move at any pose**, because a city is instances in a mesh
+that already existed. At DPR 1 the whole thing is inside the noise: the two
+orders disagree in sign at four of the nine poses.
+
+**And inside Houston at DPR 1.5 the city is worth half a millisecond, in the
+right direction** — 1.05 against the control's 1.61, reproduced in both orders.
+That is §26's water result again and it is the same argument: the sky dome runs
+two fractal noises per sky pixel, so an opaque surface covering the sky is a
+*negative* cost, and DPR 1.5 is where the frame is fill-bound. The build with
+250 more boxes in it renders the city's own street cheaper than the empty plain
+the control renders from the same pose.
+
+### The bound, measured against §24's flight tests
+
+`BOUND` 2,600 → **5,000**, and the cities are what make it load-bearing:
+Houston's centre stands **2,992** from the origin and Delhi's far rim reaches
+**2,814**. At 2,600 both are outside the soft edge and a reader flying to either
+is pushed home the whole way — a world with places in it that it will not let
+you reach.
+
+Nothing under it moved. 75 seconds of boosted flight, the site's own loop
+running, the start pose verified before the keys go down, **and the same three
+flights run on a §35 build in the same session** — because the rAF figures in
+that session are not comparable to §24's and the control is what says so:
+
+| flight | build | frames | rAF median / p99 | over 25ms | least clearance | reached | chunks | ms each (worst) |
+|---|---|---|---|---|---|---|---|---|
+| level boost at 190 (§23/§24's own) | **§36** | 3,936 | 18.9 / 26.2 | 119 | 64.56 | r = **5,480** | 942 | 3.68 (6.6) |
+| | §35 | 3,941 | 18.9 / 26.5 | 132 | 64.20 | r = 3,080 | 550 | 3.78 (6.4) |
+| terrain-hugging boost | **§36** | 3,956 | 18.8 / 27.4 | 165 | **6.000** | r = 5,077 | 1,058 | 3.91 (7.9) |
+| | §35 | 3,951 | 18.9 / 26.5 | 144 | *0.624* | r = 2,963 | 618 | 3.79 (7.0) |
+| boost toward Houston, level | **§36** | 3,925 | 18.9 / 26.6 | 136 | 142.26 | r = 5,480 | 865 | 3.71 (7.3) |
+| | §35 | 3,935 | 18.9 / 26.8 | 150 | 158.90 | r = 3,080 | 464 | 3.72 (6.6) |
+
+Read the pairs and not the rows. **`maxRadius` is the whole of the change**:
+3,080 against 5,480, which is the soft edge plus the band the reader settles
+in, and it is why the chunk count nearly doubles — at 2,600 the camera was
+turned back and re-flew ground it had already generated. Generation time is
+unchanged to a tenth of a millisecond, the pool never had more than three
+chunks pending, and the frames over 25ms are the *session*: the control has as
+many. Earlier the same day, on a quiet machine, the same §36 build flew the
+first two at **16.7 / 18.4 with zero frames over 25ms**, 947 chunks at 3.13
+(worst 6.3) and 558 at 2.96 — which is the row to read against §24's own 549
+at 4.65 and 632 at 5.06.
+
+**And the control's 0.624 is a defect this step found and fixed, in the
+instrument rather than in the clamp.** `view.pose().ground` exists for one
+purpose — making §24's guarantee checkable — and it returned `height()` alone
+where the floor has used `height() + swell()` since §34. So a terrain-hugging
+flight over the massif reads *under six units* on 210 frames, worst −2.99,
+with the clamp holding 6.000 the whole way; every dip is where the swell's
+deviation is negative, and the tell is that not one of them is near a mast
+(147 to 255 units from the cluster centre, `resolve` empty at all of them).
+One line in `camera.ts`, and the same flight on the fixed build reads exactly
+**6.000**.
+
+### The table, and §35's architecture question answered with real numbers
+
+§35 chose a static table and guessed that "§36's two cities and §37's ten
+landmarks at the same authoring density would be a few hundred more". Built:
+**294 boxes over 467 hash cells, 18,560 bytes.** That is the whole of what a
+residency scheme would be saving, and adding two cities to the table was one
+array spread. The query is *cheaper* in a city than at a station, because
+Homonoia's four overlapping boxes per mast resolve twice where a city's do not:
+
+| where | µs/call | boxes tested |
+|---|---|---|
+| every frame on the route | 0.059 | 0.2 of 294 |
+| flying round Houston | 0.102 | 3.4 |
+| down the middle of Houston | 0.123 | 4.6 |
+| **inside a Delhi building (resolving)** | **0.172** | 8.0 |
+| inside a Homonoia mast (resolving) | 0.967 | 4.0 |
+
+The route's closest approach to anything is **unchanged at 22.67**, and the
+per-scene set reproduces §34's and §35's numbers exactly — 92.23 / 22.67 /
+32.04 / 107.27 — with the cities more than 600 units off the route at their
+nearest.
+
+### Cost
+
+World chunk **+1,388 bytes** gzipped over a §35 build in the same session at
+the same gzip level: **222.48 KiB** (227,819 = 224,412 + 3,407 worker). The
+worker is **+115**, which is `paved()` — the first time since §28 that a step
+has put anything in it, and it is two circles rather than a city. CSS
+unchanged at 3,131. **Document JS is unchanged in content**: 17,380 bytes
+uncompressed either way, and the only bytes that differ are the eight-character
+chunk hash it names, which moves the gzipped total by 1 byte to 57,024.
+
+Nothing here touches document mode and nothing here is information: a city
+carries no writeup, no machine ID and no name, so hard rule 6 has nothing to
+be given. No new DOM node, so §35's eight axe-clean states stand unchanged.
+
 ### 37. The other ten landmarks
 The stadium, the datacenter hall, the dish array, the turbines, the torii
 gate, the court, the bridge, the lighthouse, the standing stones, the wreck

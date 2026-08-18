@@ -219,6 +219,32 @@ const RANGE_MASK_HIGH = 0.42;
    answers the election is `swell` below: a *deviation*, one narrow summit
    per node, zero-mean by construction, so a term changes which of the five
    summits is the high one and leaves the mountain they stand on alone. */
+/* ── Where the two cities stand (§36) ───────────────────────────────────
+   The sites live *here*, with the field, and they are the only thing about
+   a city this side of the render layer knows. The reason is the same one
+   that puts `WATER` in this file: the worker has to ask "is this ground
+   paved" — nothing grows in a street, and a conifer standing inside a tower
+   is the placement rule (§0.2) getting the answer right for a world that no
+   longer exists there — and a worker that imported `city.ts` would build
+   three copies of six hundred boxes to answer a question about two circles.
+
+   **Searched, not chosen** (§0.2's rule, and §22's and §29's). Houston is
+   the flattest ground of its own footprint that the frame at the end of the
+   route can see: relief 40.0 units over the 480 across it stands on, against
+   26.5 for the flattest patch of that size anywhere in the quadrant, and
+   1,105 units from Basis's settle, where the fog leaves it 0.23 of its light
+   and 28° off the axis — the right-hand edge of the one frame in which a
+   reader is handed a stick. Delhi is not sited for a skyline; it is 15 to 40
+   units tall and would be a texture at any distance, so it is sited for
+   *ground*: 90% of its plots pass the slope test, which is the highest in
+   the world for a footprint of 1,240, and it stands 861 units off the route
+   where somebody who has taken the stick will fly over it. They are 4,802
+   units apart, which is two places rather than one conurbation. */
+export const CITY_SITES = [
+  { slug: 'houston', x: -2600, z: 1480, reach: 380 },
+  { slug: 'delhi', x: 600, z: -2100, reach: 700 },
+] as const;
+
 export const CLUSTER_SITE = { x: -520, z: -900 };
 export const CLUSTER_NODES = 5;
 export const CLUSTER_RING = 120;

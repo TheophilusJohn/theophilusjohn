@@ -116,17 +116,28 @@ export type Solid = {
   ride: boolean;
 };
 
-export type Scene = {
+/** What `built.ts` draws and `solid.ts` reads: boxes, a proxy for them, and
+    somewhere to stand. A scene is one of these and §36's cities are the
+    other — which is the whole of what the two share, and it is why neither
+    of those two files knows there is more than one kind of built thing.
+
+    **A city's `pad` is zero.** A scene stands on a slab and measures every
+    part off its top; a city is two hundred buildings over 1,240 units, each
+    standing on the ground under it, so its parts carry world heights. */
+export type Built = {
   slug: string;
   site: { x: number; z: number };
   /** The top of the pad every part's `y` is measured from. */
   pad: number;
-  radius: number;
-  tall: number;
   parts: Part[];
-  signals: Signal[];
   /** §35. A handful of boxes beside the geometry that produced them. */
   proxy: Solid[];
+};
+
+export type Scene = Built & {
+  radius: number;
+  tall: number;
+  signals: Signal[];
 };
 
 /* The pad. A scene stands on a slab whose top is *above the highest ground

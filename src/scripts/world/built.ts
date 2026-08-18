@@ -1,12 +1,13 @@
 /* §0.4 / §34 — the four scenes, drawn.
 
-   `scenes.ts` is where they are and what they are made of; this is the half
-   that needs a GPU. It follows `stands.ts`'s construction exactly, and for
-   the same reason: **two draw calls for everything built in the world**, not
-   one per scene and not one per part. Four hundred and forty-one boxes and
-   fifty-one travelling signals go into two instanced meshes, and what makes
+   `scenes.ts` and `city.ts` are where they are and what they are made of;
+   this is the half that needs a GPU. It follows `stands.ts`'s construction
+   exactly, and for the same reason: **two draw calls for everything built in
+   the world**, not one per scene and not one per part. Every box in the
+   world and fifty-one travelling signals go into two instanced meshes, and what makes
    one box different from the next is six floats in its instance rather than
-   a second geometry.
+   a second geometry. Since §36 that is 425 boxes rather than 182: the two
+   cities are in the same mesh, for the same reason.
 
    ── What is animated, and where it is decided ──────────────────────────
    Nothing here decides anything. `consensus.ts` says who holds the term and
@@ -76,6 +77,7 @@ import {
 import type Node from 'three/src/nodes/core/Node.js';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import { bands } from './band';
+import { CITIES } from './city';
 import type { Cluster } from './consensus';
 import { fog } from './fog';
 import type { Palette } from './palette';
@@ -242,10 +244,19 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     geometry.setIndex(new BufferAttribute(new Uint16Array(idx), 1));
   }
 
-  /* Flattened out of `scenes.ts` once, at build. Every part of every scene
-     is in one buffer and nothing here is ever rewritten — what changes is
-     four uniforms and a thirty-entry table. */
-  const parts = SCENES.flatMap((s) => s.parts.map((part) => ({ scene: s, part })));
+  /* Flattened out of `scenes.ts` and `city.ts` once, at build. Every part of
+     every built thing in the world is in one buffer and nothing here is ever
+     rewritten — what changes is four uniforms and a thirty-entry table.
+
+     **§36's two cities go in this mesh rather than in one of their own**,
+     which is what holds the whole world at two draw calls. They cost nothing
+     the four scenes do not: a city is `kind 0` throughout, so the varying
+     below resolves to a constant zero for all of it and the only work an
+     instance does is the same box the stations are made of. What a city
+     brings is *fill* — a tower is 320 units of surface — and fill is paid
+     for where the camera is, which is why §36 measures inside one and
+     outside one rather than at three altitudes. */
+  const parts = [...SCENES, ...CITIES].flatMap((s) => s.parts.map((part) => ({ scene: s, part })));
   const N = parts.length;
   const aPos = new Float32Array(N * 3);
   const aSize = new Float32Array(N * 3);
@@ -360,7 +371,8 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
   const mesh = new Mesh(geometry, material);
   /* Instance positions are world coordinates and the geometry is a unit cube
      at the origin, so the bounding sphere describes nothing. Four hundred
-     boxes is 5,300 triangles — cheaper to submit than to bound. */
+     boxes is 5,100 triangles — cheaper to submit than to bound, and it is
+     still cheaper at §36's 425. */
   mesh.frustumCulled = false;
   mesh.matrixAutoUpdate = false;
 

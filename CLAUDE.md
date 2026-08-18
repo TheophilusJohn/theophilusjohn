@@ -27,6 +27,23 @@ cost. Document mode was finished and shipped first (steps 1–14) and stays
 finished — that is what makes the reversal survivable. Steps 21–38 build the
 world. See `docs/STEPS.md`.
 
+**Since §36 there are two cities in it, and they are the reason the world is
+ten kilometres across.** `city.ts` is the seventh module with no three and no
+DOM in it — it imports `height.ts` and `cover.ts`'s hash and nothing else —
+and it owns both, as 250 boxes in `built.ts`'s existing mesh: **no new draw
+call, and at DPR 1.5 flying down a Houston street is half a millisecond
+*cheaper* than the empty plain**, because an opaque tower over a sky pixel
+takes the dome's two fractal noises off it. The contrast between them is a
+plan as well as a skyline: Houston is a five-by-five grid with a hard edge on
+the flattest ground its footprint could find, and Delhi is a plot rule tested
+against slope and the water line, so the terrain draws its outline. Nothing
+grows in a street — `cover.ts`'s `paved()` is one disc per city read by the
+conifers, the stone and the ground cover alike, which is why `height.ts` and
+not `city.ts` carries the two centres: the worker has to know *where* a city
+is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
+**5,000**, and that is load-bearing rather than aspirational: Houston stands
+2,992 from the origin. Everything under it is where §24 measured it.
+
 **And the world is inhabited (SPEC §0.2–§0.4, after step 29).** Scroll is the
 route and free flight is what the last station unlocks; the four projects are
 *scenes* of the systems rather than structures; twelve landmarks and two
@@ -1088,6 +1105,34 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   empty rather than wrong. Size the block to the glyphs (7px here) and
   restrict it to the mask's covered pixels, which is also what keeps the
   route rail — `--leader` on `--void`, three pixels away — out of the sample.
+- **A number that exists to make a guarantee checkable has to be the number
+  the guarantee is made in.** `camera.ts`'s floor has included the swell since
+  §34 and `view.pose().ground` — which exists for no other purpose than
+  checking the floor — still returned `height()` alone, so a clearance taken
+  against it read **under six units on 210 frames** of a terrain-hugging
+  flight over the massif, worst −2.99, with the clamp holding exactly 6.000
+  the whole way. It looks like the guarantee failing, and every dip is a place
+  where the swell's deviation is negative. Fixed at §36; the tell was
+  `nearBuilt: false` at every one of them, 147 to 255 units from the cluster
+  centre, which is inside `SWELL_REACH` and nowhere near a mast.
+- **"The towers stop you" is not "the camera stops".** Resolution is a push
+  (§0.3), so a boosted flight straight at a city slides round it and comes
+  out the other side having travelled almost the full distance — which reads
+  as no collision at all. The honest instrument is whether any frame *ended*
+  inside something: 633 frames flown at Houston at 180 units/s, zero still
+  inside, closest approach exactly 4.00 — the camera's own radius, pressed
+  against a wall.
+- **A `flyTo` is an ease and any input cancels it**, so a harness that sets a
+  start pose and immediately starts holding a key measures a flight from
+  wherever the camera happened to be — 1,059 units from where it says, in the
+  case that found this. Wait for `view.easing()` to go false, and report the
+  pose the run actually started at.
+- **An opaque layer that covers the sky is a negative frame cost, and §26's
+  water is not the only case.** The sky dome runs two fractal noises per sky
+  pixel, so at DPR 1.5 — where the frame is fill-bound — flying down a street
+  in §36's Houston measured **1.05ms against the empty plain's 1.61**, in both
+  orders. The build with 250 more boxes in it renders that frame half a
+  millisecond faster than the one without them.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -1107,7 +1152,10 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §35: **55.69 KiB (57,023)** — **unchanged to the
+  1024px). Measured at §36: **55.69 KiB (57,024)** — **unchanged in content**,
+  17,380 bytes uncompressed either way, and the only bytes that differ are
+  the eight-character world-chunk hash the entry script names. Earlier, at
+  §35: **55.69 KiB (57,023)** — **unchanged to the
   byte** on §34, which is what a step that adds only world-mode code should
   do. Earlier, at §34: **55.69 KiB (57,023)**, which is **−1 byte** on
   a §33 build in the same session at the same gzip level — nothing in this
@@ -1120,7 +1168,13 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §35: **221.12 KiB** (223,139 + 3,292 worker), up
+  own merits. Measured at §36: **222.48 KiB** (224,412 + 3,407 worker), up
+  **1,388** on a §35 build in the same session at the same gzip level — two
+  cities, 250 boxes, the `paved()` disc and the bound. **The worker is +115**
+  and it is the first thing since §28 to land in one: `cover.ts` asks whether
+  ground is paved and the worker bakes that into the tint, which is why
+  `height.ts` and not `city.ts` carries the two centres. CSS unchanged at
+  3,131. Earlier, at §35: **221.12 KiB** (223,139 + 3,292 worker), up
   **1,575** on §34 — the proxies, the hash, the resolution and the stick.
   **The worker is byte-identical**: nothing in a worker calls `resolve`, so
   `solid.ts` is tree-shaken out of it entirely, the way `swell` and
@@ -1155,7 +1209,13 @@ budgeted apart and a reader never pays both.
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
 - **8ms/frame at cruise.** §0.2's block (steps 25–28 and 30) is finished and
-  §34 is the first thing since to spend any of it. Measured at §34 on built
+  §34 is the first thing since to spend any of it. **§36's two cities spend
+  none**: one forced pose into both builds, both orders, nine poses — draw
+  calls **identical at every one** (the cities are instances in a mesh that
+  already existed), triangles +3,000, and the DPR 1 delta is −0.023 to +0.061
+  with the two orders disagreeing in sign at four of the nine. At DPR 1.5,
+  **flying down a Houston street is 1.05 against the control's 1.61** — the
+  city is cheaper than the sky it hides. Earlier: Measured at §34 on built
   code, **one forced pose driven into both builds** so the two frames contain
   the same ground, trees and sky — the settle pitches moved this step, so a
   jump-to-scroll A/B is not like for like — both orders, DPR 1: Enargeia's
@@ -1198,7 +1258,9 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. Measured at §30 on built code against a §28 build,
+- Under 100 draw calls. **§36 adds none at all** — 47 to 62 over nine poses,
+  identical between a §36 build and a §35 one, because everything built in
+  the world is still two draw calls. Measured at §30 on built code against a §28 build,
   same harness, same session: **58 / 45 / 24** at 70, 190 and 520 units of
   altitude against §28's 56 / 44 / 23 — the cloud forms at every altitude and
   the motes only at 70 — at **0.925 / 0.831 / 0.632 ms/frame** against
@@ -1270,7 +1332,11 @@ budgeted apart and a reader never pays both.
   §23's 1,772 chunks was an *unbounded* 13.5km flight and cannot be
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every
-  flight that tries to break it, and the clamp costs 1.8µs a frame. The route
+  flight that tries to break it, and the clamp costs 1.8µs a frame. **§36
+  re-ran §24's flights against the 5,000 bound and it still is**; a collision
+  query in a city is 0.05 to 0.17µs against a mast's 0.98, and 633 frames
+  flown straight at Houston at boost ended **zero** of them inside anything,
+  with a closest approach of exactly 4.00 — the camera's own radius. The route
   never reaches it: its least clearance is **13.00 units** by construction —
   at Enargeia's settle, and unchanged by §32's extra keyframe. **As flown it
   is 9.07**, at scroll 2,275 on the approach to Enargeia, swept every scroll

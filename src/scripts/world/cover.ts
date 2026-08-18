@@ -26,7 +26,7 @@
    low-frequency noise for clumping, because uniform scatter is the tell that
    something was placed by a computer. */
 
-import { WATER, height, landform, noise2, rangeMask, uplift } from './height';
+import { CITY_SITES, WATER, height, landform, noise2, rangeMask, uplift } from './height';
 
 /* ── Altitude ───────────────────────────────────────────────────────────
    The field runs -24.6 to 126.2 inside the bounded world with a mean of 11.2
@@ -87,6 +87,34 @@ export const ramp = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
+/* ── Paved ground (§36) ─────────────────────────────────────────────────
+   Nothing grows in a street. The two cities are the first thing in this
+   world that *replaces* the ground rather than standing on it, and the
+   failure without this is not subtle: a 16-unit scatter cell inside a tight
+   grid of towers puts conifers through the walls, and a blade disc under a
+   downtown reads as a ruin.
+
+   It is one disc per city with a ramp, exactly as §34's massif is, and it is
+   here rather than in `scatter.ts` because §36 needs it on *both* surfaces —
+   the conifers and the stone that `scatter.ts` places, and the ground cover
+   the worker bakes as a tint and `blades.ts` stands instances in. One
+   expression, three readers, and the worker never has to know what a city is
+   made of: `height.ts` carries the two centres for exactly that reason.
+
+   The ramp is a third of the reach wide, so the city's own ground is bare,
+   the country around it is not, and there is no edge between them to see. */
+const PAVED_OUT = 1.34;
+
+export function paved(x: number, z: number): number {
+  let f = 1;
+  for (const c of CITY_SITES) {
+    const d = Math.hypot(x - c.x, z - c.z);
+    if (d < c.reach * PAVED_OUT) f *= ramp(c.reach, c.reach * PAVED_OUT, d);
+    if (f <= 0) return 0;
+  }
+  return f;
+}
+
 /* How much cover the ground at (x, z) supports, 0..1, given what the caller
    already knows about the field there. `h` is the surface height, `slope` the
    magnitude of its gradient, `mask` the range mask — the two ends of §27 pass
@@ -113,7 +141,7 @@ export function coverAt(h: number, slope: number, mask: number, x: number, z: nu
     (1 - PATCH_FLOOR) *
       (noise2((x + PATCH_OFF_X) / PATCH, (z + PATCH_OFF_Z) / PATCH) * 0.5 + 0.5);
 
-  return Math.min(d * clump * patch, 1);
+  return Math.min(d * clump * patch, 1) * paved(x, z);
 }
 
 /* The same density, sampling the field itself: `blades.ts` uses this because

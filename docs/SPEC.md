@@ -522,8 +522,8 @@ flies to one expecting content.
 
 | | |
 |---|---|
-| **Houston** | A tight cluster of towers on flat ground that stops abruptly. Visitable, below |
-| **Delhi** | Low, dense, spread wide, with an arch and a fluted tower above it. Visitable, below |
+| **Houston** | A tight cluster of towers on flat ground that stops abruptly. Visitable, below. **Built §36** |
+| **Delhi** | Low, dense, spread wide, with an arch and a tower above it. Visitable, below. **Built §36** — and the tower is not fluted, which is §34's aliasing lesson rather than a shortcut: ribs at the pitch a flute needs put two edges in one pixel from anywhere outside the city |
 | **The stadium** | A bowl with floodlights, lit, empty, and a figure on a plinth outside it. No crest and no wordmark — the silhouette does the work |
 | **A datacenter hall** | Long, low, lit racks visible through it. The only landmark that is literally the subject of the site |
 | **A dish array** | Six or eight radio telescopes on a hillside, all pointed the same way. Machines listening and agreeing on what they heard |
@@ -559,6 +559,59 @@ Delhi inverts it — mostly **15–40 units**, dense, spread over four times the
 footprint, with two or three monuments reaching 120. The contrast between
 the two skylines is the point of having both.
 
+**Built at §36, and the contrast turned out to be a plan as well as a
+skyline.** Two grids of boxes at two scales are one idea drawn twice, so the
+*rule that decides where a building stands* differs too — and it is the
+ground that makes them differ:
+
+- **Houston is a grid with a hard edge.** Twenty-one plots, five by five with
+  the corners cut, on a 128-unit pitch that leaves streets 65 to 77 across,
+  and then nothing at all: no thinning, no outskirts. Twenty towers, three
+  boxes each — a shaft, a setback at 0.62 of the height and a crown at 0.86 —
+  186 to 320 units tall, tallest in the middle. It asks the terrain one
+  question only, which is how far to sink each footing.
+- **Delhi is a field that follows the ground.** A 54-unit plot grid over a
+  disc of 620 with every fifth row and column left open, thinned toward the
+  rim, and each plot tested for slope and for the water line. 179 boxes — 162
+  buildings and three monuments: an arch you fly through, a tapering tower
+  with balcony rings, and a stepped tank. The city's *scale* is the thinning's
+  and its **shape** is the ground's: seven plots refused for slope and nine at
+  the water line of the ones that reach those tests, sixteen and twenty-one
+  over the whole disc, which is a north-west flank cut where the basin turns
+  over and a lake bitten out of the south. Neither is authored.
+
+That difference is forced rather than chosen. The flattest 1,240-across patch
+of ground **anywhere in this world has 71 units of relief**, against buildings
+15 to 40 tall: a low city laid out on a grid there is a blanket over a hill,
+and the only honest way to spread one over four times Houston's footprint is
+to let the terrain say where it goes.
+
+**Sited by search, and Houston's search has a second objective.** It stands
+on the flattest ground of its own footprint that the frame at the *end of the
+route* can see — relief 40.0 units over the 480 across it stands on, against
+26.5 for the flattest patch of that size anywhere in the quadrant — because
+the offer of the stick (§0.3) is made at Basis's settle and a reader handed a
+control with nothing in frame to point it at has been handed nothing.
+Measured off the built geometry rather than off the search's estimate: from
+that pose the city is **842 to 1,377 units away**, the fog leaves it 0.10 to
+0.42 of its light, and it runs from **63% of the frame's width off the right
+edge**, between 31% and 59% of its height. So it is a hazed skyline behind
+and above Basis's own graph — which stands at 67% of the width and is eight
+times nearer — and clear of the reading column on the left. Delhi
+is 15 to 40 units tall and would be a texture at any distance, so it is sited
+for *ground* instead: 90% of its plots pass the slope test, the highest in
+the world for a footprint that size. They stand 4,802 apart, which is two
+places rather than one conurbation.
+
+**Nothing grows in a street.** The two cities are the first thing in this
+world that replaces the ground rather than standing on it, so `cover.ts`
+carries a `paved()` disc per city and both ends read it — the conifers and
+stone `scatter.ts` places, and the cover the worker bakes as a tint and
+`blades.ts` stands blades in. It is why `height.ts` carries the two city
+centres: the worker has to be able to ask where a city is without importing
+what one is made of. Measured, it costs the generator nothing (1.63 to 1.66
+ms a level-0 chunk either way, interleaved over three runs).
+
 ##### And the world has to grow
 
 The bound is 2,600 units (§24), which held four stations and a massif. Two
@@ -568,6 +621,13 @@ being a theme park.
 **Raise it to 5,000** — a 10km world, 220 seconds across at cruise and 55 at
 boost. The ceiling and the recall stay as measured; the fog, the chunk reach
 and the star sphere are all camera-relative and do not care.
+
+**Done at §36, and it is the cities that make it load-bearing.** Houston
+stands 2,992 units from the origin and Delhi's far rim reaches 2,814: at
+2,600 both are outside the soft edge, and a reader flying to either one is
+being pushed home the whole way — a world with places in it that it will not
+let you reach. Measured against §24's own flight tests, 75 seconds of boosted
+flight each: nothing under the bound moved.
 
 ### 0.3 Movement
 

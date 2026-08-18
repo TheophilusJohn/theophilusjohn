@@ -139,6 +139,17 @@ const CUSHION = 24;
    shipped field's own answer. Mountains standing in open country. At cruise the soft edge is
    58 seconds out and the far side is 116; at boost, 14 and 29.
 
+   **Raised to 5,000 at §36, and it is the cities that raise it** (§0.2).
+   Houston stands 2,992 units from the origin and Delhi's far rim reaches
+   2,814: at 2,600 both are outside the soft edge and a reader flying to
+   either one is being pushed home the whole way, which is a world with
+   places in it that it will not let you reach. Ten kilometres across, 220
+   seconds at cruise and 55 at boost. Nothing under it moves — the ceiling
+   and the recall are as measured, and the fog, the chunk reach and the star
+   sphere are all camera-relative and do not know how big the world is. The
+   one thing that does is the *time* the far edge takes to reach, and that is
+   the whole of what a bigger world buys.
+
    **The ceiling is the cloud deck**, and that is a measurement rather than
    a taste. `sky.ts` draws the deck only on rays that reach it from below,
    so at 620 the sky loses its clouds in every direction at once — and the
@@ -155,7 +166,7 @@ const CUSHION = 24;
    and it is also why the limits are not where the reader stops: a climb
    settles where the input and the return cancel, which is 460 at cruise
    and 520 at boost. */
-const BOUND = 2600;
+const BOUND = 5000;
 const BOUND_BAND = 600;
 const CEILING = 360;
 const CEILING_BAND = 200;
@@ -538,12 +549,20 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     },
     flying: () => flying,
     /** Nothing in the site reads this — it is what a harness measures a
-        flight with, and `ground` is what makes the clamp checkable. */
+        flight with, and `ground` is what makes the clamp checkable.
+
+        **It is `ground()` and not `height()`, since §36.** The floor has
+        included the swell since §34 and this did not, so a clearance taken
+        against it read *under six units* anywhere the deviation is negative
+        — 210 frames of a terrain-hugging flight over the massif, worst
+        −2.99, with the clamp holding 6.000 the whole way. A number that
+        exists to make a guarantee checkable has to be the number the
+        guarantee is made in. */
     pose: () => ({
       x: position.x, y: position.y, z: position.z,
       yaw: yaw / DEG, pitch: pitch / DEG,
       speed: velocity.length(),
-      ground: height(position.x, position.z),
+      ground: ground(position.x, position.z),
     }),
   };
 }
