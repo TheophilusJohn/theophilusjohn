@@ -82,7 +82,9 @@ text must not lag. Both are exempt on a jump, which is §31's rule one level
 up.
 
 **Since §34 there is something standing at each of the four sites, and one
-of them is an election.** `scenes.ts` is the fifth module with no three and
+of them is an election.** (The four scenes are **182 parts**, not the 441
+§34's own note recorded: its aliasing fix took Enargeia from 350 cells to
+90 and the number outlived it. 96 / 20 / 45 / 21, counted in Node at §35.) `scenes.ts` is the fifth module with no three and
 no DOM in it — it imports `height.ts` and nothing else — and it owns the four
 **sites** as well as the four scenes, because a scene is a thing in the world
 and `route.ts` is a flight past it. Scale is **enormous** (§8's last open
@@ -109,6 +111,30 @@ deviation is carried on the main thread instead — a vertex term on the
 terrain with its own analytic normal, a rigid lift on the masts, and a JS
 term on §24's floor. Measured: 38 units between holding the term and not,
 over 2.7 seconds, and chunk generation unchanged.
+
+**Since §35 everything built is solid, and the stick is a button.**
+`solid.ts` is the sixth module with no three and no DOM in it: 48 authored
+boxes in a spatial hash, a sphere against an oriented box, resolved by
+pushing out along the shallowest axis with §24's floor holding the veto —
+ground and architecture are two constraints and both hold. It is a **static
+table**, decided against the two residency schemes on measurement rather
+than taste: the whole world is 2,376 bytes, and a scheme that saves two
+kilobytes costs a second object lifetime to reason about. A proxy is
+**under-approximate and authored**, and "inside" means inside the volume a
+four-unit sphere can occupy rather than inside the drawn outline — every gap
+in these four scenes is narrower than the sphere is wide, so a box spanning
+one is exact. Basis's six struts are deliberately **not** in it. Measured:
+zero reachable cells inside anything carrying a proxy, over 21.5M lattice
+cells; the route's closest approach is **22.67 units** to a proxy and to a
+drawn box alike; a query is **0.061µs a frame on the route** and 0.98 at its
+worst, against the floor clamp's 1.8. `stick.ts` is the other half — `F` is
+gone, the offer is a `<button>` at the opposite end of `.escape`'s edge with
+the rail between them, it ramps in over 300 units at the end of the last
+dwell, and `tj:flight` persists the **unlock** and not the mode, so a
+returning visitor opens at the arrival with the offer up rather than in free
+flight over an empty ridge. A wheel from inside free flight rejoins the
+route at the nearest station — the wheel and not every input, because the
+arrows are movement and a touch drag is the look control.
 
 **And the arrival frame carries the name** (§0.3's 0% row, finally owned by a
 step). Not a clone of the document's hero — that is `--t-hero` at 18vw and
@@ -1017,6 +1043,51 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   its own shading mixed away under it, which flattened it into a silhouette.
   Five identical masts differing by one lit block is what an election looks
   like from the air.
+- **An instance's yaw turns the box about its own centre and does not move
+  it.** `built.ts` writes an instance position as `site + part.(x, y, z)`
+  flat and hands the shader `cos/sin` separately, so a second consumer of
+  the same authoring that *also* rotates the offset puts the box somewhere
+  else: §35's proxies had sixteen of forty-eight displaced, worst **37.8
+  units** at Basis's outermost module against a four-unit camera radius —
+  a proxy for empty air beside a module with nothing on it. It is invisible
+  in every rendered frame, because the thing that is wrong is the thing that
+  is not drawn. The cross-check that catches it is cheap and exact: where a
+  proxy *is* the geometry, the closest approach to a proxy and to a drawn
+  box have to be the same number.
+- **"Cannot get inside it" is a flood fill, not a set of probe points.**
+  Fill the free space around a scene from outside on a lattice, then ask of
+  every cell it *reaches* whether it is inside the drawn geometry — the two
+  failure directions are not symmetric, and only one is safe. A lattice too
+  coarse to resolve a passage under-reports reachability, which hides a
+  hole; one that jumps a wall over-reports, which merely sends you looking.
+  Every obstacle is inflated by the sphere's radius before the test, so the
+  thinnest thing in §35's world is 9.4 units of blocked space against a
+  2-unit step — a wall cannot be jumped, and the step is what decides
+  whether a gap is found.
+- **A spatial hash's distance is readable without exporting one.** A query
+  that answers "is anything within r" answers "how far is the nearest
+  thing" under bisection on r, so a harness gets an exact distance out of
+  the shipped function instead of re-deriving the table it walks. 44
+  bisections over 2.8M poses cost five seconds.
+- **The tab the browser tools drive is `document.hidden` between calls**,
+  so rAF stops and anything the render loop drives — a route position, a
+  panel, a `data-ready` — silently never advances. Wheel events dispatched
+  into it still accumulate, so the symptom is a page that has clearly
+  received the input and not acted on it. A `computer` screenshot
+  foregrounds the tab; a `javascript_tool` call does not. Drive state
+  through the module's own functions rather than waiting for a frame.
+- **A closure's state outlives the `localStorage` key that seeded it.**
+  Clearing `tj:flight` and re-testing the unlock in the same page measures
+  a module whose `unlocked` and `latch` are still set from the last run, and
+  it reports the *end* state for every step of the ramp. Reload between
+  runs; a three-state preference has three states to reach and only one of
+  them is the one already in memory.
+- **§17's 12×12 block does not fit inside a 10px mono label at all.** §35's
+  stick is 240 covered pixels in a 108×7 box, so a 12×12 window anchored
+  inside the glyph box has no valid position and the measurement comes back
+  empty rather than wrong. Size the block to the glyphs (7px here) and
+  restrict it to the mask's covered pixels, which is also what keeps the
+  route rail — `--leader` on `--void`, three pixels away — out of the sample.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -1036,7 +1107,9 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §34: **55.69 KiB (57,023)**, which is **−1 byte** on
+  1024px). Measured at §35: **55.69 KiB (57,023)** — **unchanged to the
+  byte** on §34, which is what a step that adds only world-mode code should
+  do. Earlier, at §34: **55.69 KiB (57,023)**, which is **−1 byte** on
   a §33 build in the same session at the same gzip level — nothing in this
   step lands in document mode. §33: 55.69 KiB (57,024). Earlier, at §32: **55.18 KiB (56,507 gzipped)**, up 38 bytes on a
   §31 build in the same session at the same gzip level — the address
@@ -1047,7 +1120,12 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §34: **219.59 KiB** (221,564 + 3,292 worker), up
+  own merits. Measured at §35: **221.12 KiB** (223,139 + 3,292 worker), up
+  **1,575** on §34 — the proxies, the hash, the resolution and the stick.
+  **The worker is byte-identical**: nothing in a worker calls `resolve`, so
+  `solid.ts` is tree-shaken out of it entirely, the way `swell` and
+  `setShares` already were. CSS 3,058 → **3,113** for the `.stick` block.
+  Earlier, at §34: **219.59 KiB** (221,564 + 3,292 worker), up
   **4,303** on a §33 build in the same session at the same gzip level — four
   scenes, the election, the swell and the arrival, and the largest
   single-step addition to the chunk so far (§28's conifers were 3,743).
@@ -1202,7 +1280,14 @@ budgeted apart and a reader never pays both.
   §34 adds a second thing the route must clear and does: closest approach of
   the flown path to any box of any scene is **22.7 units** (Homonoia's
   climb-out, past a mast), then 32.0, 92.2 and 107.3, against §35's four-unit
-  camera radius
+  camera radius. **§35 re-measured it against the proxies and got the same
+  four numbers** — 22.67 / 32.04 / 92.23 / 107.27, swept every scroll unit at
+  five arrival clocks over thirty-three cluster states — which is the check
+  that Homonoia's proxy is its geometry, and it is how §35's placement bug
+  was caught. The minimum is at the *baked* distribution: the swell only ever
+  lifts the masts further from the path. A collision query costs **0.061µs a
+  frame on the route**, 0.199 flying around Homonoia and **0.980 pressed into
+  a mast** with both passes resolving, against the altitude clamp's 1.8
 - **The route is flown two ways** (§31), because they measure different
   things. A reader (a 600px burst, then 700ms) never sees the speed cap bind
   at the end of a gesture — 283 units/s median, and the camera is where the

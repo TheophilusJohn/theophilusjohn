@@ -17,16 +17,18 @@
    What is here is the renderer, a camera you can fly, and — since §22 — a
    landscape under it with — since §23 — a sky over it and a light on it, and
    — since §26 — water in the low ground, and — since §34 — four scenes
-   standing in it with an election running in one of them. Almost none of any
+   standing in it with an election running in one of them — and, since §35,
+   solid, with the stick on offer at the end of the route. Almost none of any
    of it is in this file: `height.ts` is the field, `chunk.ts` samples it and bakes what it
    shadows, `grid.ts` is the vertex layout both ends share, `terrain.ts`
    decides which squares of ground exist and how they band, `water.ts` is the
    one plane at the field's water level, `sky.ts` is the gradient and the
-   cloud deck and `sun.ts` is the one direction all of it agrees on. Still
+   cloud deck, `sun.ts` is the one direction all of it agrees on and
+   `solid.ts` is the one answer to what the camera may not enter. Still
    ahead:
 
-   - §35 makes what §34 built *solid*, and offers the stick at the end of
-     the route
+   - §36 and §37 put two cities and ten landmarks in it, and each of them
+     arrives carrying a proxy `solid.ts` already knows how to read
 
    The scene is no longer a function of scroll position, and that rule goes
    with it. What replaces it is a stricter one in the same spirit: the pose
@@ -50,6 +52,7 @@ import { buildSky } from './sky';
 import { buildStands } from './stands';
 import { buildStation, entryAt, type Where } from './station';
 import { buildStars } from './stars';
+import { buildStick } from './stick';
 import { setSwell } from './swell';
 import { buildTerrain } from './terrain';
 import { buildWater } from './water';
@@ -197,10 +200,11 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
 
   /* ── What is built (§34) ─────────────────────────────────────────────
      The four scenes, and it is two draw calls for all of them: one instanced
-     box mesh for four hundred and forty-one parts and one additive layer for
-     the fifty-one things travelling between them. `scenes.ts` is where they
-     are, `consensus.ts` is what the cluster is doing, and neither of those
-     files has seen a GPU.
+     box mesh for a hundred and eighty-two parts and one additive layer for
+     the fifty-one things travelling between them. (441 until §34's own
+     aliasing fix took Enargeia from 350 cells to 90; the comment outlived
+     it.) `scenes.ts` is where they are, `consensus.ts` is what the cluster
+     is doing, and neither of those files has seen a GPU.
 
      Added after the motes and before the loop, so the boxes are opaque and
      drawn with the world while the signals — additive, depth-tested, not
@@ -217,7 +221,7 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
      height field. What arrives here is a pose, and it goes into the camera
      the same way the reader's own flying does — through camera.ts, which is
      still the only thing that may move the view. */
-  const ride = buildScroll(canvas);
+  const ride = buildScroll(canvas, () => take(false));
 
   /* ── The station's content (§32) ──────────────────────────────────────
      The writeup is the document's own HTML, cloned, and it arrives over
@@ -235,6 +239,26 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
      stations sit on it, and which one you are at. It reports and does
      nothing else. */
   const rail = buildRail();
+
+  /* ── The stick (§35) ─────────────────────────────────────────────────
+     The offer at the end of the route, and the way back from inside it.
+     One function does both directions, because they are one decision seen
+     twice — the button calls it, a wheel in free flight calls it, and there
+     is no third caller. Handing over zeroes the camera's velocity;
+     rejoining is the route picked up at the station **nearest to wherever
+     the reader flew to**, eased rather than cut, which is `flyTo` doing the
+     job §24 built it for. */
+  function take(on: boolean) {
+    if (on === view.flying()) return;
+    view.stick(on);
+    ride.hold(on);
+    canvas.toggleAttribute('data-flying', on);
+    if (on) return;
+    const pose = view.pose();
+    ride.jump(nearest(pose.x, pose.z));
+    view.flyTo(poseAt(ride.at(), 0));
+  }
+  const stick = buildStick(() => take(!view.flying()));
 
   ride.jump(entryAt(arrived));
 
@@ -281,8 +305,10 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
     /* Off the route there is no station: with the stick out the reader is
        somewhere the route has no position for, and a writeup hanging over
        a free flight is a claim about where they are that is not true. */
-    place.update(view.flying() ? null : ride.at(), dt);
-    rail.update(view.flying() ? null : ride.at());
+    const on = view.flying() ? null : ride.at();
+    place.update(on, dt);
+    rail.update(on);
+    stick.update(on);
     // After the camera and before the render: which squares of ground exist
     // is a function of where the camera is *this* frame, and asking a frame
     // late is a hole in the ground on every LOD boundary crossed at speed.
@@ -342,25 +368,13 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
       return;
     }
 
-    /* **Interim, and §35 replaces it with the unlock.** The route is the
-       default now (§0.3) and free flight is what the last station offers —
-       a visible control, not a hidden key. Until that exists the stick is
-       on `F`, which is where §29's probe left it.
-
-       Coming back is the shape §35 needs: the route is picked up at the
-       station nearest to wherever the reader flew to, and the camera eases
-       to that pose rather than cutting to it. */
-    if (event.code !== 'KeyF') return;
-    const flying = !view.flying();
-    view.stick(flying);
-    ride.hold(flying);
-    canvas.toggleAttribute('data-flying', flying);
-    if (!flying) {
-      const pose = view.pose();
-      ride.jump(nearest(pose.x, pose.z));
-      view.flyTo(poseAt(ride.at(), 0));
-    }
-    event.preventDefault();
+    /* **`F` is gone at §35.** The stick was on a key here from §29 as an
+       interim, and §0.3 is explicit that free flight is offered by a visible
+       control rather than a hidden one — `stick.ts` is that control, it is a
+       real `<button>`, and a keyboard reader reaches it with Tab. A second
+       undocumented binding for the same thing would be one more mode nobody
+       can see the edges of, which is the argument that kept pointer lock out
+       of §24. */
   });
 
   /* One pass over the quadtree before the first frame, so the opening pose
@@ -418,17 +432,19 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   holdScroll();
 
   document.documentElement.dataset.world = '';
-  document.body.append(place.root, rail.root, canvas);
+  document.body.append(place.root, rail.root, stick.root, canvas);
   /* Attached before it is measured: `station.ts` reads the column's own
      height to decide how much of it the dwell has to carry, and a detached
      subtree measures zero. A deep link arrives at a settle, so this is the
      load that has a writeup open in its first frame. */
   place.update(ride.at(), 0);
   rail.update(ride.at());
+  stick.update(ride.at());
   requestAnimationFrame(() => {
     canvas.setAttribute('data-ready', '');
     place.root.setAttribute('data-ready', '');
     rail.root.setAttribute('data-ready', '');
+    stick.root.setAttribute('data-ready', '');
 
     /* And the curtain comes down, over a world that is already complete
        behind it — the canvas does not fade in under `data-mode="world"`,
@@ -449,7 +465,7 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   run();
 
   return {
-    renderer, scene, camera, view, ride, place, rail,
+    renderer, scene, camera, view, ride, place, rail, stick, take,
     sky, stars, terrain, water, blades, stands, clouds, motes, built,
     /* The loop, so it can be stopped from outside. The visibility handler
        above is one caller; a frame-cost harness is the other, and it is not

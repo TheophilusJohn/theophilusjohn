@@ -22,10 +22,18 @@
    thread — the same function the workers sample and `terrain.ts` already
    calls once a frame for its LOD. The bounds are a radius and a ceiling.
    The way back is a recall to the opening pose, because the guided path
-   §0.3 would rather hand this to does not exist until §35. */
+   §0.3 would rather hand this to does not exist until §35.
+
+   **§35 adds the second constraint and it is the same shape as the first.**
+   `solid.ts` answers "is the camera inside anything built" and `constrain()`
+   below applies both: the floor first, then the push out, and the floor has
+   the last word where they disagree. Ground and architecture are two
+   constraints and both hold — a resolution may never put the camera under
+   the terrain, which is what `constrain` hands `solid.ts` the floor for. */
 
 import { PerspectiveCamera, Vector3 } from 'three/webgpu';
 import { height, swell } from './height';
+import { RADIUS, resolve } from './solid';
 
 const DEG = Math.PI / 180;
 
@@ -249,14 +257,14 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     position.set(pose.x, pose.y, pose.z);
     yaw = pose.yaw * DEG;
     pitch = pose.pitch * DEG;
-    floor();
+    constrain();
     apply();
   }
 
   function update(dt: number) {
     if (recall) {
       flyHome(dt);
-      floor();
+      constrain();
       apply();
       return;
     }
@@ -286,7 +294,7 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     velocity.addScaledVector(wanted.sub(velocity), k);
     position.addScaledVector(velocity, dt);
 
-    floor();
+    constrain();
     apply();
   }
 
@@ -332,7 +340,10 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     wanted.y *= Math.max(gap, 0) / CUSHION;
   }
 
-  function floor() {
+  /** Every hard constraint on the pose, in the order they are guaranteed:
+      the ground, the bounds, then what is built. Whoever is holding the
+      camera — the route, the reader, an eased move — goes through here. */
+  function constrain() {
     const y = floorAt();
     if (position.y < y) {
       position.y = y;
@@ -347,6 +358,35 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
       position.z *= max / r;
     }
     position.y = Math.min(position.y, Math.max(CEILING + CEILING_BAND, y));
+
+    /* ── What is built (§35) ───────────────────────────────────────────
+       A push rather than a stop, which is the whole difference between
+       collision that reads as a wall and collision that reads as sliding
+       along one: only the component of the velocity going *into* the
+       surface is taken away, so a camera flown at a mast at an angle keeps
+       the part of its speed that is along it.
+
+       Given the floor, so a box can never resolve the camera into the
+       ground. It runs on the route as well as under the stick, for the
+       reason the floor does: a guarantee that only holds when somebody is
+       flying is not one. Measured, the route never reaches it — its closest
+       approach to any proxy is **22.67 units** against a radius of four,
+       swept every scroll unit at five arrival clocks over thirty-three
+       cluster states. That is the same number §34 measured to the nearest
+       drawn *box*, which is the check that Homonoia's proxy is its
+       geometry. */
+    const out = resolve(position.x, position.y, position.z, RADIUS, y);
+    if (!out) return;
+    position.x += out.x;
+    position.y += out.y;
+    position.z += out.z;
+    const len = Math.hypot(out.x, out.y, out.z);
+    if (len === 0) return;
+    const into = (velocity.x * out.x + velocity.y * out.y + velocity.z * out.z) / len;
+    if (into >= 0) return;
+    velocity.x -= (out.x / len) * into;
+    velocity.y -= (out.y / len) * into;
+    velocity.z -= (out.z / len) * into;
   }
 
   /* ── The recall ──────────────────────────────────────────────────────
@@ -473,7 +513,7 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   // The opening pose is composed against the field (§22) and stands 196
   // units over it, but nothing guarantees that of a pose in general and the
   // floor is the thing that has to be true on the first frame as well.
-  floor();
+  constrain();
   apply();
 
   return {
@@ -485,10 +525,10 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
     /** True while an eased move is running, which is the one time neither
         the route nor the reader is holding the camera. */
     easing: () => recall !== null,
-    /** §35's unlock, on a key until then. Handing the stick over zeroes the
-        velocity: the route's own delta can be a thousand units a second on a
-        flick, and inheriting that would fling the reader across the world on
-        the frame they took control. */
+    /** §35's unlock, driven by `stick.ts`'s control. Handing the stick over
+        zeroes the velocity: the route's own delta can be a thousand units a
+        second on a flick, and inheriting that would fling the reader across
+        the world on the frame they took control. */
     stick(on: boolean) {
       flying = on;
       velocity.set(0, 0, 0);

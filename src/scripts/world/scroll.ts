@@ -195,7 +195,17 @@ function fastest(from: number, step: number): number {
   return rate;
 }
 
-export function buildScroll(target: HTMLElement) {
+/**
+ * @param resume  What to do with a wheel event that arrives while §35 has
+ *   the stick. §0.3: the route stays available from inside free flight and
+ *   scrolling picks it back up at the nearest station. It is the **wheel**
+ *   and not every input: the arrows and space are camera.ts's movement keys
+ *   while flying, and a touch drag is its look control, so either of those
+ *   would resume the route out from under a reader who was steering with it.
+ *   A wheel means nothing at all in free flight, which is what makes it the
+ *   unambiguous one.
+ */
+export function buildScroll(target: HTMLElement, resume: () => void = () => {}) {
   let want = 0;
   let at = 0;
   let arrive = 0;
@@ -268,6 +278,9 @@ export function buildScroll(target: HTMLElement) {
      non-passive wheel listener on the window is a cost paid on every event
      for a preventDefault that would do nothing. */
   addEventListener('wheel', (event) => {
+    // The route is not live under the stick, and a wheel there is the reader
+    // asking for it back rather than an event to drop (§35).
+    if (!live) { resume(); return; }
     const scale = event.deltaMode === 1 ? LINE : event.deltaMode === 2 ? innerHeight : 1;
     move(event.deltaY * scale);
   }, { passive: true });
@@ -394,7 +407,7 @@ export function buildScroll(target: HTMLElement) {
     update,
     jump,
     /** §35 hands the stick over; while it holds one, the gesture is not the
-        route's any more. */
+        route's any more — except for the wheel, which asks for it back. */
     hold(on: boolean) { live = !on; },
     /** How much of a station's dwell its column actually occupies, in
         scroll units — the one thing the friction needs and this module

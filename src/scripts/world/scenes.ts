@@ -94,6 +94,28 @@ export type Signal = {
   size: number;
 };
 
+/** One box of a scene's **collision proxy** (§35), in the same site-local
+    frame `Part` is in. `ride` is whether it moves with the swell — true only
+    for Homonoia's masts, which stand on summits that rise with the term, and
+    it is taken at the box's own centre because every box of a node shares
+    that node's (x, z), exactly as `built.ts`'s rigid lift does.
+
+    **Authored, never derived**, and the rule is §0.3's: a proxy has to be
+    *inside* its own silhouette, because bouncing off nothing is a bug a
+    reader cannot explain where flying through a gap is merely a world that
+    does not stop you. What "inside" means here is inside the volume **a
+    four-unit sphere can occupy** rather than inside the drawn outline — the
+    two differ wherever a scene has a gap narrower than eight units, and
+    every gap in these four is: Enargeia's cells are 5.8 apart, Philoi's desk
+    clears its floor by 2.9 and its screen frame by 4.1. A box spanning those
+    is exact for the only query that will ever be made of it. */
+export type Solid = {
+  x: number; y: number; z: number;
+  w: number; h: number; d: number;
+  yaw: number;
+  ride: boolean;
+};
+
 export type Scene = {
   slug: string;
   site: { x: number; z: number };
@@ -103,6 +125,8 @@ export type Scene = {
   tall: number;
   parts: Part[];
   signals: Signal[];
+  /** §35. A handful of boxes beside the geometry that produced them. */
+  proxy: Solid[];
 };
 
 /* The pad. A scene stands on a slab whose top is *above the highest ground
@@ -149,6 +173,14 @@ const box = (
   kind: Kind = 0, a = 0, b = 0, yaw = 0,
 ): Part => ({ x, y, z, w, h, d, yaw, kind, a, b });
 
+/** A proxy box from the span it covers rather than from a centre and a half
+    height, because that is how every one of them is read off the geometry:
+    "from the top of the plinth to the top of the lid". */
+const slab = (
+  x: number, z: number, from: number, to: number, w: number, d: number,
+  yaw = 0, ride = false,
+): Solid => ({ x, y: (from + to) / 2, z, w, h: (to - from) / 2, d, yaw, ride });
+
 /* ── Enargeia — a machine thinking ──────────────────────────────────────
    §0.4: "a stack of layers with a wave of activation travelling through it
    … it runs on the visitor's own hardware; the scene should not look like a
@@ -184,7 +216,7 @@ const E_PLATE = 1.15;  // half its thickness
 /** Seconds a forward pass takes, bottom to top. `built.ts` reads it too. */
 export const E_PASS = 3.2;
 
-function enargeia(): { parts: Part[]; signals: Signal[] } {
+function enargeia(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
   const parts: Part[] = [];
   const span = ((E_CELLS - 1) * E_PITCH) / 2;
   const top = E_BASE + (E_LAYERS - 1) * E_RISE;
@@ -226,7 +258,23 @@ function enargeia(): { parts: Part[]; signals: Signal[] } {
     from: [0, top + 6, 0], to: [0, top + 30, 0],
     rate: 1 / E_PASS, phase: 0, arc: 0, group: 0, node: -1, span: 0.34, size: 4.0,
   }];
-  return { parts, signals };
+
+  /* **Two boxes for ninety-six parts**, and that is the shape of the whole
+     convention. The plinth is its own part copied out. The chassis is one
+     box from the plinth's top to the lid's, at the *lid's* half-width —
+     which is the narrowest of the three things that reach the outside
+     (columns 22.9, cells 22.6, lid 22.4), so the proxy is inside the
+     silhouette on every face.
+
+     What it swallows is the air between the cells and the 3.85 units under
+     the lowest layer, and neither is reachable: the gaps are 5.8 across and
+     the sphere is 8. */
+  const plinthTop = -SLAB / 2 + 2 + (SLAB / 2 + 2);
+  const proxy: Solid[] = [
+    slab(0, 0, -SLAB, plinthTop, span + 9, span + 9),
+    slab(0, 0, plinthTop, top + 4.6 + 0.9, span + 5.4, span + 5.4),
+  ];
+  return { parts, signals, proxy };
 }
 
 /* ── Homonoia — five nodes and a term ───────────────────────────────────
@@ -257,9 +305,10 @@ function enargeia(): { parts: Part[]; signals: Signal[] } {
 const H_TALL = 100;
 const H_CROWN = 7.0;
 
-function homonoia(pad: number): { parts: Part[]; signals: Signal[] } {
+function homonoia(pad: number): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
   const parts: Part[] = [];
   const signals: Signal[] = [];
+  const proxy: Solid[] = [];
   const at: [number, number, number][] = [];
 
   for (let i = 0; i < CLUSTER_NODES; i++) {
@@ -282,6 +331,20 @@ function homonoia(pad: number): { parts: Part[]; signals: Signal[] } {
     parts.push(box(x, y + H_TALL * 0.90 + H_CROWN, z, 9.2, H_CROWN, 9.2, 2, i));
 
     at.push([x, y + H_TALL * 0.90 + H_CROWN, z]);
+
+    /* **Here the proxy is the geometry**, which is the case the convention
+       has to allow for: a mast is already four stacked boxes standing on
+       their own, so an authored approximation of it could only be worse.
+       Four per node, twenty for the scene, every one riding the swell —
+       the summit under a node rises by up to thirty units while it holds
+       the term, and a proxy that stayed where the field left it would be a
+       mast you could fly through for a third of every election. */
+    proxy.push(
+      slab(x, z, y + 3 - SLAB, y + 3 + SLAB, 15.0, 15.0, 0, true),
+      slab(x, z, y, y + H_TALL * 0.60, 8.4, 8.4, 0, true),
+      slab(x, z, y + H_TALL * 0.42, y + H_TALL * 0.90, 5.4, 5.4, 0, true),
+      slab(x, z, y + H_TALL * 0.90, y + H_TALL * 0.90 + H_CROWN * 2, 9.2, 9.2, 0, true),
+    );
   }
 
   /* The traffic. Every message has a *direction*, because that is the
@@ -303,7 +366,7 @@ function homonoia(pad: number): { parts: Part[]; signals: Signal[] } {
       }
     }
   }
-  return { parts, signals };
+  return { parts, signals, proxy };
 }
 
 /* ── Philoi — two editors, and nothing is discarded ─────────────────────
@@ -336,10 +399,13 @@ const P_DESK = 6.0;
     lands *between* two others, and at a fast cadence that is a flicker. */
 export const P_CYCLE = 6.4;
 
-function philoi(): { parts: Part[]; signals: Signal[] } {
+function philoi(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
   const parts: Part[] = [];
   const signals: Signal[] = [];
   const seat: [number, number, number][] = [];
+  /* The floor first, so the three boxes read in the order they stand. */
+  const floorTop = -SLAB / 2 + 1.2 + (SLAB / 2 + 1.2);
+  const proxy: Solid[] = [slab(0, 0, -SLAB, floorTop, P_APART + 12, 11.5)];
 
   /* A screen is turned in toward the other, so anything offset from its
      centre has to be turned with it: the instance's own yaw rotates the
@@ -389,6 +455,25 @@ function philoi(): { parts: Part[]; signals: Signal[] } {
       ));
     }
     seat.push([x, sy + 2, 0]);
+
+    /* Five per side. The desk box runs from the floor rather than from the
+       desk's own underside, because the 2.9 units under it are not a place a
+       four-unit sphere can be.
+
+       **The screen is the frame and not the glass**, which is the one place
+       in these four scenes where the difference is large enough to see. A
+       single box over the frame would be an 18.6 × 31.4 pane of nothing —
+       the biggest over-approximation available in this world, and at a scene
+       whose whole subject is what is *on* the screens. So it is the two
+       uprights and the two rails, copied. What is left open is the opening,
+       which is 2.3 sphere-widths across. */
+    proxy.push(slab(x, 0, floorTop, P_DESK + 0.7, 9.6, 6.4, yaw));
+    for (const e of [-1, 1]) {
+      const [ux, uz] = turn(e * (P_SCREEN_W + 0.7), 0, yaw);
+      proxy.push(slab(x + ux, uz, sy - P_SCREEN_H - 0.7, sy + P_SCREEN_H + 0.7, 0.7, 0.7, yaw));
+      const rail = sy + e * (P_SCREEN_H + 0.7);
+      proxy.push(slab(x, 0, rail - 0.7, rail + 0.7, P_SCREEN_W + 1.4, 0.7, yaw));
+    }
   }
 
   /* The edit in flight, and it goes both ways at once — concurrent edits
@@ -398,7 +483,7 @@ function philoi(): { parts: Part[]; signals: Signal[] } {
     signals.push({ from: seat[0]!, to: seat[1]!, rate: 1 / P_CYCLE, phase: k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4 });
     signals.push({ from: seat[1]!, to: seat[0]!, rate: 1 / P_CYCLE, phase: 0.25 + k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4 });
   }
-  return { parts, signals };
+  return { parts, signals, proxy };
 }
 
 /* ── Basis — modules, wired, with a request through them ────────────────
@@ -430,10 +515,11 @@ const B_NODES: [number, number, number, number][] = [
   [-19, 7, 11.0, 4.8],
 ];
 
-function basis(): { parts: Part[]; signals: Signal[] } {
+function basis(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
   const parts: Part[] = [];
   const signals: Signal[] = [];
   const at: [number, number, number][] = [];
+  const proxy: Solid[] = [slab(-2, 3, -SLAB, -SLAB / 2 + 1.0 + (SLAB / 2 + 1.0), 21, 17)];
 
   /* Tight to the graph rather than a platform around it. A slab wider than
      what stands on it reads as a mesa the modules happen to be on, and the
@@ -446,6 +532,12 @@ function basis(): { parts: Part[]; signals: Signal[] } {
     parts.push(box(x, h / 2, z, 0.8, h / 2, 0.8));
     parts.push(box(x, h + half * 0.7, z, half, half * 0.7, half * 0.8, 4, a, 0, i * 23));
     at.push([x, h + half * 0.7, z]);
+    // The mast and the module it carries, copied. Two per node, fourteen
+    // for the graph.
+    proxy.push(
+      slab(x, z, 0, h, 0.8, 0.8),
+      slab(x, z, h, h + half * 1.4, half, half * 0.8, i * 23),
+    );
   });
 
   // The wiring: one strut per edge of the path, drawn as a thin box turned
@@ -471,7 +563,13 @@ function basis(): { parts: Part[]; signals: Signal[] } {
       span: 1 / (B_NODES.length - 1), size: 2.6,
     });
   }
-  return { parts, signals };
+  /* **The struts are not in it, and that is the deliberate half of the
+     rule.** They are 1.4 units thick and lie at six different angles; a
+     proxy for one is a box the sphere meets four units before it looks like
+     it should, at the one place in the scene where the eye can see there is
+     nothing there. Flying through a wire is a world that does not stop you.
+     Bouncing off the air beside one is a bug. */
+  return { parts, signals, proxy };
 }
 
 /* ── The four ───────────────────────────────────────────────────────────
@@ -489,11 +587,11 @@ function build(): Scene[] {
   const out: Scene[] = [];
   const make = (
     slug: string, site: { x: number; z: number }, radius: number, tall: number,
-    parts: (pad: number) => { parts: Part[]; signals: Signal[] },
+    parts: (pad: number) => { parts: Part[]; signals: Signal[]; proxy: Solid[] },
     pad = padOf(site, radius),
   ) => {
-    const { parts: p, signals: s } = parts(pad);
-    out.push({ slug, site: { x: site.x, z: site.z }, pad, radius, tall, parts: p, signals: s });
+    const { parts: p, signals: s, proxy } = parts(pad);
+    out.push({ slug, site: { x: site.x, z: site.z }, pad, radius, tall, parts: p, signals: s, proxy });
   };
 
   make('enargeia', SITES.enargeia, 24, 46, () => enargeia());

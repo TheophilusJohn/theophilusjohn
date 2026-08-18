@@ -4691,6 +4691,116 @@ works, and a returning visitor is not made to scroll the route again.
 **Report:** the proxy convention, box counts, the cost of a query per frame,
 and which of the three above was chosen and what it cost.
 
+*Done.* **The architecture question answered itself once it was measured:
+the whole world is 48 boxes and 2,376 bytes, and a residency scheme would
+have been a second object lifetime to save two kilobytes.** The static
+table wins, and `solid.ts` is the only file that would have to change if
+§36 or §37 ever makes it wrong — `SOLIDS` is built from `SCENES` in one
+block and read through one function.
+
+**The convention: authored, under-approximate, and inside the volume a
+four-unit sphere can occupy** — which is not the same as inside the drawn
+outline, and the difference is the whole of the authoring. Every gap in
+these four scenes is narrower than the sphere is wide, so a proxy that
+spans one is exact for the only query that will ever be made of it:
+Enargeia's cells are 5.8 apart against a sphere of 8, its lowest layer
+clears the plinth by 3.85, and Philoi's desk clears its floor by 2.9 and
+its screen frame by 4.1. Two boxes cover Enargeia's ninety-six parts.
+
+| scene | parts | proxy boxes | note |
+|---|---|---|---|
+| Enargeia | 96 | **2** | plinth, then one chassis at the lid's 22.4 — the narrowest of the three things that reach the outside (columns 22.9, cells 22.6, lid 22.4), so it is inside the silhouette on every face |
+| Homonoia | 20 | **20** | the proxy *is* the geometry; four per mast, every one riding the swell |
+| Philoi | 45 | **11** | one floor, and per side a desk and the frame as two uprights and two rails — never the glass |
+| Basis | 21 | **15** | slab, then the mast and the module per node. **Not the struts** |
+| | **182** | **48** | 1,728-byte `Float32Array` + an 81-entry index over 25 hash cells = **2,376 bytes** |
+
+**The done-when has an instrument, and it found the bug.** Flood the free
+space around each scene from outside on a 2-unit lattice — free being
+`resolve()`'s own answer — then ask of every cell it reaches whether it is
+inside a *drawn* part, using `built.ts`'s own transform. 21.5M cells over
+the four scenes, Homonoia repeated for all five leaders held:
+
+| scene | lattice | free | reached | sealed | deepest reach into drawn geometry |
+|---|---|---|---|---|---|
+| Enargeia | 0.65M | 618,506 | 618,506 | 0 | **−3.30** (outside) |
+| Philoi | 0.50M | 488,094 | 488,094 | 0 | **−2.58** (outside) |
+| Basis | 0.47M | 462,024 | 462,022 | 2 | **+0.44 inside** — a strut |
+| Homonoia ×5 | 4.6–5.2M each | — | all | 0 | **−4.00** (touching, exactly) |
+
+**Zero cells inside anything carrying a proxy.** The only drawn geometry a
+four-unit sphere can enter is Basis's six wires: sampled at 0.5 units over
+every strut, four of the six have a reachable interior and the deepest is
+**0.50 units** into something 1.4 units thick. That is the deliberate half
+of the rule and the arithmetic says why — inflated by the sphere, a strut
+would block a 9.4-unit cross-section of which **97.8% is air the reader can
+see straight through**. Flying through a wire is a world that does not stop
+you; bouncing off the air beside one is a bug.
+
+**The bug the flood fill was built to find was in the placement, not in the
+resolution.** `built.ts` writes an instance's position as `site +
+part.(x, y, z)` flat and hands the shader `cos/sin` separately — the yaw
+turns the box about its own centre and never moves it. `solid.ts` turned
+the offset as well, so **sixteen of the forty-eight boxes were somewhere
+else**: Philoi's ten by 1.9 to 7.9 units and Basis's six by 3.4 to
+**37.81**, against a camera radius of four. Basis's outermost modules had a
+proxy for empty air beside them and nothing on themselves. Fixed by not
+turning the centre.
+
+**The cross-check that says it is fixed**: the route's closest approach to
+any *proxy* and to any *drawn box* are now the same number, **22.67**, and
+the per-scene set — 92.23 Enargeia, 22.67 Homonoia, 32.04 Philoi, 107.27
+Basis — reproduces §34's independently recorded 22.7 / 32.0 / 92.2 / 107.3
+exactly. Swept every scroll unit at five arrival clocks over thirty-three
+cluster states (the baked distribution plus four terms at eight phases),
+2.83M poses. The minimum is at the *baked* state: the swell only ever lifts
+Homonoia's masts further from the path.
+
+**A query costs less than the floor it runs beside.** 200,000 calls per
+row, after a warm-up batch:
+
+| where | µs/call | boxes tested |
+|---|---|---|
+| every frame on the route | **0.061** | 0.2 of 48 |
+| at the four settles | 0.036 | 0.0 |
+| free flight around Homonoia | 0.199 | 0.7 |
+| **inside a mast, both passes resolving** | **0.980** | 4.0 |
+| nowhere near anything | 0.037 | 0.0 |
+
+§24's altitude clamp is 1.8µs a frame and `height()` alone is 0.354, so the
+second constraint is cheaper than the first even in its worst case.
+
+**The unlock is a `<button>` and `F` is gone.** The offer is made at the end
+of the last dwell and ramps in over 300 of the final turn's 1,200 units,
+measured: `--in` 0.000 at `OFFER_AT`, 0.500 at +150, 1.000 at +300, with
+`tj:flight` written the moment it unlocks. It latches — scrolled back to a
+station, or to the arrival, it stays at 1.000 — and `data-off` fires only on
+the one path it exists for, a reader who scrolls back *before* the latch
+closes, where it takes `visibility: hidden` rather than sitting invisible in
+the tab order. A returning visitor opens with it already up. The label is
+the whole of the mode: "Fly it yourself" / "Rejoin the route".
+
+**Legibility, measured at this size rather than §17's.** The glyph mask
+first (canvas hidden, label white on `--void`), then the backdrop under the
+covered pixels only — 240 covered pixels in a 108×7 box, so the block is
+**7px and not 12**, which does not fit inside the label at all. Worst block
+**0.0110** against `--dim`'s 0.238 = **4.72:1**, 4.98:1 under every covered
+pixel, at the offer's own pose and two free-flight poses. Masking is also
+what keeps the route rail — `--leader` on `--void`, three pixels to the
+right — out of the sample.
+
+**axe-core 4.13.0, clean in eight states**: document mode, document mode
+with the way back shown, the curtain held, the arrival, mid-flight, at a
+station, reading a writeup, and free flight with the stick taken. The
+seventh node needs what §33's two needed and already had it — `<nav
+aria-label="Flight">`, because `<main>` is behind an opaque canvas and a
+control outside a landmark is one no screen reader can place.
+
+**Cost:** world chunk **+1,575 bytes** gzipped (223,139 + 3,292), CSS
+**+55** (3,113). The worker is **byte-identical** — nothing in a worker
+calls `resolve`, so `solid.ts` is tree-shaken out of it entirely. Document
+JS is **57,023, unchanged to the byte**.
+
 ### 36. The cities
 Houston and Delhi, oversized, visitable, solid (SPEC §0.2). Towers 180–320
 units against a landscape whose highest ground is 128; streets 60–80 wide;
