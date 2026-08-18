@@ -196,15 +196,15 @@ html[data-mode='world'] .curtain { display: grid; }
 
    A halo in --void rather than a panel behind it: the same move the
    cursor's dot already makes against a light background, and it keeps the
-   control a label rather than turning it into a chip. Two radii — a tight
-   core that carries the glyph edges and a soft pool that pulls the block
-   average down. Measured after: 0.045 worst block, 5.0:1. */
-.escape a {
-  text-shadow:
-    0 0 2px var(--void), 0 0 2px var(--void), 0 0 2px var(--void),
-    0 0 4px var(--void), 0 0 4px var(--void), 0 0 4px var(--void),
-    0 0 10px var(--void), 0 0 10px var(--void), 0 0 10px var(--void);
-}
+   control a label rather than turning it into a chip.
+
+   **--halo since §38, and the reason is that "whatever the sky happens to
+   be doing" now includes a city.** §33's stack was solved against sky and
+   ground; with §36's towers and §37's ten landmarks put directly under the
+   label — the pose is solved for, not guessed — it measured 3.86:1 over the
+   turbine row and 4.00 over Houston. The token clears 4.94 at every one of
+   the sixty-four poses in that sweep. */
+.escape a { text-shadow: var(--halo); }
 .escape a:hover, .escape a:focus-visible { color: var(--leader); }
 
 /* Opaque, and in the renderer's own clear colour — so the canvas coming
@@ -400,12 +400,7 @@ html[data-mode='world'] .curtain { display: grid; }
    Masking is also what keeps the route rail out of the
    sample: it is --leader on --void three pixels to the
    right, and it scores as ink in any padded rect. */
-.stick button {
-  text-shadow:
-    0 0 2px var(--void), 0 0 2px var(--void), 0 0 2px var(--void),
-    0 0 4px var(--void), 0 0 4px var(--void), 0 0 4px var(--void),
-    0 0 10px var(--void), 0 0 10px var(--void), 0 0 10px var(--void);
-}
+.stick button { text-shadow: var(--halo); }
 .stick button:hover, .stick button:focus-visible { color: var(--leader); }
 
 /* ── Content at a station ────────────────────────────────
@@ -465,6 +460,15 @@ html[data-mode='world'] .curtain { display: grid; }
   transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
 }
 .arrival[data-out] { visibility: hidden; }
+
+/* Type over the landscape with half a scrim behind it — the arrival is
+   §34's frame and the landscape is its subject, so the scrim is at 0.5
+   here and no more. The name and the line under it clear the bound on
+   that alone (5.93:1 and 5.53:1); the hint does not (4.38), and it is the
+   one line on the frame that is an instruction. One rule for the column,
+   because a halo the reader can see the edge of on one of three lines is
+   worse than one nobody can see at all. */
+.arrival .col { text-shadow: var(--halo); }
 
 .arrival .headline {
   margin: 0;
@@ -569,6 +573,18 @@ html[data-mode='world'] .curtain { display: grid; }
 
 /* Selectable and clickable, unlike the layer around it. */
 .station .col .body { pointer-events: auto; }
+
+/* **The name arrives before the scrim does, and §38 is where that was
+   measured.** The rung the scrim is at while only the name is resolved is
+   0.45 (station.ts), which is what lets a reader see the scene they have
+   just flown to — and the type is over the open landscape for the whole of
+   that frame. Measured at Homonoia's arrival, with the machine ID lying
+   across a lit cloud: 1.76:1 for the ID and 3.15:1 for the headline. The
+   scrim cannot fix it — solving the same measurement for the rung wants
+   0.95, which is a panel rather than a scrim and takes the scene away. The
+   halo can, and does: 7.4:1 and 15.6:1 at the same frame, with the rung
+   left where §32 put it. Inherited, so it reaches both. */
+.station .col .name { text-shadow: var(--halo); }
 
 /* The meta line: the machine ID and the period at their own width rather
    than pushed to the ends of a 45ch column, and the way out at the far

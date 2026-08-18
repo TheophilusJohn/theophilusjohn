@@ -31,6 +31,24 @@
      of it. */
   --scrim:     color-mix(in srgb, var(--void) 92%, transparent);
 
+  /* §33's halo, one place and one construction since §38. It is what makes
+     type legible over the world where there is no scrim to put behind it:
+     the two corner labels, the arrival column, and a station's name row for
+     the frame it arrives in before the scrim comes up.
+
+     **The 1px ring is the whole of what §38 added and it is the load-bearing
+     part.** The bound is measured over the glyphs' own covered pixels, and
+     what shows through there is the antialiased edge — so a tighter ring
+     buys far more than a wider pool. Measured over §36's and §37's built
+     things, worst block against --dim: no halo 1.18–2.42, §33's stack
+     3.86–4.16, and this 5.01–5.07, where 5.07 is a backdrop of pure --void
+     and the ceiling the instrument can report. */
+  --halo:
+    0 0 1px var(--void), 0 0 1px var(--void), 0 0 1px var(--void), 0 0 1px var(--void),
+    0 0 2px var(--void), 0 0 2px var(--void), 0 0 2px var(--void), 0 0 2px var(--void),
+    0 0 4px var(--void), 0 0 4px var(--void), 0 0 4px var(--void),
+    0 0 10px var(--void), 0 0 10px var(--void), 0 0 10px var(--void);
+
 
   /* ── Type scale ───────────────────────────────────────
      Use these. No arbitrary font sizes anywhere else. */

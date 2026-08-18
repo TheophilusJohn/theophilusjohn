@@ -19,7 +19,10 @@ order: 2
 Homonoia is an implementation of the Raft consensus algorithm, written from the paper and
 made visible in the browser. Five simulated nodes on a controllable network — you set
 latency, drop rate, duplication, partitions, and kill or revive nodes, then watch leader
-elections and log replication behave correctly under whatever you do to them.
+elections and log replication behave correctly under whatever you do to them. An election
+runs the same four beats every time: the leader stops being heard from, a follower's
+timeout fires and it stands as a candidate, three votes out of five settle the term, and
+replication resumes from whoever won it.
 
 The consensus core is pure: state in, state out, no I/O and no timers. The same code runs
 the visualization and the fuzz harness, so what you see on screen is the thing that was

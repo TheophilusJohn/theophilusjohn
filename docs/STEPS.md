@@ -5485,3 +5485,356 @@ clean across every state in both modes.
 LCP both modes, axe across every state — **and the frame budget re-measured
 on integrated graphics**, per layer, against the 8ms cruise ceiling — plus
 the world-only list itself, which is the deliverable of the audit above.
+
+### The machine this file's numbers were taken on is integrated
+
+SPEC §6 has asked for 60fps on integrated graphics since the beginning, and
+the line above this one says every frame number in this file "was taken on
+the same machine's discrete GPU". **There is no discrete GPU in this
+machine.** It is an Apple M4 with a ten-core GPU, `Bus: Built-In`, and every
+figure from §21 to §37 was measured on it — so the requirement has been met
+on integrated graphics all along and nobody had checked which kind of chip
+was under the measurement.
+
+That corrects the record and leaves the real question, which is that an M4
+is an integrated GPU the way a Ferrari is a road car. What §38 can honestly
+ask is **how much slower a GPU may be**, and the instrument for it is to
+give this one more pixels: the fill-bound part of a frame at four times the
+pixels is the same work as that frame on a GPU with a quarter of the fill
+rate. It does not model driver overhead, memory bandwidth or shader
+compilation, and it says nothing about the CPU — which is why the CPU is
+throttled separately below, and why both are then run together.
+
+### The frame is two terms, and one surface is nearly all of the second
+
+Nine poses, built code, the loop stopped, timed in batches of 240 between
+two `onSubmittedWorkDone` (rAF is useless for this — vsync), at five pixel
+scales. `ms = base + slope × megapixels`, least squares over the five:
+
+| pose | 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | base | slope |
+|---|---|---|---|---|---|---|---|
+| the arrival | 0.984 | 1.290 | 1.985 | 2.910 | 3.978 | 0.506 | 0.315 |
+| Enargeia settle | 1.149 | 1.413 | 2.204 | 3.212 | 4.404 | 0.590 | 0.345 |
+| Homonoia settle | 1.026 | 1.435 | 2.267 | 3.313 | 4.527 | 0.508 | 0.367 |
+| Philoi settle | 1.145 | **1.545** | 2.424 | 3.562 | **5.014** | 0.525 | **0.405** |
+| Basis settle | 1.172 | 1.481 | 2.346 | 3.430 | 4.706 | 0.582 | 0.374 |
+| Houston, down a street | 1.128 | 1.134 | 1.218 | 1.583 | 2.056 | 0.883 | **0.099** |
+| datacenter, in the hall | 1.180 | 1.204 | 1.458 | 2.100 | 2.787 | 0.794 | 0.174 |
+| under the bridge | 1.220 | 1.365 | 2.221 | 3.274 | 4.466 | 0.596 | 0.350 |
+| cruise over the massif | 1.012 | 1.310 | 1.999 | 2.952 | 4.026 | 0.521 | 0.318 |
+
+Draw calls over the nine: **50 to 69**, and the world chunk is byte-identical
+to §37's, so they are §37's own counts by construction rather than by
+measurement.
+
+**Read the last two rows against the first five.** A frame with a city in
+it, or a roof over it, has a fill slope a quarter of an open landscape's,
+because an opaque surface over a sky pixel takes the dome's two fractal
+noises off it — §26's water, §36's Houston and §37's hall for the fourth
+time, and at four times the pixels it is no longer a rounding difference.
+Turning §36's city off at DPR 3 while standing in it **costs 2.485ms**.
+
+Per layer, at the shipped cap and at the fill-bound end (whole frame in
+brackets):
+
+| layer | arrival 1.5 | arrival 3 | Philoi 1.5 | Philoi 3 | Houston 1.5 | Houston 3 |
+|---|---|---|---|---|---|---|
+| **the sky dome** | +0.251 | **+1.716** | +0.430 | **+2.766** | −0.027 | +0.033 |
+| terrain | +0.215 | +0.304 | +0.155 | +0.258 | +0.383 | +0.018 |
+| trees & stone | +0.192 | +0.091 | +0.181 | −0.005 | +0.519 | +0.060 |
+| cloud forms | +0.064 | +0.127 | +0.045 | +0.134 | −0.004 | +0.032 |
+| motes | +0.039 | +0.032 | +0.009 | −0.003 | −0.002 | +0.023 |
+| everything built | +0.032 | +0.034 | −0.009 | −0.043 | **−0.365** | **−2.485** |
+| signals | +0.039 | +0.017 | +0.017 | +0.006 | −0.021 | +0.023 |
+| ground cover | +0.030 | +0.017 | +0.036 | −0.017 | +0.086 | +0.056 |
+| stars | +0.034 | +0.032 | +0.006 | +0.002 | −0.006 | +0.022 |
+| water | +0.018 | +0.027 | +0.007 | +0.008 | +0.007 | −0.011 |
+| *(whole frame)* | *1.307* | *3.960* | *1.559* | *4.853* | *1.138* | *2.082* |
+
+The sky dome is **43% to 57% of the frame** at DPR 3 and a fifth to a
+quarter of it at 1.5. Everything §0.2 and §34–§37 added — cover, trees,
+motes, clouds, four scenes, two cities, twelve landmarks — is the other
+half, and every one of those layers is vertex work that *falls* as a share
+when the pixels go up.
+
+### The DPR cap, re-decided on frame time (SPEC §4.7)
+
+**It stays at 1.5**, and the argument has changed. §4.7 capped it because
+the scene was out of focus behind text; that reason died at §21. What
+replaces it is the ratio, not the cost: every pose is inside the 8ms cruise
+budget at every scale measured, so frame time on *this* machine does not
+decide anything. What the cap buys is a slower machine —
+
+| cap | worst pose | 60fps allows a GPU | 8ms cruise allows |
+|---|---|---|---|
+| 1.5 (shipped) | 1.545ms | **10.8×** slower | 5.2× |
+| 2.0 | 2.424ms | 6.9× | 3.3× |
+| 3.0 | 5.014ms | 3.3× | 1.6× |
+
+— and the thing being bought is almost entirely the sky dome's headroom.
+
+### 60fps on integrated graphics, with both halves slowed at once
+
+A GPU proxy alone is half a machine. CDP's CPU throttle is the other half,
+and it has a caveat that has to be stated with the numbers: **it slows the
+main thread and not the workers.** Chunk generation came back *faster*
+under throttling (1.27ms a chunk at 4× against 2.72 at 1×) because the main
+thread stops competing for cores — so every worker figure below is this
+machine's, and only the main-thread ones are throttled.
+
+Thirty seconds of boosted free flight across the world, keys re-asserted
+every frame from inside the page (§24's note), 502 chunks generated in every
+run so the flights are comparable:
+
+| main thread | pixel scale | rAF median | p95 | p99 | worst | frames over 25ms | interactive world |
+|---|---|---|---|---|---|---|---|
+| 1× | 1.5 | 16.6 | 17.9 | 18.4 | 23.7 | **0** of 1801 | 534ms |
+| 4× | 1.5 | 16.7 | 18.4 | 19.2 | 27.4 | 2 of 1801 | 861ms |
+| 6× | 1.5 | 16.6 | 19.0 | 20.3 | 32.2 | 3 of 1800 | 1,142ms |
+| 1× | 3.0 | 17.2 | 24.4 | 26.2 | 30.4 | 50 of 1657 | 422ms |
+| **4×** | **3.0** | **16.9** | 23.0 | 26.2 | 60.3 | 31 of 1720 | 831ms |
+
+The last row is the answer: a machine whose main thread is four times slower
+**and** whose GPU has a quarter of this one's fill rate flies the world at a
+16.9ms median, with 1.8% of frames over 25ms. Chunk generation over the same
+flight is 2.72ms a chunk (worst 28.3 to 51.4 on a level-0 chunk, in the
+worker) with **17.1 to 36.6ms of main-thread attach for the whole 502**, and
+zero holes at the end of every run.
+
+### Brightness, re-solved for a world with cities in it
+
+§17's instrument, at the size §35's note fixed: build the glyph mask first
+(canvas hidden, the label white on `--void`, no halo), then read the
+backdrop under the covered pixels only — with the element still in the page
+and `color: transparent`, so its own halo stays in the backdrop where it
+belongs. Two things had to be built before any of it was worth reading, and
+both are recorded under the bugs below.
+
+**Where the type is, and what was under it.** §33 solved the way out against
+sky and ground; §35 solved the stick the same way. Since then §36 put 250
+lit boxes in the world and §37 another 212 with nineteen lamps, and the
+corner both labels live in is exactly where a reader flying over one of them
+puts it. So the pose is *solved for* rather than guessed: the camera is
+turned until a named world point projects to the label's own centre, and
+every one of the sixteen built things in the world is put under each label
+from two bearings.
+
+| | before | after |
+|---|---|---|
+| the way out, 32 poses over built things | **3.86:1** worst (turbine row), 4.00 over Houston, 7 under 4.5 | **5.01:1** worst, 0 under 4.5 |
+| the stick, 32 poses | **3.90:1** worst (under the bridge), 6 under 4.5 | 5.01:1 worst, 0 under 4.5 |
+| a station's machine ID, at the arrival frame | **1.76:1** (Homonoia, across a lit cloud) | 7.53:1 |
+| a station's headline, at the arrival frame | **3.15:1** (Homonoia), 4.11 (Philoi) | 15.62:1 |
+| the arrival's own hint | 4.38:1 | 5.07:1 |
+| the stick, at the arrival | 4.16:1 | 5.04:1 |
+| the summary, the numbers, the writeup | 5.66 to 15.4:1 | unchanged |
+
+52 measurements over twelve reader states and 64 over the built things:
+**nothing is under 4.5:1 now, and the worst is 5.04.** 5.07 is the ceiling
+the instrument can report — it is `--dim` on a backdrop of pure `--void`.
+
+**The scrim could not have fixed the name row.** A station's name resolves
+before its body does, and the scrim is at 0.45 for that frame (`station.ts`)
+because §34's arrival is a frame whose subject is the landscape. Solving the
+same measurement for the rung wants **0.95**, which is a panel rather than a
+scrim. The halo does it at 0.45 with the scene left in the frame.
+
+**What the halo needed was a tighter ring, not a wider pool** — because the
+bound is measured over the glyphs' own covered pixels, and what shows
+through there is the antialiased edge:
+
+| stack | turbines | bridge | Houston | stadium | the stick at the arrival |
+|---|---|---|---|---|---|
+| none | 1.79 | 2.42 | 1.75 | 1.39 | 1.18 |
+| §33's (2,4,10 × 3) | 3.86 | 3.98 | 4.00 | 4.01 | 4.16 |
+| + a 1px ring × 3 | 4.92 | 4.95 | 4.94 | 4.97 | 4.94 |
+| **1×4, 2×4, 4×3, 10×3** | **5.01** | **5.03** | **5.01** | **5.04** | **5.04** |
+| 1×6, 2×4, 5×3, 12×3 | 5.07 | 5.07 | 5.07 | 5.07 | 5.07 |
+
+Doubling the 2px core instead reached only 4.63. It is one `--halo` token
+now, in `tokens.css` with the rest of the palette, used by the way out, the
+stick, the arrival column and a station's name row — four places, one
+construction, and **27 raw bytes more than the two nine-shadow stacks it
+replaced** (CSS 3,131 → 3,147 gzipped).
+
+It costs nothing where it is live. Twelve seconds of a station's reading
+driven over the same 1,400 scroll units in both builds, both orders: **one
+style recalc a frame and zero layouts** either way, 0.25 against 0.27ms of
+style a frame, 2.2ms of task time a frame either way, rAF median 16.6
+against 16.7 with no frame over 25ms in either. (Whichever build runs first
+in a browser session pays the cold start and comes back at a 19ms median —
+§28's order sensitivity, in a place nobody had met it before.)
+
+### The world-only audit
+
+Hard rule 6 — *"every fact exists in document mode"* — asserted in four
+places since §21 and verified nowhere. It is verified here, in two halves.
+
+**Half one is mechanical, and it is the half that can be re-run.** Every
+text node world mode can put on screen, walked across eight reader states,
+against the document's own `textContent` with the whitespace taken out
+(SplitText wraps every word in a span and a headline carries an authored
+`<br>`, so the two differ in whitespace and nowhere else):
+
+> **67 strings, 59 of them the document's own words.** The eight that are
+> not are: `Scroll to fly`, `Read the document`, `Fly it yourself`, `Rejoin
+> the route`, `Close`, and the three landmark names `Primary`, `Site mode`,
+> `Flight`.
+
+Every one of the eight is a control or the accessible name of a landmark.
+None is a fact about the work — and that is §32's construction holding: the
+station panel *clones* the document's nodes, so a writeup cannot drift from
+`/`'s.
+
+**Half two is the scenes, which are not clones of anything** — and this is
+what §34 opened and what the audit exists for. Scene by scene, what a
+reader can read off it, and where that is in the `.mdx`:
+
+- **Enargeia.** One machine on one plinth with nothing beside it; ten layers
+  of cells; a wave of activation rising through them every 3.2s; one token
+  leaving the top per pass. *"Runs on the visitor's own hardware"* and *"not
+  a datacenter"* are both in the writeup — "the visitor's GPU does the
+  inference", and the count of one says the rest. **"Inference is a pass up
+  through the layers, and a token is one pass" was not**, and it is the
+  thing the animation is *about*. One sentence added to `enargeia.mdx`.
+- **Homonoia.** Five masts, one crown lit; the term changes on a schedule;
+  a candidate blinks at half amplitude while it asks for votes and only
+  goes steady when they land; traffic stops before an election and flows
+  from the leader after it; the ground rises under whoever holds the term.
+  The writeup had *"watch leader elections and log replication"*, which
+  names the subject and not the sequence. **The four beats a reader actually
+  watches — silence, a candidate, three votes of five, replication
+  resuming — were world-only.** One sentence added to `homonoia.mdx`.
+- **Philoi.** Two screens with the same document; a line arriving late lands
+  *between* two that are already there and pushes the rest down; nothing is
+  overwritten and the two columns stay identical. Covered, and almost
+  word for word: *"two people typing in the same paragraph both end up with
+  the same document and nobody's keystrokes are discarded"*, *"convergence
+  is tested at 10 simultaneous clients"*. No change.
+- **Basis.** Seven modules of different sizes, wired by struts, with one
+  request crossing the graph in order every twelve seconds, one leg at a
+  time. The claim is "something assembled, serving a request" and the
+  writeup makes it — a full-stack starter, single origin, Express with
+  validation *throughout*. The seven is not a claim about a specific seven,
+  and no reader can count a fact out of it. No change.
+
+**The ground the scenes stand on is checked too, and it is the easy half.**
+The cities and the ten landmarks contribute **zero strings** in the walk
+above — no name, no machine ID, no writeup, nothing in the accessibility
+tree. §37's rule that no landmark may wear `--leader` is what keeps that
+true visually as well: nothing out there promises content.
+
+**Both loaders.** The curtain says `theophilusjohn.com`, a percentage, and
+one of `starting` / `fetching renderer · 221 KiB` / `starting gpu` /
+`generating terrain · n/136 chunks` / `ready`, with `Loading the world` and
+`Progress` as its names. All of it is about the load and none about the
+work. The failure paths say nothing to anybody: `world.ts` warns to the
+console and un-inerts the document, which is the document arriving late
+rather than a message.
+
+**One caveat, stated rather than hidden.** The audit's mechanical half
+proves no *string* is world-only. It cannot prove no *picture* is, and half
+two is a judgement made by reading the two against each other. What it is
+not is an assertion: the list is above, item by item, and two items failed.
+
+### Escapable from every state, and §33's defect closed
+
+The one-line fix §33 recorded is applied: the inline `Esc` listener returns
+unless `data-mode` is still `world`, so it stands down when `world.ts`
+deletes the attribute on the fallback path. Six states, measured:
+
+| state | before | after Esc |
+|---|---|---|
+| the curtain up, world still coming | `mode=world`, `/?world`, nothing stored | leaves → `/?doc`, stores `doc` |
+| flying, at the arrival | `mode=world`, `data-world` | leaves → `/?doc`, stores `doc` |
+| a writeup open at Homonoia | `aria-expanded=true`, `/projects/homonoia?world` | **closes** (`aria-expanded=false`), stays; a second press leaves |
+| free flight, stick taken | `flying=true` | leaves → `/?doc`, stores `doc` |
+| **the adapter refused** | `mode` gone, `/`, nothing stored | **nothing at all** — no navigation, nothing stored |
+| ordinary document mode | `mode=doc` | nothing |
+
+The way out is still the **first** thing `Tab` reaches on a world load, and
+it is one press.
+
+### axe, ten states, both modes
+
+Clean in all ten: document mode, a document deep link, the curtain held, the
+adapter-refused fallback, the arrival, mid-flight, a station's name frame, a
+writeup open, free flight with the stick taken, and the document with the
+way back showing. §33's five and §34's six, plus §38's own two — the
+fallback, which nothing had ever run axe against, and the arrival frame with
+the halo on it.
+
+### Four instrument bugs, and every one of them would have been reported as a result
+
+1. **The corner solve had both signs inverted and diverged.** Turning the
+   camera left moves the world *right* in the frame; the correction was
+   written the naive way round for both axes, so the iteration ran away —
+   yaw −455°, −1019° and 873° on three passes over the same site, each of
+   them measuring whatever happened to be in that direction. It reads as a
+   flaky world rather than as a broken harness: the same pose came back at
+   3.85, 4.70 and 5.06. `project` reading a stale `matrixWorldInverse` was
+   the other half; `drive` does not refresh it. The fix carries an assertion
+   on the residual, so a pose that has not converged can never be measured.
+2. **A link's underline is not the backdrop.** `text-decoration-color` is
+   `--leader` globally and does not follow `color: transparent`, so a row of
+   accent pixels sat inside every metric strip measured — at exactly
+   **0.3847**, which is `--leader`'s own luminance and the tell that it is
+   ink. Four scenes reported an identical 2.04:1 for it.
+3. **A harness that serves uncompressed is measuring a different site.**
+   `astro build` output is served gzipped by Cloudflare; the harness's own
+   server was not, and document LCP on Lighthouse's Slow 4G came back
+   **1,820ms against 1,116** with one line added to it. The second number is
+   §33's, which is how the mistake was caught.
+4. **Two probe builds are not the same build.** The `__probe` patch adds
+   dynamic imports, and rollup split the world chunk in two for them —
+   49KB and 727KB where the shipped build has one of 798KB. `world.json`
+   then names the small half, the curtain's fetch phase counts 20 KiB, and
+   the import downloads the rest with the bar sitting still. Every loading
+   number here is taken on the **shipped** build for that reason; the frame,
+   brightness and axe numbers are on the probe build, where the split
+   changes nothing.
+
+And one instrument note that is not a bug: **axe run during the intro
+reports the log band.** GSAP fades `.log-band` in from opacity 0 over half a
+second and leaves an inline opacity on it the whole way, which axe folds
+into the contrast it computes — eleven `color-contrast` violations on
+`aria-hidden` decoration, and none once the tween has cleared. Wait for the
+tween, not for `data-intro`.
+
+### Cost
+
+**The world chunk is byte-identical to §37's** — same 226,731 gzipped,
+same `scene.DWsQXswP.js` hash, worker unchanged at 3,593 — because nothing
+in this step lands in it: the halo is CSS, the audit is content, the Esc fix
+is the inline head script and the DPR decision was to leave the number
+where it was.
+
+**Document JS is unchanged to the byte**: 56,256 gzipped (54.94 KiB of 120),
+150,443 raw over three files, entry script 17,380 raw.
+
+CSS **3,131 → 3,147** gzipped (+16; raw 11,683 → 11,710) for the `--halo`
+token and its four uses. `index.html` 9,858 → **10,249** gzipped (+391) for
+the two sentences the audit added to the writeups and the one condition on
+`Esc`.
+
+**LCP, cold cache, gzip served, three runs each** — and both Slow 4G presets,
+because the name is ambiguous and the two differ by a second:
+
+| | document LCP | world LCP | interactive world |
+|---|---|---|---|
+| desktop | 80–92ms | 52ms | **428–434ms** |
+| Fast 4G (9 Mbps, 85ms) | 416–436ms | 312–332ms | 1,468–1,476ms |
+| Slow 4G, Lighthouse (1.6 Mbps, 150ms) | **1,152–1,164ms** | 548–568ms | 4,559–4,588ms |
+| Slow 4G, DevTools preset (1.6 Mbps, 562ms) | 2,132–2,152ms | 1,380–1,392ms | 6,923–7,583ms |
+
+Document and world LCP reproduce §33's figures (1,112–1,116 and 536–552) on
+the Lighthouse throttle. **Interactive world does not**: §33 recorded
+2,766–2,899ms on Slow 4G against 4,559 here, and §34–§37 added ten kilobytes
+to the chunk, which is about 60ms of it. The rest is not attributable from
+here — §33's throttle parameters are not written down, and the two Slow 4Gs
+above are a second apart on the same page. The desktop number is the one the
+budget names, and it is 434ms of 3,000.
+
+And the same caveat §33 filed: world-mode LCP names the hero `<h1>`, which
+on a world load is behind an opaque curtain and never seen. The number a
+reader lives is the last column.

@@ -120,10 +120,19 @@ const nav = [
       /* `Esc` reaches the same thing. Once the world has a frame it owns
          the key — an open writeup is what `Esc` closes first (§32), and
          only with nothing open does it leave — so this hands over the
-         moment `data-world` appears rather than racing it. */
+         moment `data-world` appears rather than racing it.
+
+         And it stands down entirely if the world never comes. On the
+         adapter-refused path `world.ts` deletes `data-mode`, un-inerts the
+         document and deliberately stores nothing; without this condition
+         the listener outlives all of that, and one press then navigates to
+         `/?doc` and writes `tj:mode = 'doc'` — recording a mode preference
+         on a machine that has not expressed one, which is the exact failure
+         the rule against storing here was written to prevent (§33's own
+         defect, found by §38's audit). */
       addEventListener('keydown', function (e) {
         if (e.key !== 'Escape' || e.metaKey || e.ctrlKey || e.altKey) return;
-        if (r.dataset.world !== undefined) return;
+        if (r.dataset.mode !== 'world' || r.dataset.world !== undefined) return;
         leave();
       });
 

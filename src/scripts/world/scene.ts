@@ -118,10 +118,24 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
 
   function size() {
     const [w, h] = viewport();
-    // §4.7 capped this at 1.5 because the layer was out of focus behind
-    // text. It is the whole frame now and nothing is in front of it, so the
-    // justification is gone and only the cost argument is left — which is a
-    // measurement (§36), not a decision this step gets to make on taste.
+    /* §4.7 capped this at 1.5 because the layer was out of focus behind
+       text. It is the whole frame now and nothing is in front of it, so
+       that justification is gone — and §38 is the step that re-decided it
+       on frame time.
+
+       **It stays at 1.5, and what it buys is a slower GPU rather than this
+       one.** The frame here is two terms: about 0.5ms of submission and
+       vertex work that does not move with resolution, and 0.10 to 0.41ms
+       per megapixel of fill. At 1.5 the worst pose on the route is 1.55ms,
+       at 2 it is 2.42 and at 3 it is 5.01 — all of them inside the 8ms
+       cruise budget on this machine, which is why frame time alone does not
+       decide it. What decides it is the ratio: 16.7ms of a 60Hz frame is
+       10.8x the worst pose at 1.5, 6.9x at 2 and 3.3x at 3, and SPEC §6
+       asks for 60fps on integrated graphics rather than on this one.
+
+       Nearly all of the fill is one surface: the sky dome's two fractal
+       noises measured +0.43ms at 1.5 and +2.77 at 3, against a whole frame
+       of 1.56 and 4.85. The cap is what keeps that affordable. */
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.setSize(w, h, false);
   }

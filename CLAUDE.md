@@ -44,6 +44,31 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §38 hard rule 6 is verified rather than asserted, and the type is
+legible over everything §36 and §37 put in the world.** The audit is two
+halves: a walk over every string world mode can put on screen (**67, of
+which 59 are the document's own words**; the eight that are not are controls
+and landmark names), and a scene-by-scene reading of what §34's four scenes
+*show* against what the writeups say — which found two gaps and closed them
+with one sentence each in `enargeia.mdx` (a token is one pass up through the
+layers) and `homonoia.mdx` (the four beats of an election). The cities and
+the ten landmarks contribute **no strings at all**, which is the easy half
+confirmed. **`--halo` is one token now** — §33's stack plus a 1px ring, which
+is what the bound actually needed, because it is measured over the glyphs'
+own covered pixels and what shows through there is the antialiased edge. It
+carries the way out, the stick, the arrival column and a station's name row;
+before it, the way out measured **3.86:1 over the turbine row** and a
+station's machine ID **1.76:1** across a lit cloud, and the scrim could not
+have fixed the second (solving for the rung wants 0.95 against §32's 0.45).
+Nothing is under 4.5:1 now and the worst of 116 measurements is 5.04, where
+5.07 is `--dim` on pure `--void` and the ceiling. **§33's `Esc` defect is
+closed**: the inline listener returns unless `data-mode` is still `world`,
+so the adapter-refused load records no preference. And the frame budget has
+an instrument at last — see Budgets; the short version is that this machine
+is an **M4, integrated**, that a frame is `base + slope × megapixels` with
+the sky dome as nearly all of the slope, and that the world holds 60fps with
+a GPU **10.8× slower** than this one at the shipped DPR cap.
+
 **Since §37 the other ten landmarks stand in it, and none of them is a
 station.** `landmark.ts` is the eighth module with no three and no DOM in it —
 it imports `height.ts` and `cover.ts`'s hash and nothing else — and it owns
@@ -1214,6 +1239,46 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   the frame-cost instrument; "frames over 25ms" simply cannot be reported in
   such a session. Measure the raw rAF interval before trusting one.
 
+- **A camera pose solved by iteration has two ways to go wrong and both
+  read as a flaky world.** Turning the camera left moves the world *right*
+  in the frame, so a naive correction on either axis diverges — measured,
+  yaw −455°, −1019° and 873° on three passes over the same site, each
+  measuring whatever happened to be in that direction and reporting 3.85,
+  4.70 and 5.06 for the same thing. And `project()` reads
+  `matrixWorldInverse`, which `camera.ts`'s `drive` does not refresh. Assert
+  the residual and refuse to measure a pose that did not converge.
+- **`text-decoration-color` does not follow `color: transparent`.** It is
+  `--leader` globally here, so a brightness harness that hides the ink to
+  read the backdrop leaves every link's underline painted: measured, four
+  different metric strips reporting an identical worst block of **0.3847**,
+  which is `--leader`'s own luminance and the tell that it is ink and not
+  scene.
+- **A halo is won at the glyph edge, not in the pool.** The bound is
+  measured over the glyphs' own covered pixels, and what shows through there
+  is the antialiased edge — so a 1px ring took every failing case from
+  3.86–4.16 to ≥4.90, where doubling the 2px core reached 4.63. Add radius
+  inward before outward.
+- **A harness that serves uncompressed is measuring a different site.**
+  Cloudflare serves the build gzipped; a plain static server does not, and
+  document LCP on Lighthouse's Slow 4G came back **1,820ms against 1,116**
+  with one line added to the harness. And "Slow 4G" names two presets:
+  Lighthouse's is 1.6 Mbps at 150ms, DevTools' applies the 3.75× multiplier
+  to the latency as well, and they are a second apart on the same page.
+- **A `__probe` patch can change the chunk graph.** Extra dynamic imports in
+  the entry made rollup split the world chunk in two — 49KB and 727KB where
+  the shipped build has one of 798KB — so `world.json` named the small half,
+  the curtain's fetch phase counted 20 KiB and the import fetched the rest
+  with the bar sitting still. Take loading numbers on the shipped build.
+- **axe run during the intro reports the log band.** GSAP fades `.log-band`
+  in from opacity 0 and leaves an inline opacity on it for the whole tween,
+  which axe folds into the contrast it computes: eleven `color-contrast`
+  violations on `aria-hidden` decoration, none once it has cleared. Wait for
+  the tween, not for `data-intro`.
+- **CDP's CPU throttle does not slow a worker.** Chunk generation came back
+  *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
+  thread stops competing for cores. It bounds main-thread work and nothing
+  else; say so beside the number.
+
 ---
 
 ## Budgets
@@ -1226,7 +1291,13 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §37: **unchanged to the byte** on a §36 build in the
+  1024px). Measured at §38: **54.94 KiB (56,256)** over three files, 150,443
+  raw, **unchanged to the byte** on a §37 build in the same session — the
+  step's only document-mode bytes are CSS and HTML. (That file set is entry
+  + LogBand + the motion chunk, with the dynamically imported world chunk
+  excluded; earlier steps counted a slightly different set and reported
+  57,024.) `index.html` 9,858 → **10,249** gzipped for the two sentences the
+  audit added and the one condition on `Esc`. Earlier, at §37: **unchanged to the byte** on a §36 build in the
   same session at the same gzip level, and the entry script byte-identical at
   17,380 uncompressed — which is what a step that adds only world-mode code
   should do. Earlier, at §36: **55.69 KiB (57,024)** — **unchanged in content**,
@@ -1241,7 +1312,12 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. The old limit was 260KB for
+- World chunk, desktop: **under 400KB gzipped**. Measured at §38:
+  **224.93 KiB** (230,324 = 226,731 + 3,593 worker) and **byte-identical to
+  §37's** — same chunk hash, same worker — because nothing in that step
+  lands in it. CSS 3,131 → **3,147** for the `--halo` token and its four
+  uses, which is 27 raw bytes more than the two nine-shadow stacks it
+  replaced. The old limit was 260KB for
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
@@ -1291,7 +1367,20 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise.** §0.2's block (steps 25–28 and 30) is finished and
+- **8ms/frame at cruise.** **§38 measured the frame as a law rather than as
+  a number**: `ms = base + slope × megapixels`, base 0.51–0.88 (submission
+  and vertex work) and slope **0.099 to 0.405 ms/Mpx**, fitted over five
+  pixel scales at nine poses. At the shipped DPR 1.5 cap that is **1.13 to
+  1.55ms**; at DPR 3, 2.06 to 5.01. **The sky dome is nearly all of the
+  slope** — +0.25 to +0.43ms at 1.5 and **+1.72 to +2.77 at 3**, against
+  whole frames of 1.31 to 1.56 and 3.96 to 4.85 — and every other layer is
+  vertex work whose share *falls* as the pixels go up: terrain 0.16–0.38,
+  trees and stone 0.18–0.52, cover 0.03–0.09, cloud forms 0.05–0.06, motes
+  0.01–0.04, everything built 0.03, signals 0.02–0.04, water 0.01, stars
+  0.01–0.03 at DPR 1.5. **Standing in §36's Houston, turning the city off
+  costs 2.485ms at DPR 3** — an opaque surface over a sky pixel takes the
+  dome's two noises off it, for the fourth time (§26, §36, §37). §0.2's
+  block (steps 25–28 and 30) is finished and
   §34 is the first thing since to spend any of it. **§37's ten landmarks
   spend none either, and two of them give it back**: one forced pose into both
   builds, both orders, nine poses — draw calls **identical at every one**,
@@ -1336,7 +1425,14 @@ budgeted apart and a reader never pays both.
   hide the sky dome's two fractal noises entirely. The murk that carries them
   into every other material costs −0.022 to +0.022 — inside the noise.
   Report per layer
-- LCP under 2.5s on throttled 4G. Measured at §33 in a real browser on a
+- LCP under 2.5s on throttled 4G. Measured at §38 on the shipped build,
+  cold cache, **gzip served** (a harness that does not is measuring a
+  different site), three runs each: document **80–92ms desktop**,
+  416–436 on Fast 4G and **1,152–1,164 on Lighthouse's Slow 4G** (1.6 Mbps,
+  150ms); world 52 / 312–332 / 548–568. Both reproduce §33's figures. The
+  DevTools preset of the same name — same bandwidth, 562ms of latency —
+  is 2,132–2,152 and 1,380–1,392, so always name which one. Earlier,
+  measured at §33 in a real browser on a
   cold cache, three runs each: document mode **72–84ms desktop** and
   **1,112–1,116 on Lighthouse's Slow 4G**; world mode **44–84** and
   **536–552**, lower in both because §33 does not arm the intro's pre-paint
@@ -1344,12 +1440,21 @@ budgeted apart and a reader never pays both.
   a world load is behind an opaque curtain and never seen — report the
   interactive-world figure beside it or the number flatters the page.
   §22 measured 24ms desktop / 48ms mobile on a different harness
-- **Interactive world under 3s** on a desktop connection. Measured at §33 at
+- **Interactive world under 3s** on a desktop connection. Measured at §38:
+  **428–434ms** cold on desktop, 1,468–1,476 on Fast 4G, 4,559–4,588 on
+  Lighthouse's Slow 4G — and that last figure does **not** reproduce §33's
+  2,766–2,899. Ten kilobytes of chunk growth is about 60ms of the gap and
+  the rest is not attributable: §33's throttle parameters are not written
+  down, and the two presets called Slow 4G are a second apart on the same
+  page. Under a slowed main thread the desktop figure is 534 / 861 / 1,142ms
+  at 1× / 4× / 6×. Earlier, measured at §33 at
   `.world[data-ready]`, which is set after the first render with the loop
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§37 adds none at all** — 47 to 71 over nine poses,
+- Under 100 draw calls. **§38 adds none and cannot**: the world chunk is
+  byte-identical to §37's, so the 50–71 counted over nine poses are §37's own
+  counts by construction. Earlier, **§37 adds none at all** — 47 to 71 over nine poses,
   identical between a §37 build and a §36 one, because everything built in the
   world is still two draw calls and §37's nineteen lights go into the layer
   the four scenes' messages already travel in. Earlier, **§36 adds none at
@@ -1404,6 +1509,12 @@ budgeted apart and a reader never pays both.
   31.3, and the last block's worst opacity step from 0.151 to 0.050
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
+  Measured at §38 over 30s of boosted free flight, 502 chunks in every run:
+  **2.72ms a chunk** in the worker (worst 28.3 to 51.4 on a level-0 chunk)
+  and **17.1 to 36.6ms of main-thread attach for all 502**, with zero holes
+  at the end and **zero frames over 25ms** at the shipped cap. CDP's CPU
+  throttle does not reach the workers — generation came back *faster* under
+  it, because the main thread stops competing.
   Measured at §24 over 75s of boosted flight: level at 190, 549 chunks at
   4.65ms each in the worker pool (worst 8.1), 0.2ms worst on the main
   thread, **zero frames over 25ms**; terrain-hugging at boost, 632 at 5.06.
@@ -1462,8 +1573,26 @@ budgeted apart and a reader never pays both.
   cap is for, and it costs a **14-second fly-past** after the last wheel
   event. rAF median 16.4ms either way, 5 or 6 frames over 25ms in ~1,450,
   never more than 3 chunks pending
-- 60fps on integrated graphics, with LOD doing the work
-- Lighthouse accessibility **100**. axe-core measured at §32 in world mode
+- **60fps on integrated graphics, with LOD doing the work. Measured at §38,
+  and the first thing it measured was the machine**: this is an Apple M4
+  with a ten-core built-in GPU, so every frame number in this project has
+  been taken on integrated graphics all along and the record's "discrete
+  GPU" was wrong. What is left is how much slower a GPU may be, and the
+  proxy is pixels: at DPR 1.5 the worst pose on the route is 1.545ms, so a
+  60Hz frame allows a GPU **10.8× slower** (5.2× against the 8ms cruise
+  ceiling); at a cap of 2 it is 6.9× and at 3, 3.3×. **That ratio is what
+  the DPR cap buys and it is why §38 left it at 1.5**, since frame time on
+  this machine is inside the budget at every scale measured. Both halves
+  slowed at once — main thread 4× and four times the pixels — flies the
+  world at a **16.9ms median** with 1.8% of frames over 25ms
+- Lighthouse accessibility **100**. **axe measured clean at §38 in ten
+  states**, both modes: document mode, a document deep link, the curtain
+  held, the **adapter-refused fallback** (which nothing had ever run it
+  against), the arrival, mid-flight, a station's name frame, a writeup open,
+  free flight with the stick taken, and the document with the way back
+  showing. Wait for the intro's band tween before running it, or eleven
+  `color-contrast` violations on `aria-hidden` decoration are reported that
+  are not there at rest. Earlier: axe-core measured at §32 in world mode
   too, and it needs one thing document mode does not: the station panel has
   to be a **named landmark of its own**, because the document's `<main>` is
   behind an opaque canvas and out of the accessibility tree. Without it,

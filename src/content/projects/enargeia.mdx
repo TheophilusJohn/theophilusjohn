@@ -18,7 +18,9 @@ order: 1
 
 Enargeia runs Qwen2.5-0.5B-Instruct entirely in the browser. The visitor's GPU does the
 inference, so serving it costs nothing beyond static files — no server, no API key, no
-per-token cost. Every kernel is WGSL running on WebGPU.
+per-token cost. Every kernel is WGSL running on WebGPU. Generating a token is one pass up
+through the model's layers, dispatched in order, and every one of those dispatches runs on
+the machine in front of you.
 
 The model is quantized to int4, except the tied embedding and LM head which ship at
 int8 — 334.9 MiB resident against 1884.6 at fp32, for 13.5% worse perplexity. Decode
