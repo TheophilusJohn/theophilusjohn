@@ -4442,6 +4442,200 @@ nothing in the world to contain.
 three stations standing elsewhere in the world; the arrival frame carries
 the name and reads as arriving somewhere named.
 
+### Scale, asked before anything was modelled
+
+**Enormous**, and the deciding argument is a measurement rather than a
+taste: §24's camera floor holds the view six units over the ground, which is
+above head height on a desk, so the human register was never the intimate
+option it sounds like — it is every scene looked *down* on from 27° of
+pitch, plus a re-search of four settles and a re-derivation of every number
+§31 and §32 measured. The enormous register cost one camera. Scenes are 40
+to 70 units against conifers of 12.5 and city towers of 180 to 320.
+
+`scenes.ts` is the file, it imports the field and nothing else, and it owns
+the four **sites** as well as the four scenes — `route.ts` reads them now,
+which is the right way round: a scene is a thing in the world and the route
+is a flight past it. Three of the four scenes were built to the half-width
+the sited stand-off already implied (24, 22, 26); Homonoia could not be,
+because its five nodes stand on `height.ts`'s own 120-unit ring and a node
+off its own summit breaks the one agreement the scene is. So **Homonoia's
+stand moved** — back along its own view axis, from 498 units to 774, which
+keeps §31's searched bearing and is the only camera this step touched. All
+four now frame at 24.0–24.1% of the width.
+
+### The clamp ate the shares, and had done since §16
+
+`uplift()` was `min(Σ share·5·gauss, 1.4)` with the five Gaussians at σ=160
+on a 120-unit ring. They overlap so heavily that the sum is over 1.4
+everywhere inside the massif *whatever the shares are*: measured, `[1,0,0,0,0]`
+returns **1.400 at all five nodes**, exactly as equal shares does, and the
+ground under the cluster is 51.3 / 41.4 / 85.1 / 105.3 / 88.8 either way. The
+election could never have moved that ground. Nobody had pushed a non-equal
+share through it since §16 wrote the note promising §35 would.
+
+**And the massif should not have been the thing that moves anyway.** It is
+the biggest thing in §22's opening frame — the world's front door — and a
+term ending every nine seconds may not re-cut the horizon a reader is
+arriving at from three kilometres away. So `uplift` is shares-independent
+now and the election answers through **`swell`**: a *deviation*, one narrow
+summit per node at σ=62, zero-mean by construction, so a term changes which
+of the five summits is the high one and leaves the mountain alone. The field
+is unchanged where it must be — worst |Δheight| **1.8e-6** over 27,161
+samples across the whole world.
+
+### The swell is not part of the field, and that is the load-bearing choice
+
+Everything the workers bake is a pure function of (x, z) and has to stay
+one: the surface, its normals, the marched shadow, the cover density, and
+`scatter.ts`'s answer to where a conifer stands. A term that changed any of
+them means regenerating six hundred units of world every nine seconds and
+re-baking shade under trees that have moved. So the field the worker sees
+never moves and the deviation is carried on the main thread — `swell.ts` —
+as a vertex term on the terrain with its own analytic normal, a rigid lift on
+`built.ts`'s masts, and a JS term on §24's floor so the camera cannot be
+swallowed by a rising summit.
+
+Measured live in the page at Homonoia's settle: the summit under the node
+holding the term stands **38 units** above where it stands when it does not
+(30.0 up from the resting level, 8 down), and the handover takes 2.7
+seconds. It follows the *votes* rather than the announcement, because a
+majority of five is three.
+
+### `consensus.ts`, and why it is total
+
+`stateAt(t)` is a pure function of the clock — the term, its leader, the
+previous one, who is campaigning, how far through, and how much traffic is
+flowing. §15 drew its next leader with `Math.random()` and §17's brightness
+harness recorded what that cost: two runs of the same length disagreeing by
+1.7× on one stop's ceiling. Here a harness can walk every phase of every
+term by asking for the second it wants.
+
+Two corrections came out of building it. **"Not the incumbent" written as
+`leaderOf(k−1)` is O(k)** — a page open for an hour walks four hundred
+frames deep every frame, and a harness asking for term 20,000 overflows the
+stack, which is how it was found. It is a 97-term cycle instead, walked once
+at module load with the seam checked, which has the property by construction
+and costs one modulo. And **the leader distribution over a 97-draw walk is
+not uniform** — 16 / 22 / 22 / 21 / 16 — which is an ordinary multinomial
+draw (σ = 3.9) and is worth not claiming otherwise.
+
+### What the frame cost, and the three things that were not where they looked
+
+The first honest A/B came back **+0.49 to +0.62 ms/frame at every settle**,
+which is an order of magnitude more than anything §25 to §30 added and would
+have been most of a step's budget. Four hunts, and the first three were wrong:
+
+- **Not the per-object uniforms.** §34 wanted two more beside `morph` — the
+  chunk's origin and the swell gate — and three `uniform()`s with three
+  `onObjectUpdate` callbacks is a hundred and fifty JS calls a frame over
+  fifty chunks. Packed into one `vec4`: no change at all. Worth keeping
+  anyway.
+- **Not the double normalize.** The terrain's corrected normal is a
+  *fragment*-stage node and the first version normalised twice, which is a
+  wasted inverse square root on every pixel of the screen. Removing it: no
+  change. Worth keeping anyway.
+- **Not the near-plane blowout.** These are the only camera-facing quads in
+  the world at *fixed* world points — `motes.ts` and `clouds.ts` are
+  camera-relative, so their centres are always in front of the eye — and a
+  quad built in the camera's basis around a point behind the near plane
+  straddles it and rasterises across the whole screen. Real, fixed by
+  collapsing the quad to a point, and not the cost.
+- **It was two things, and both are the same mistake.** A cumulative-hide
+  sweep on both builds in one session put 0.31 ms on the fifty-one signal
+  quads and 0.23 on `stands.ts`. The signals' fragment shader read
+  `fog(positionWorld)`, and three derives `positionWorld` from
+  `positionNode` — so the whole vertex chain, `swellLift`'s five
+  exponentials included, was being recomputed **per pixel**. Everything in
+  it except the disc itself is a property of the instance; collapsed into one
+  `varying` the layer costs **0.023 ms**. The same argument put `built.ts`'s
+  `hot` — four `equal` selects and three dynamically indexed uniform-array
+  reads — into a varying, and the four hundred boxes cost **0.034**.
+
+`stands.ts` is the one that was not a bug but a bad trade. A gated branch in
+a vertex shader still costs the branch, and it runs once per vertex of twenty
+thousand instances on a 608-unit disc. What it bought, counted in Node:
+**twelve conifers** inside the whole 306-unit footprint, ten of which move
+more than three units, and **no ground cover at all** — `coverAt` is zero
+over the entire disc, so the grass never needed it. Twelve trees are not
+worth a fifth of a millisecond everywhere, so `scatter.ts` clears them
+instead, folded into `treeClump` where the worker and the main thread both
+already read it — a factor either could forget to apply is a pool of shade
+with nothing standing in it.
+
+### Verified
+
+**Frame cost.** One forced pose per row, driven into both builds so the two
+frames contain the same ground, the same trees and the same sky — the earlier
+A/B was not like for like, because §34's pads changed the settle pitch at all
+four. Built code, both orders, DPR 1:
+
+| pose | §33 | §34 | Δ |
+|---|---|---|---|
+| Enargeia settle | 0.923 / 0.919 | 1.030 / 1.035 | **+0.107 / +0.116** |
+| Philoi settle | 0.907 / 0.877 | 0.921 / 0.954 | +0.014 / +0.077 |
+| Basis settle | 0.839 / 0.853 | 0.869 / 0.863 | +0.030 / +0.010 |
+| §31's Homonoia settle | 0.797 / 0.774 | 0.838 / 0.840 | +0.041 / +0.066 |
+
+At **DPR 1.5 it is −0.035 to +0.007** — nothing, because the frame is
+fill-bound there and the scenes are vertex work. Draw calls **+2** (31–49 →
+33–51 at these poses), triangles +2,286. Against a budget of 8 ms and 100
+draw calls.
+
+**Chunk generation is unchanged**, which is the point of keeping the swell
+off the field: 1.43–1.60 ms a chunk either way at four places including the
+massif, run twice in each order, all differences inside the noise. The
+worker's own bundle is +42 bytes — `scatter.ts`'s bare disc — and `swell`
+and `setShares` are tree-shaken out of it, since nothing in a worker calls
+them.
+
+**Clearance.** Least clearance over the flown route, swept every scroll unit
+at three arrival clocks and over four whole terms: **9.07 units**, at scroll
+2,275 on the approach to Enargeia. §33 measured **9.06** at the same place,
+so this is unchanged and §32's recorded "12.6 as flown" was optimistic — it
+was taken on a coarser sample. The 6.000 clamp still never fires on the
+route. The swell cannot lower it: the route's nearest approach to the massif
+is on the climb-out, 122 units up.
+
+**Nothing is entered.** Closest approach of the flown path to any box of any
+scene, every two scroll units at both ends of the arrival clock: **22.7**
+(Homonoia's climb-out, past a mast), 32.0 (Philoi's, past a screen frame),
+92.2, 107.3. §35's camera radius is four.
+
+**Accessibility.** axe-core clean in six states — document mode, the curtain
+held, the arrival, mid-flight, at a station, and reading a writeup. The
+arrival needed what §32 and §33 both needed: a labelled landmark of its own,
+here a `<section>` named by the `<h1>` inside it, which in world mode is the
+page's only heading.
+
+**Bundle**, both builds in one session at the same gzip level. World
+**219.59 KiB** (221,564 + 3,292 worker) of 400, up **4,303** on §33's
+217,261 — four scenes, the election, the swell and the arrival, and the
+largest single-step addition to the chunk so far (§28's conifers were 3,743).
+Document **55.69 KiB** (57,023) of 120, **−1 byte**: nothing here lands in
+document mode. CSS 2,924 → **3,058** for the arrival block.
+
+**And "stations" is plural, so the spec line stands.** From the opening pose
+at 190 units, Homonoia's masts at 1,064 units and Enargeia's machine at 1,030
+are both legible in the frame — which is why the masts are 100 units and not
+the 46 they were first built at: at 46 they are 3.4° of a 60° frame and read
+as posts on a ridge.
+
+### Two things this step got wrong on the first build
+
+- **A `--leader` mast is too much accent for one bit of state.** Given the
+  node's whole geometry, the leader read as a solid column of accent and its
+  own shading was mixed away under it, which flattened it into a silhouette.
+  The crown alone carries the term now: five identical masts differing by one
+  lit block is what an election looks like from the air, and it is what §2
+  asks of the colour.
+- **Thin slabs alias, and the fix is gaps rather than thickness.** Enargeia
+  was fourteen layers of twenty-five cells at 0.85 units thick on a 2.9
+  pitch; seen from 132 units at a shallow angle with no MSAA, the back of the
+  stack showed through the front as vertical moiré, which reads as a
+  rendering fault rather than as depth. Ten layers of nine on a 17-unit
+  pitch is the same object with 5.8 units of air between cells — a gap the
+  eye resolves as a gap, where 1.8 on 8 is where two edges land in one pixel.
+
 ### 35. Collision and the unlock
 Oriented boxes in a spatial hash, a sphere against a box, resolved by
 pushing out along the shallowest axis (SPEC §0.3). The camera has a radius

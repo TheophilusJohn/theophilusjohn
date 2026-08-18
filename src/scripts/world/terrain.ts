@@ -46,6 +46,7 @@ import {
   MeshBasicNodeMaterial,
   Sphere,
   Vector3,
+  Vector4,
   type Camera,
 } from 'three/webgpu';
 import {
@@ -57,6 +58,8 @@ import {
   positionWorld,
   smoothstep,
   uniform,
+  varying,
+  vec2,
   vec3,
 } from 'three/tsl';
 import { bands, litness } from './band';
@@ -66,6 +69,7 @@ import { SEG, VERTEX_COUNT, buildIndices, type ChunkSpec } from './grid';
 import type { ChunkData } from './chunk';
 import type { Palette } from './palette';
 import { haze } from './sky';
+import { nearSwell, swellGated } from './swell';
 import { SUN } from './sun';
 
 /* ── The LOD, in five numbers ───────────────────────────────────────────
@@ -201,28 +205,89 @@ export function buildTerrain(palette: Palette) {
 
   const material = new MeshBasicNodeMaterial();
 
-  /* Per **object**, which is what `uniform` already is: its group is the
+  /* ── One per-object uniform, and it is four numbers ──────────────────
+     Per **object**, which is what `uniform` already is: its group is the
      object group, so the value the callback writes is the one this mesh is
      drawn with and the next mesh gets its own. That is the whole plumbing
      cost of a per-chunk weight, against a vertex attribute that would have
-     to be re-uploaded every frame. */
-  const morph = uniform(0);
-  morph.onObjectUpdate((frame) => {
-    morph.value = (frame.object?.userData.morph as number | undefined) ?? 0;
+     to be re-uploaded every frame.
+
+     **One of them, not three, and that is a measurement.** §34 wanted two
+     more — where the chunk is, so the swell can be asked about a world
+     coordinate, and whether it is near the massif at all — and written as
+     three `uniform()`s with three `onObjectUpdate` callbacks the frame cost
+     went up **0.49 to 0.62 ms at every one of the four settles**, which is
+     an order of magnitude more than anything §25 to §30 added and did not
+     move when the scenes themselves were hidden. It is not the shader: a
+     callback runs per object per render, so three of them over fifty chunks
+     is a hundred and fifty JS calls and three uniform buffer writes a frame
+     where there was one. Packed into a `vec4` it is one of each again.
+
+     x is §25's morph weight, y and z are the chunk's own origin, w is §34's
+     swell gate. */
+  const chunk4 = uniform(new Vector4());
+  chunk4.onObjectUpdate((frame) => {
+    const object = frame.object;
+    if (!object) return;
+    chunk4.value.set(
+      (object.userData.morph as number | undefined) ?? 0,
+      object.position.x,
+      object.position.z,
+      (object.userData.swell as number | undefined) ?? 0,
+    );
   });
+  const morph = chunk4.x;
 
   /* §25 — three attributes morph, and all three are differences from this
      chunk's own value, so a root chunk carries zeroes and needs no branch.
      Position is the one that is a vertex-stage node; the other two are read
      in the fragment stage, where blending the varying and blending at the
      vertex come to the same thing because both are linear. */
+  /* ── The swell (§34) ─────────────────────────────────────────────────
+     The ground under Homonoia is not where the workers baked it: a term ends
+     and the summit under the new leader rises thirty units. `swell.ts` says
+     why that is a vertex term rather than a regeneration — everything a
+     worker bakes has to be a pure function of (x, z), including where a
+     conifer stands and how dark the ground under it is.
+
+     Gated **per chunk**, which is the whole of what makes it affordable:
+     the gate is that same per-object vec4, so 132 of the 136 chunks at the
+     opening pose evaluate a comparison and skip five exponentials, and the
+     branch is perfectly coherent because a chunk is either in the massif or
+     nowhere near it. */
+  /* **A varying, not an expression.** `rise` is read by `positionNode` in
+     the vertex stage and by the normal below in the fragment stage, and a
+     node used in both is *generated* in both — which would put five
+     exponentials on every pixel of the massif as well as on every vertex of
+     it. It is linear in the two things that vary across a triangle, so
+     interpolating it is the same answer for a fraction of the cost. */
+  const rise = varying(swellGated(
+    vec2(positionLocal.x.add(chunk4.y), positionLocal.z.add(chunk4.z)),
+    chunk4.w,
+  ));
+
   material.positionNode = positionLocal.add(
-    vec3(0, attribute<'float'>('morphY', 'float').mul(morph), 0),
+    vec3(0, attribute<'float'>('morphY', 'float').mul(morph).add(rise.x), 0),
   );
 
-  const normal = attribute<'vec3'>('normal', 'vec3')
-    .add(attribute<'vec3'>('morphNormal', 'vec3').mul(morph))
-    .normalize();
+  /* And its normal, analytically. The baked normal encodes the field's own
+     slope; dividing out its `y` recovers `(−∂h/∂x, 1, −∂h/∂z)`, and the
+     swell's gradient — which `swellAt` returns beside the lift for two
+     multiplies a node — subtracts into it. Without this the massif's summit
+     rises with the shading of the flat ground it used to be, and thirty
+     units of relief arrive with no terminator moving across them, which
+     reads as the mountain inflating rather than as light on a slope. */
+  /* **Not normalised twice.** The blended attribute goes straight into the
+     divide: `n / n.y` is `(−∂h/∂x, 1, −∂h/∂z)` whatever the length of `n`
+     was, so normalising first is a wasted inverse square root — and this is
+     a *fragment*-stage node, so it is a wasted one on every pixel of the
+     screen. Written with both, the frame cost went up half a millisecond at
+     every settle with the scenes hidden and the swell switched off, which is
+     what sent this hunt to the shader in the first place. */
+  const raw = attribute<'vec3'>('normal', 'vec3')
+    .add(attribute<'vec3'>('morphNormal', 'vec3').mul(morph));
+  const flat = raw.div(raw.y.max(0.05));
+  const normal = vec3(flat.x.sub(rise.y), 1, flat.z.sub(rise.z)).normalize();
 
   /* Lit by hand rather than through a lighting model, and at §23 that is
      no longer only a bundle argument. A quantised N·L with a baked cast
@@ -556,7 +621,20 @@ export function buildTerrain(palette: Palette) {
       if (chunk.mesh) {
         const visible = shown.has(chunk.key);
         chunk.mesh.visible = visible;
-        if (visible) chunk.mesh.userData.morph = morphOf(chunk, p.x, p.z);
+        if (visible) {
+          chunk.mesh.userData.morph = morphOf(chunk, p.x, p.z);
+          /* §34's gate, per chunk. The test is against the chunk's own
+             centre with its half-diagonal as the pad, so a level-3 square
+             that only clips the massif still evaluates the term for the
+             corner of it that does. Written here rather than at generation
+             because a chunk's *level* changes what pad it needs and a chunk
+             is generated once. */
+          chunk.mesh.userData.swell = nearSwell(
+            chunk.ix * chunk.size + chunk.size / 2,
+            chunk.iz * chunk.size + chunk.size / 2,
+            chunk.size * Math.SQRT1_2,
+          ) ? 1 : 0;
+        }
       } else if (chunk.requested) pending++;
       if (live) chunk.idle = 0;
       else {

@@ -351,6 +351,65 @@ html[data-mode='world'] .curtain { display: grid; }
   opacity: 0;
 }
 
+/* ── The arrival (§0.3's 0% row, §34) ────────────────────
+   The name over the landscape at the top of the route, and
+   it leaves before the first station's ID resolves. Not the
+   document's hero: that is --t-hero at 18vw and would fill
+   the frame the world is the subject of. This is --t-2xl,
+   which is what §29 measured as composed over the ground
+   and what every station headline is set at — one register,
+   two things in it.
+
+   Written out rather than cloned, unlike everything else in
+   this layer, because there is nothing in the document at
+   this size to clone. The tokens are the same ones
+   ProjectSection sets its own headline from. */
+.arrival .col {
+  position: absolute; inset-block: 0; left: var(--s-16);
+  width: 54ch; max-width: calc(100% - 2 * var(--s-16));
+  padding-block: var(--s-16) var(--s-12);
+  display: grid; align-content: center; justify-items: start;
+  row-gap: var(--s-6);
+  opacity: var(--in, 0);
+  transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
+}
+.arrival[data-out] { visibility: hidden; }
+
+.arrival .headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-2xl); line-height: 0.94;
+  letter-spacing: -0.045em; font-weight: 500;
+  font-variation-settings: 'wdth' 120;
+  color: var(--paper);
+  /* max-content for the same reason a station's headline
+     takes its own width: the name is two words and a 54ch
+     measure would leave it looking like a paragraph that
+     happens to be large. */
+  width: max-content; max-width: 100%;
+}
+
+/* --leader, and it is the one place on the arrival frame
+   that may be: the line is the claim the whole site is
+   making, which is state in §2's sense the way a live link
+   is. It is also the hero's own colour in document mode. */
+.arrival .sub {
+  margin: 0; max-width: 42ch;
+  font-size: var(--t-lg); color: var(--leader);
+}
+
+/* Its own fade, ahead of the rest: an instruction still on
+   screen after the reader has obeyed it is noise. --dim on
+   --scrim, at the mono meta size the rest of the site uses
+   for anything that is not prose. */
+.arrival .hint {
+  margin: 0; opacity: var(--hint, 0);
+  font-family: var(--font-mono); font-size: var(--t-meta);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--dim);
+}
+.arrival .hint::after { content: ' \2193'; }
+
 .station { display: none; }
 .station[data-here] { display: block; }
 

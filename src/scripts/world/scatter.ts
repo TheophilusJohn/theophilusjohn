@@ -28,7 +28,7 @@
    nothing standing in it. */
 
 import { coverAt, hash3, ramp } from './cover';
-import { WATER, height, landform, rangeMask, noise2, uplift } from './height';
+import { CLUSTER_SITE, SWELL_REACH, WATER, height, landform, rangeMask, noise2, uplift } from './height';
 
 /* One cell is sixteen units and holds up to two of each. At full density
    that is a conifer every eleven units, which is a stand rather than a
@@ -189,7 +189,15 @@ export function groundAt(x: number, z: number, h = height(x, z, SPACING)): Groun
     everywhere, because two thirds of the cells anyone considers are outside
     a forest and this is what makes them free. */
 export function treeClump(x: number, z: number): number {
-  return ramp(
+  /* The bare disc is folded in *here* rather than into `treeDensity`, and
+     that is the point: `chunk.ts` bakes the shade under a conifer in a
+     worker and `stands.ts` draws the conifer on the main thread, and they
+     agree only because both ask the same function the same question. A
+     factor either of them could forget to apply is a pool of shade with
+     nothing standing in it. This one they cannot forget — it is inside the
+     number they both already read. */
+  const bare = ramp(BARE_IN, BARE_OUT, Math.hypot(x - CLUSTER_SITE.x, z - CLUSTER_SITE.z));
+  return bare * ramp(
     TREE_CLUMP_LOW,
     TREE_CLUMP_HIGH,
     noise2((x + TREE_CLUMP_OFF_X) / TREE_CLUMP, (z + TREE_CLUMP_OFF_Z) / TREE_CLUMP),
@@ -215,12 +223,42 @@ export function treeBand(h: number): number {
 
 /** How many of a cell's conifer slots are filled, 0..1. `clump` is
     `treeClump` at the same point, which the caller already asked for. */
+/* ── The massif's own ground is bare (§34) ──────────────────────────────
+   Nothing grows inside the swell's footprint, and it is a performance
+   decision written as a placement rule because that is the only place it can
+   be written *once*.
+
+   §34 moves the ground under Homonoia by up to thirty units when a term
+   ends, and what stands on it has to move with it. Done in the shader — a
+   gated lift in `stands.ts`'s vertex stage — it cost **0.22 ms a frame at
+   every pose in the world**, measured at the Enargeia settle a kilometre
+   away, which is more than the whole landscape and more than the four scenes
+   put together. What it bought: **twelve conifers**, ten of which move more
+   than three units, and **no ground cover at all** — `coverAt` is already
+   zero over the entire 306-unit disc, so the grass never needed it.
+
+   Twelve trees are not worth a fifth of a millisecond everywhere. Taking
+   them out is free, it is a pure function of (x, z) so the worker and the
+   main thread still agree about where a tree is and how dark the ground
+   under it is, and it is the picture the massif already had: §28's own test
+   is that the treeline is readable from above, and the cluster's five
+   summits stand at 41 to 105 against a treeline of 58. The disc is 282 to
+   398 units, ramped, so there is no edge to see — and nothing to see it in.
+
+   The other three readers of the swell stay: the terrain is the ground, the
+   camera's floor is a guarantee, and `built.ts`'s masts are the thing the
+   term is about. */
+const BARE_IN = SWELL_REACH * 0.92;
+const BARE_OUT = SWELL_REACH * 1.3;
+
 export function treeDensity(g: Ground, clump: number): number {
   let d = treeBand(g.h) * ramp(TREE_SLOPE_NONE, TREE_SLOPE_FULL, g.slope);
   if (d <= 0) return 0;
   d *= 1 - TREE_MASK_THIN * Math.min(Math.max(g.mask, 0), 1);
   return Math.min(d * clump, 1);
 }
+
+
 
 export function rockDensity(g: Ground, clump: number, x: number, z: number): number {
   if (g.h < WATER) return 0;

@@ -599,7 +599,7 @@ One scroll, top to bottom, and it is a flight.
 
 | scroll | what happens |
 |---|---|
-| 0% | Arrival. High over the landscape, the name in `--paper`, stations visible in the distance |
+| 0% | Arrival. High over the landscape, the name in `--paper`, stations visible in the distance. **Built at §34** — and *stations* is right: Homonoia's masts and Enargeia's machine are both in the opening frame, at 1,064 and 1,030 units |
 | ~15–40% | Travelling. The first station's ID and headline resolve as you close |
 | ~40% | **Settle.** The camera eases into a composition, the writeup arrives |
 | … | Climb away, travel, settle, four times |
@@ -610,8 +610,10 @@ curve. `curve.ts`'s discipline applies and it is why that module was written
 the way it was: the pose is a pure function of its input and lives in one
 module with no three and no DOM in it (§4.7's camera).
 
-**Built at §31, and the route is 22 keyframes over 16,867 scroll units**,
-with the settles at 13.6%, 36.2%, 61.5% and 84.0%. (21 over 12,067 as §31 shipped
+**Built at §31, and the route is 22 keyframes over 17,144 scroll units**,
+with the settles at 13.4%, 35.6%, 62.1% and 84.2%. (16,867 and
+13.6 / 36.2 / 61.5 / 84.0 until §34 moved Homonoia's stand back to 774 units,
+which is the only camera §34 touched.) (21 over 12,067 as §31 shipped
 it; §32 gave the last station the climb-away every other station already
 had, then gave the dwell the room to hold the beats — 600 units to 1,500 —
 and the final turn 1,200 rather than 500, because 155° of yaw in 500 units
@@ -645,7 +647,9 @@ never short of where they scrolled to.
 scrollbar and world mode does not, because there is no document scroll to
 report — so a 1px rail stands at the right edge in §4.3's own language:
 `--rule` track, `--leader` fill from the top, the four settles marked at
-13.6 / 36.2 / 61.5 / 84.0%, the live one wider and in the accent. It reports
+13.4 / 35.6 / 62.1 / 84.2% (computed from `stops`, so §34 moving Homonoia's
+stand moved them without touching this file), the live one wider and in the
+accent. It reports
 and takes no pointer: a scrollbar you can grab would be a second way to move
 the camera. Hidden with the stick out, like the writeup, because off the
 route there is no route position to report.
@@ -675,18 +679,53 @@ The gesture may still run ahead of the flight and always arrives where it was
 put: a bound on the lag was built and removed, because it buys a short
 catch-up by discarding scroll the reader made.
 
+#### The name at 0%, which is what the arrival frame carries
+
+Two of that row's three clauses had never belonged to a step: §31 sited the
+route and put Enargeia in the opening frame, §32 built the content *at* a
+station, and until there was something in the world to contain neither was
+wrong to skip it. So the first 9.5% of the route carried no type at all —
+`bandAt(0)` is station −1 at weight 0, the first non-zero weight is 1,601
+units in, and the document's own hero is behind `visibility: hidden`.
+
+**It is not a clone of that hero.** The hero is `--t-hero` at 18vw, which is
+the right size for a page whose subject is the type and the wrong size for a
+frame whose subject is the landscape. The arrival is `--t-2xl` — the size §29
+measured as composed over the world, and the one every station headline is
+already set at — in the column the reading occupies: the name in `--paper`,
+the document's own subline in `--leader`, and a mono hint in `--dim` under
+it. One register, two things in it.
+
+It leaves the way everything else on the route leaves, on a ramp off scroll:
+gone by 1,200, which is four hundred units before Enargeia's machine ID
+begins to resolve, so the two are never both on screen. The hint goes first
+(by 800) — an instruction still on screen after the reader has obeyed it is
+noise. It rides `y` directly rather than a band weight because there is no
+band at 0, and the route's speed cap makes it smooth without damping: at
+twelve scroll units a frame it moves 1.4% of an opacity.
+
+**A labelled `<section>` with an `<h1>` in it**, for the reason every station
+panel is a labelled region: `<main>` is behind an opaque canvas and out of
+the accessibility tree in world mode, so in world mode this *is* the page's
+heading. Measured clean by axe in six states.
+
 #### The four stations, sited
 
 Searched against `height.ts` in Node — level ground a scene can stand on,
 proud of what is around it, the next visible from the last one's climb-away,
 no leg doubling back, and the first of them in the opening frame.
 
-| | site | ground | settle pose |
+| | site | pad | settle pose |
 |---|---|---|---|
-| **Enargeia** | (12, −967) | 46.0 | (3, 62, −835) yaw 13.1 pitch 1.0 |
-| **Homonoia** | (−520, −900) | 57.2 | (−327, 109, −1359) yaw 174.2 pitch −2.7 |
-| **Philoi** | (−1040, 280) | 42.5 | (−991, 57, 169) yaw 173.2 pitch 0.7 |
-| **Basis** | (−1640, 1300) | 19.7 | (−1508, 35, 1243) yaw 130.4 pitch 0.9 |
+| **Enargeia** | (12, −967) | 48.9 | (3, 62, −835) yaw 13.1 pitch 2.3 |
+| **Homonoia** | (−520, −900) | 74.4 | (−220, 152, −1614) yaw 174.2 pitch −3.7 |
+| **Philoi** | (−1040, 280) | 44.0 | (−991, 57, 169) yaw 173.2 pitch 1.4 |
+| **Basis** | (−1640, 1300) | 21.3 | (−1508, 35, 1243) yaw 130.4 pitch 1.5 |
+
+**The `ground` column is the scene's pad since §34**, not `height(site)`: a
+scene stands on a slab over the highest ground under its footprint, so it is
+1.5 to 6 units higher than the field and the aim was low by the difference.
+Homonoia's stand moved (§0.4) and the pitches moved with the pads.
 
 Legs of 1,030 / 536 / 1,289 / 1,183 units and 4,039 end to end, all inside
 the 2,600 bound. **Homonoia is where `height.ts` already puts the cluster**
@@ -697,8 +736,16 @@ better would have cost the world its front door.
 The framing is a rule rather than four poses — stand off far enough that the
 scene is a quarter of the frame's width, aim at 0.4 of its height, turn 17°
 off the bearing — and it reproduces §29's numbers and puts the subject at
-**67% of the width and 50% of the height at all four**. §34 tunes two numbers
-per station, the scene's radius and its height, and the poses follow.
+**67% of the width and 50% of the height at all four**. §34 tuned the two
+numbers per station, the scene's radius and its height, and the poses
+followed: all four now frame at 24.0–24.1% of the width.
+
+**The route does not fly through anything it built.** Closest approach of the
+flown path to any box of any scene, swept every two scroll units at both ends
+of the arrival clock: 22.7 units (Homonoia's climb-out, past a mast), 32.0
+(Philoi's, past a screen frame), 92.2 and 107.3. §35's camera radius is four,
+so there is nothing on the route for collision to resolve — which is right,
+since collision is for free flight.
 
 #### The settle, and §29's four constraints
 
@@ -814,30 +861,101 @@ should recognise what they are looking at without being told.**
 - **Enargeia** — a machine thinking. A stack of layers with a wave of
   activation travelling through it, or one machine with the forward pass
   visible on it. It runs on the visitor's own hardware; the scene should not
-  look like a datacenter.
+  look like a datacenter. **Built at §34**: ten plates of nine cells in a
+  four-column chassis with a lid, and the negative half is answered by the
+  *count* — there is exactly one of these, on one plinth, with nothing beside
+  it. Racks are what "many machines" reaches for. The wave is a function of
+  the clock and the plate's own place in the stack, with a hashed weight per
+  cell so a layer does not activate as one solid bar.
 - **Homonoia** — five nodes in the landscape, passing something between
   them, with one of them holding the term. **This absorbs the cluster step
   entirely**: the election happens here, and the ground under the cluster is
-  where §16's heightfield term already raises a massif (§0.5, §4.7).
+  where §16's heightfield term already raises a massif (§0.5, §4.7). **Built
+  at §34**: five hundred-unit masts, one per Gaussian on the field's own
+  ring, and the crown is the only part that carries the term — a mast in
+  `--leader` is a great deal of accent for one bit of state and flattens the
+  node into a silhouette. Traffic is authored both ways for every pair and
+  the half that is not the leader's is switched off.
 - **Philoi** — two workstations, screens lit, the same document open on
   both. Edits appear on one and arrive on the other. Nothing is discarded,
-  and a reader should be able to see that.
+  and a reader should be able to see that. **Built at §34**, and that last
+  clause is the whole scene: sixteen lines, each carrying an **origin** that
+  decides where it sits, and a line's place in the column is *how many
+  present lines have a smaller origin* rather than when it arrived. So a line
+  that lands late slots between two that are already there and pushes the
+  ones below it down, and both screens run the same comparison over the same
+  origins and reach the same column. The 0.42s of latency is the only window
+  in which the two disagree, and it is the only window in which a reader can
+  see that this is a *replica* rather than a shared screen.
 - **Basis** — something assembled and running. Modules wired together, a
   request tracing through them on a slow loop. Deliberately the quietest.
+  **Built at §34**: seven modules on masts joined by struts, one request
+  every twelve seconds, one strut at a time.
 
-#### Scale is the open question here
+**Two draw calls for everything built in the world** — one instanced box mesh
+for 356 parts and one additive layer for the 51 things travelling between
+them — which is `stands.ts`'s construction and for its reason. What makes one
+part differ from the next is six floats in its instance.
+
+**And an object is not flat ground**, which §28 already knew and which bites
+harder on a box: `sun.ts` puts the key light where an axis-aligned face
+reaches `N·L` 0.660 at *best*, so compressed into a conifer's 0.05–0.86 the
+brightest wall of a building lands two hundredths past `band.ts`'s
+terminator and every scene is one flat fill. The range is fitted through what
+a box can actually reach — 0.50 at 0 and 1.07 at 1 — and the low end of it is
+a **fill**, the one thing here the terrain does not get. **Two of the four
+settles stand on the shadow side**: §29's framing rule turns 17° off the
+bearing to the subject and says nothing about where the light is, so at
+Philoi, Homonoia and Basis the camera sees only walls at `N·L` 0 exactly.
+
+#### Scale, answered at §34: enormous
 
 Two desks is a human-sized scene in a world where the camera cruises at 45
 units a second and the nearest visible ground at cruise is 315 units out
-(§28). Two ways, and they are different worlds:
+(§28). The two ways were different worlds:
 
 - **Enormous** — desks the size of buildings, monitors like billboards. Fits
   the oversized register the cities are in (§0.2) and needs no change to the
-  flight profile.
-- **Human, with the camera descending** — the route drops to a few units at
-  each station. More intimate, and it changes the whole altitude curve.
+  flight profile. **This is what shipped.**
+- ~~**Human, with the camera descending**~~ — the route drops to a few units
+  at each station. §24's floor holds the camera six units over the ground,
+  which is above head height on a desk, so this was never the intimate
+  option it sounds like: it is every scene looked *down* on from 27° of
+  pitch, plus a re-search of four settles and a re-derivation of every number
+  §31 and §32 measured.
 
-**Decide by looking**, at one station, before building four.
+**`scenes.ts` is the file**, and it owns the four sites as well as the four
+scenes — `route.ts` reads them, because a scene is a thing in the world and
+the route is a flight past it. `radius` and `tall` are the framing rule's
+only two inputs and **three of the four are derived from the sited stand-off
+rather than chosen**: at §31's distances the quarter-of-the-frame rule wants
+24, 22 and 26, so the scenes were built to those half-widths.
+
+**Homonoia is the exception and could not be otherwise.** Its five nodes
+stand on `height.ts`'s own 120-unit ring — that is where the massif puts its
+summits, and a node off its own summit breaks the one agreement the scene is
+— so the scene is 280 across and the framing rule wants 774 units of
+stand-off rather than §31's 498. The *camera* moved instead, back along its
+own view axis so the searched bearing is kept: `(−220, 152, −1614)`. All four
+now frame at 24.0–24.1% of the width. The route is 17,144 units and the
+settles are at 13.4 / 35.6 / 62.1 / 84.2%.
+
+| | site | pad | radius | tall | stand-off |
+|---|---|---|---|---|---|
+| **Enargeia** | (12, −967) | 48.9 | 24 | 46 | 132 |
+| **Homonoia** | (−520, −900) | 74.4 | 140 | 120 | 774 |
+| **Philoi** | (−1040, 280) | 44.0 | 22 | 40 | 121 |
+| **Basis** | (−1640, 1300) | 21.3 | 26 | 44 | 144 |
+
+**A scene stands on a pad, not on the field.** The sites are level to 8.5 to
+13.8 units, not level, so each scene sits on a slab whose top is above the
+highest ground under its footprint and whose bottom is well below the lowest
+— buried on the high side, proud on the low, which is what a thing built on a
+slope looks like. The pad is also what the camera aims at (`pad + 0.4·tall`),
+which is why **Homonoia's is the mean of the five node grounds** rather than
+the maximum over its footprint: taken as a maximum it is 127.5, the top of
+the massif and 25 units above the tallest crown, and the scene sits at the
+bottom of the frame. The difference is 53 units of aim.
 
 #### What does not change
 
@@ -1639,6 +1757,24 @@ Everything else here is scaffolding for a single moment: a term ends, and the la
 
 If the frame budget forces a choice, that survives and everything else goes.
 
+**Built at §34, and it is `consensus.ts`.** A pure function of the clock:
+`stateAt(t)` gives the term, who holds it, who held the last one, which node
+is campaigning and how much traffic is flowing. That is a correction to §15,
+which drew its next leader with `Math.random()` — §17's brightness harness
+recorded what that cost, two runs of the same length disagreeing by 1.7× on
+one stop's ceiling. Nothing is stored, so a harness can walk every phase of
+every term by asking for the second it wants, and the same second gives the
+same cluster on a reload. The incumbent may not succeed itself, which is the
+one Raft detail that shows in the picture rather than in the log. Terms are
+9 seconds: 0.9s of silence, then a candidacy, then the votes, then six
+seconds of steady state.
+
+**And the ground answers it.** Measured live in the page at Homonoia's
+settle: the summit under the node holding the term stands **38 units** above
+where it stands when it does not — 30.0 up from the resting level and 8 down
+— and the handover takes 2.7 seconds, following the *votes* rather than the
+announcement, because a majority of five is three.
+
 **Two things to get right now (§0).** The election stands, and it becomes
 something you arrive at rather than something under every screen — the
 cluster and its ground are a place at Homonoia (§0.5). But §0.2's step 22 is
@@ -1815,10 +1951,14 @@ calls rather than architectural ones. The architecture is decided.
   §29: they are scenes, not structures** (§0.4), and the four are named
   there. The range above is closed — a scene of the system explains itself,
   where a monolith has to be explained.
-- **How big a station is.** The half of the question above that is still
-  open, and the build order still blocks on it (step 34): desks the size of
-  buildings in the cities' oversized register, or human-scale with the route
-  descending to a few units. Decide by looking at one, not by argument.
+- ~~**How big a station is.**~~ **Answered at §34: enormous.** 40 to 70
+  units tall against conifers of 12.5 and city towers of 180 to 320 — three
+  and a half trees, a fifth of a tower. The deciding argument was not taste:
+  §24's camera floor is six units over the ground, which is *above head
+  height on a desk*, so the human register would have looked down on every
+  scene from 27° of pitch and would have moved the floor, the four settles
+  and every number §31 and §32 measured. The enormous register cost nothing —
+  the route was already sited for it, and only Homonoia's stand moved.
 - ~~**Is the terrain habitable or hostile?**~~ **Answered at §24:
   habitable.** §0.2 makes the landscape alive — water in the low ground,
   conifers and scrub on the lower slopes, motes in the air — which is the

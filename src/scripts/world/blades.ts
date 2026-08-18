@@ -295,6 +295,11 @@ export function buildBlades(palette: Palette, time: UniformNode<'float', number>
      the disc sinks into the ground over twelve units of travel. The distance
      is to the instance rather than to the vertex: every vertex of one tuft
      has to agree about how big it is. */
+  /* **No swell here** (§34). The ground under Homonoia moves with the term
+     and grass would have to move with it — except that `coverAt` is zero
+     over the whole of the swell's 306-unit footprint, so there is no grass
+     there to move. `scatter.ts` says the rest of it: the conifers went the
+     same way, and it cost 0.22 ms a frame to find that out. */
   const shrink = smoothstep(REACH, REACH_IN, pos.sub(cameraPosition).length());
   material.positionNode = pos.add(shape.mul(h.mul(shrink)));
 

@@ -16,16 +16,17 @@
 
    What is here is the renderer, a camera you can fly, and — since §22 — a
    landscape under it with — since §23 — a sky over it and a light on it, and
-   — since §26 — water in the low ground. Almost none of any of it is in this
-   file: `height.ts` is the field, `chunk.ts` samples it and bakes what it
+   — since §26 — water in the low ground, and — since §34 — four scenes
+   standing in it with an election running in one of them. Almost none of any
+   of it is in this file: `height.ts` is the field, `chunk.ts` samples it and bakes what it
    shadows, `grid.ts` is the vertex layout both ends share, `terrain.ts`
    decides which squares of ground exist and how they band, `water.ts` is the
    one plane at the field's water level, `sky.ts` is the gradient and the
    cloud deck and `sun.ts` is the one direction all of it agrees on. Still
    ahead:
 
-   - §35 brings the cluster back as a thing standing in a place, and with it
-     the election, which is still the one thing to get right
+   - §35 makes what §34 built *solid*, and offers the stick at the end of
+     the route
 
    The scene is no longer a function of scroll position, and that rule goes
    with it. What replaces it is a stricter one in the same spirit: the pose
@@ -36,7 +37,9 @@ import { Renderer, Scene, WebGPUBackend, BasicNodeLibrary } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
 import { buildBlades } from './blades';
+import { buildBuilt } from './built';
 import { buildCamera } from './camera';
+import { stateAt } from './consensus';
 import { buildClouds } from './clouds';
 import { buildMotes } from './motes';
 import { buildPalette, token } from './palette';
@@ -47,6 +50,7 @@ import { buildSky } from './sky';
 import { buildStands } from './stands';
 import { buildStation, entryAt, type Where } from './station';
 import { buildStars } from './stars';
+import { setSwell } from './swell';
 import { buildTerrain } from './terrain';
 import { buildWater } from './water';
 
@@ -191,6 +195,21 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   const motes = buildMotes(palette, uTime);
   scene.add(motes.mesh);
 
+  /* ── What is built (§34) ─────────────────────────────────────────────
+     The four scenes, and it is two draw calls for all of them: one instanced
+     box mesh for four hundred and forty-one parts and one additive layer for
+     the fifty-one things travelling between them. `scenes.ts` is where they
+     are, `consensus.ts` is what the cluster is doing, and neither of those
+     files has seen a GPU.
+
+     Added after the motes and before the loop, so the boxes are opaque and
+     drawn with the world while the signals — additive, depth-tested, not
+     depth-written — sit at renderOrder 2 with the cloud forms and in front
+     of the ground they cross. */
+  const built = buildBuilt(palette, uTime);
+  scene.add(built.mesh);
+  scene.add(built.signals);
+
   /* ── The route (§31) ─────────────────────────────────────────────────
      Scroll is the site. `scroll.ts` turns the gesture into a position along
      the route and `route.ts` turns that into a pose, and neither of them can
@@ -236,6 +255,20 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
     const dt = Math.min((now - last) / 1000, 1 / 30);
     last = now;
     uTime.value += dt;
+
+    /* ── The election (§4.7's one thing to get right) ──────────────────
+       A pure function of the clock, evaluated once and handed to the two
+       things that read it: `swell.ts` — which writes both the uniform the
+       ground is displaced by and the array §24's floor samples — and
+       `built.ts`, which lights the mast on the summit that is rising. One
+       call, so the mountain and the machine can never disagree about who
+       holds the term.
+
+       It runs whether or not anyone is at Homonoia. A cluster that stopped
+       electing when the camera looked away would be a screensaver; and off
+       the massif every reader of it is one distance test. */
+    const cluster = stateAt(uTime.value);
+    setSwell(cluster.shares);
     /* Three things can be holding the camera and only one of them at a
        time: an eased move between the two (rejoining the route), the reader
        with the stick, or — by default, and this is the reversal §31 is —
@@ -258,6 +291,7 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
     stands.update(camera);
     clouds.update(camera);
     motes.update(camera);
+    built.update(camera, cluster, uTime.value, dt);
     renderer.render(scene, camera);
   };
 
@@ -374,6 +408,7 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   stands.settle(camera);
   clouds.settle(camera);
   motes.settle(camera);
+  built.update(camera, stateAt(0), 0, 0);
   renderer.render(scene, camera);
 
   /* The document is behind an opaque canvas from the next line, so it must
@@ -415,6 +450,12 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
 
   return {
     renderer, scene, camera, view, ride, place, rail,
-    sky, stars, terrain, water, blades, stands, clouds, motes,
+    sky, stars, terrain, water, blades, stands, clouds, motes, built,
+    /* The loop, so it can be stopped from outside. The visibility handler
+       above is one caller; a frame-cost harness is the other, and it is not
+       optional there — `renderer.info` is zeroed by the renderer's own rAF
+       rather than by `render()`, so a count read while the loop is running
+       is whatever the last frame happened to leave behind. */
+    run, stop,
   };
 }

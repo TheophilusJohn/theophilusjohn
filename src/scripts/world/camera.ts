@@ -22,10 +22,10 @@
    thread — the same function the workers sample and `terrain.ts` already
    calls once a frame for its LOD. The bounds are a radius and a ceiling.
    The way back is a recall to the opening pose, because the guided path
-   §0.3 would rather hand this to does not exist until §34. */
+   §0.3 would rather hand this to does not exist until §35. */
 
 import { PerspectiveCamera, Vector3 } from 'three/webgpu';
-import { height } from './height';
+import { height, swell } from './height';
 
 const DEG = Math.PI / 180;
 
@@ -201,16 +201,24 @@ export function buildCamera(canvas: HTMLCanvasElement, aspect: number) {
   /* The highest ground under the camera and under where it is heading.
      `height` with no spacing is every octave — the field itself, not the
      LOD's version of it — which is the only sample that is the same answer
-     at every altitude. */
+     at every altitude.
+
+     **Plus the swell** (§34). The field is what the workers baked and it does
+     not move; the ground under Homonoia does, by up to thirty units under
+     whichever node holds the term, and a floor taken off the field alone
+     would let a summit rise through the camera while a reader watched an
+     election. It is one distance test everywhere else in the world. */
+  const ground = (x: number, z: number) => height(x, z) + swell(x, z);
+
   function floorAt(): number {
     const reach = Math.hypot(velocity.x, velocity.z) * AHEAD;
-    let top = height(position.x, position.z);
+    let top = ground(position.x, position.z);
     if (reach > 1) {
       const nx = velocity.x / Math.hypot(velocity.x, velocity.z);
       const nz = velocity.z / Math.hypot(velocity.x, velocity.z);
       for (let i = 1; i <= AHEAD_STEPS; i++) {
         const d = (reach * i) / AHEAD_STEPS;
-        top = Math.max(top, height(position.x + nx * d, position.z + nz * d));
+        top = Math.max(top, ground(position.x + nx * d, position.z + nz * d));
       }
     }
     return top + CLEARANCE;

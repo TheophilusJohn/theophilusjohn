@@ -81,6 +81,41 @@ one is damped at 0.09s rather than 0.30, because a reader's own wheel moving
 text must not lag. Both are exempt on a jump, which is §31's rule one level
 up.
 
+**Since §34 there is something standing at each of the four sites, and one
+of them is an election.** `scenes.ts` is the fifth module with no three and
+no DOM in it — it imports `height.ts` and nothing else — and it owns the four
+**sites** as well as the four scenes, because a scene is a thing in the world
+and `route.ts` is a flight past it. Scale is **enormous** (§8's last open
+decision, answered): 40 to 70 units against conifers of 12.5 and city towers
+of 180 to 320, decided on §24's six-unit camera floor rather than on taste.
+`consensus.ts` is Raft as a pure function of the clock — `stateAt(t)` is
+total, so a harness walks any phase of any term by asking for the second it
+wants, which is the correction to §15's `Math.random()` leader. `built.ts`
+draws all four scenes in **two draw calls**: one instanced box mesh for 356
+parts and one additive layer for 51 travelling signals, `stands.ts`'s
+construction for the third time. And `swell.ts` is the ground answering the
+election — see below, because it is the load-bearing decision of the step.
+
+**The election moves the ground and the field does not move.** `uplift()` was
+shares-weighted and its `min(…, 1.4)` clamp ate them entirely: measured,
+`[1,0,0,0,0]` returned 1.400 at all five nodes, exactly as equal shares did,
+so the election could never have moved anything. It is shares-independent
+now, and the deviation lives in `swell()` — one narrow summit per node, σ=62,
+zero-mean, so a term changes which of the five summits is high and leaves the
+massif (the biggest thing in the opening frame) alone. **It is not part of
+`height()`**: everything a worker bakes has to be a pure function of (x, z),
+including where a conifer stands and how dark the ground under it is, so the
+deviation is carried on the main thread instead — a vertex term on the
+terrain with its own analytic normal, a rigid lift on the masts, and a JS
+term on §24's floor. Measured: 38 units between holding the term and not,
+over 2.7 seconds, and chunk generation unchanged.
+
+**And the arrival frame carries the name** (§0.3's 0% row, finally owned by a
+step). Not a clone of the document's hero — that is `--t-hero` at 18vw and
+would fill the frame the landscape is the subject of — but `--t-2xl` in the
+reading column, on a ramp off scroll that is gone by 1,200, four hundred
+units before Enargeia's machine ID begins to resolve.
+
 **Since §33 the mode is decided before first paint, and that is the whole
 of world-first.** The head script in `Base.astro` resolves it and writes
 `data-mode` on the root: capability first and unbypassable (an adapter, 1024
@@ -112,7 +147,8 @@ where anything grows, `sun.ts` and `wind.ts` are the two directions the world
 agrees on, `scatter.ts` (§28) is what stands on it, `air.ts` (§30) is what
 floats over it, `terrain-worker.ts` runs the generator off the main thread,
 and `terrain.ts`, `water.ts`, `blades.ts`, `stands.ts`, `motes.ts`,
-`clouds.ts` and `sky.ts` are the parts that know what a mesh is. Keep it that
+`clouds.ts`, `sky.ts`, `built.ts` and `swell.ts` are the parts that know what
+a mesh is. Keep it that
 way: a worker that reaches anything in three is a second copy of the
 renderer.
 
@@ -927,6 +963,60 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   headline, and an address `url-sync` is *supposed* to rewrite). Name the
   fields in the assertion; a labelled object cannot be misread the way a
   four-element array can.
+- **A gated branch in a vertex shader still costs the branch.** `swellLift`
+  in `stands.ts` ran once per vertex of twenty thousand instances on a
+  608-unit disc and measured **+0.22ms a frame at every pose in the world**,
+  including a settle a kilometre from the thing it was for. What it bought,
+  counted in Node: **twelve conifers** inside the whole footprint and **no
+  ground cover at all**. Count what a term is *for* before paying for it
+  everywhere; a placement rule that removes the twelve is free.
+- **`fog(positionWorld)` in a fragment shader recomputes the whole vertex
+  chain per pixel.** Three derives `positionWorld` from `positionNode`, so a
+  billboard whose position included five exponentials evaluated them on every
+  covered pixel: fifty-one additive quads cost **0.31ms**, against 0.004 for
+  four hundred and forty-one opaque boxes, and a material stripped to a
+  constant cost nothing — which is what says it is the shader and not the
+  submission. Anything constant across an instance belongs in a `varying`,
+  including the whole product of a transparent layer's opacity terms.
+- **A camera-facing quad at a *fixed* world point straddles the near plane.**
+  Every other billboard here is camera-relative (§30's motes, §30's cloud
+  forms), so its centre is always in front of the eye; one placed in the
+  world is not, and a quad built in the camera's basis around a point behind
+  the near plane does not vanish — it rasterises across the whole screen.
+  Collapse it to a point.
+- **A frame-cost A/B is not like for like if the poses moved.** §34 took the
+  settle's aim height from the scene's pad instead of `height(site)`, which
+  changed the pitch at all four stations by a degree or two — enough to
+  change how much ground is in frame. Drive one forced pose into both builds.
+- **`If` needs a shader stack, so it only works inside `Fn`.** Called bare in
+  a material's node graph there is no block to add the branch to, and the
+  build fails at mount with `Cannot read properties of null (reading 'If')` —
+  which in world-first is a page that never comes out from behind the
+  curtain.
+- **A recursive "not the previous one" is O(k) and overflows.** A succession
+  written as `leaderOf(k−1)` walks once per term elapsed — four hundred
+  frames deep after an hour, and a stack overflow for a harness asking about
+  term 20,000. A fixed cycle has the property by construction, costs one
+  modulo, and needs its seam checked.
+- **The bands are placed around flat ground and a box is even less like flat
+  ground than a cone.** `sun.ts` puts the key light where an axis-aligned
+  face reaches `N·L` 0.660 at *best*, so a conifer's 0.05–0.86 compression
+  lands the brightest wall of a building two hundredths past the terminator
+  and every scene is one flat fill. Fit the range through what the shape can
+  actually reach — and note that §29's framing rule says nothing about where
+  the light is, so two of the four settles stand on the shadow side and a
+  built surface needs a **fill** the terrain never wanted.
+- **Thin slabs alias, and the fix is gaps rather than thickness.** Plates
+  0.85 units thick on a 2.9 pitch, seen at a shallow angle with no MSAA,
+  showed the back of a stack through the front as vertical moiré — which
+  reads as a rendering fault rather than as depth. 5.8 units of air on a
+  17-unit pitch is a gap the eye resolves as a gap; 1.8 on 8 is where two
+  edges land in one pixel.
+- **A whole structure in `--leader` is too much accent for one bit of
+  state.** A hundred-unit mast given the term read as a column of accent with
+  its own shading mixed away under it, which flattened it into a silhouette.
+  Five identical masts differing by one lit block is what an election looks
+  like from the air.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -946,7 +1036,9 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §32: **55.18 KiB (56,507 gzipped)**, up 38 bytes on a
+  1024px). Measured at §34: **55.69 KiB (57,023)**, which is **−1 byte** on
+  a §33 build in the same session at the same gzip level — nothing in this
+  step lands in document mode. §33: 55.69 KiB (57,024). Earlier, at §32: **55.18 KiB (56,507 gzipped)**, up 38 bytes on a
   §31 build in the same session at the same gzip level — the address
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
@@ -955,7 +1047,13 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §33: **215.34 KiB** (217,261 + 3,250 worker), up
+  own merits. Measured at §34: **219.59 KiB** (221,564 + 3,292 worker), up
+  **4,303** on a §33 build in the same session at the same gzip level — four
+  scenes, the election, the swell and the arrival, and the largest
+  single-step addition to the chunk so far (§28's conifers were 3,743).
+  **The worker is +42**, which is `scatter.ts`'s bare disc; `swell` and
+  `setShares` are tree-shaken out of it, since nothing in a worker calls
+  them. §33: **215.34 KiB** (217,261 + 3,250 worker), up
   138 bytes on §32 — the mount's progress callback and its wait for ground —
   of which the worker is again 0. §32: **215.21 KiB** (217,123 + 3,250
   worker), of
@@ -966,8 +1064,9 @@ budgeted apart and a reader never pays both.
   over 214.38 KiB (216,279) for the damping, the third phase and the last
   climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
   **1,541** on a §31 build in the same session at the same gzip level. CSS
-  2,035 → **2,548** for the station layer and the `--scrim` token, and
-  2,658 → **2,924** at §33 for the curtain and the way out. §31 with every hook removed: **212.5 KiB** (214,426
+  2,035 → **2,548** for the station layer and the `--scrim` token,
+  2,658 → **2,924** at §33 for the curtain and the way out, and
+  2,924 → **3,058** at §34 for the arrival block. §31 with every hook removed: **212.5 KiB** (214,426
   + 3,223 worker), of which the route and its driver are 2,205 bytes and none
   of them the worker. §30: **210.4 KiB** (212,221
   + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
@@ -977,9 +1076,18 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise** is the ceiling everything §0.2 puts *on* the
-  landscape shares (steps 25–28 and 30, and after §30 nothing is left to
-  spend it), against 0.83 today (§30, DPR 1). The geomorph took
+- **8ms/frame at cruise.** §0.2's block (steps 25–28 and 30) is finished and
+  §34 is the first thing since to spend any of it. Measured at §34 on built
+  code, **one forced pose driven into both builds** so the two frames contain
+  the same ground, trees and sky — the settle pitches moved this step, so a
+  jump-to-scroll A/B is not like for like — both orders, DPR 1: Enargeia's
+  settle **1.030 / 1.035 against §33's 0.923 / 0.919 (+0.107 / +0.116)**,
+  Philoi's +0.014 / +0.077, Basis's +0.030 / +0.010, §31's Homonoia settle
+  +0.041 / +0.066. **At DPR 1.5 it is −0.035 to +0.007** — nothing, because
+  the frame is fill-bound there and the scenes are vertex work. Draw calls
+  **+2**, triangles +2,286. Directly measured at a settle: the four hundred
+  boxes 0.034ms, the fifty-one signals 0.023. Earlier figures below are
+  against 0.83 (§30, DPR 1). The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water
   took nothing at all (§26: -0.008 / +0.002 / +0.005 measured against the
@@ -1086,8 +1194,15 @@ budgeted apart and a reader never pays both.
 - The camera's clearance over the ground is **exactly 6.000 units** in every
   flight that tries to break it, and the clamp costs 1.8µs a frame. The route
   never reaches it: its least clearance is **13.00 units** by construction —
-  at Enargeia's settle, and unchanged by §32's extra keyframe — and 12.6 as
-  flown
+  at Enargeia's settle, and unchanged by §32's extra keyframe. **As flown it
+  is 9.07**, at scroll 2,275 on the approach to Enargeia, swept every scroll
+  unit at three arrival clocks and over four whole terms of the swell; a §33
+  build measures **9.06** at the same place, so §34 changes it by a
+  hundredth and §32's recorded "12.6 as flown" was taken on a coarser sample.
+  §34 adds a second thing the route must clear and does: closest approach of
+  the flown path to any box of any scene is **22.7 units** (Homonoia's
+  climb-out, past a mast), then 32.0, 92.2 and 107.3, against §35's four-unit
+  camera radius
 - **The route is flown two ways** (§31), because they measure different
   things. A reader (a 600px burst, then 700ms) never sees the speed cap bind
   at the end of a gesture — 283 units/s median, and the camera is where the
@@ -1106,7 +1221,11 @@ budgeted apart and a reader never pays both.
   two `region` violations during the load and one once it is flying.
   Measured clean at §33 in five states: document mode, the curtain held,
   the world at the arrival, the world at a station, and document mode with
-  the way back shown
+  the way back shown. **§34's arrival needs the same thing again** — the name
+  at 0% is a `<section>` labelled by the `<h1>` inside it, which in world mode
+  is the page's only heading — and axe measured **clean in six states** at
+  §34: document mode, the curtain held, the arrival, mid-flight, at a station,
+  and reading a writeup
 - Usable at 360px wide with motion off
 
 ---

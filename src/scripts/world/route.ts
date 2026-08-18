@@ -22,8 +22,11 @@
    off far enough that the scene is a quarter of the frame's width, aim at
    0.4 of its height, and turn 17° off the bearing to it. That puts the
    subject at 67% of the frame with the reading half clear — measured out of
-   this file at every station below. The scene's own size is the one number
-   §34 gets to change per station.
+   this file at every station below. The scene's own size is the input, and
+   §34 built three of the four scenes *to* the half-width the sited stand-off
+   already implied. Homonoia could not be built to its own — its nodes stand
+   on the field's 120-unit ring — so there the stand moved instead, which is
+   the only camera §34 touched.
 
    **The settle is not the end of the movement**, which is §29's fourth
    constraint and the thing this step is judged on. A camera that reaches its
@@ -35,6 +38,7 @@
    and the composition holds. */
 
 import { CLUSTER_SITE, height } from './height';
+import { SCENES } from './scenes';
 
 const DEG = Math.PI / 180;
 
@@ -44,10 +48,15 @@ export type Station = {
   slug: string;
   /** Where §34 builds. The pose below frames this point. */
   site: { x: number; z: number };
-  /** The field's own answer at the site, so nothing re-samples it per frame. */
+  /** The top of the scene's own pad, which is what it is framed against —
+      `scenes.ts`'s answer, not a re-sample of the field. Before §34 this was
+      `height(site)` and a hand-copied constant; a scene stands on a slab
+      over the highest ground under its footprint, so it is 1.5 to 6 units
+      higher than that and the aim was low by the difference. */
   ground: number;
-  /** What §34 will stand there: half its width and its height, in units.
-      These two numbers are the only tuning the framing rule takes. */
+  /** What stands there: half its width and its height, in units. These two
+      numbers are the only tuning the framing rule takes, and since §34 they
+      come from the scene rather than from a guess about it. */
   radius: number;
   tall: number;
   /** Where the camera stands. Searched: the bearing is off the one the
@@ -62,13 +71,32 @@ export type Station = {
    their own pad, standing 7.4 to 28.9 proud of a 130-unit ring, all dry, all
    inside the 2,600 bound (968 / 1,039 / 1,077 / 2,093 from the origin), no
    leg under 536 units or over 1,289, and every next station clear of the
-   ground by 34 to 44 units from the one before it. */
-export const STATIONS: Station[] = [
-  { slug: 'enargeia', site: { x: 12, z: -967 }, ground: 46.0, radius: 24, tall: 46, stand: { x: 3, y: 62, z: -835 } },
-  { slug: 'homonoia', site: { x: -520, z: -900 }, ground: 57.2, radius: 90, tall: 70, stand: { x: -327, y: 109, z: -1359 } },
-  { slug: 'philoi', site: { x: -1040, z: 280 }, ground: 42.5, radius: 22, tall: 40, stand: { x: -991, y: 57, z: 169 } },
-  { slug: 'basis', site: { x: -1640, z: 1300 }, ground: 19.7, radius: 26, tall: 44, stand: { x: -1508, y: 35, z: 1243 } },
-];
+   ground by 34 to 44 units from the one before it.
+
+   **Homonoia's stand moved at §34 and it is the only one that did.** Its
+   five nodes stand on `height.ts`'s 120-unit ring — that is where the massif
+   puts its summits and taking a node off its own summit would break the one
+   agreement the scene is — so the scene is 280 across and the framing rule
+   wants 774 units of stand-off rather than 498. Standing where §31 put it,
+   the cluster would have been 37% of the frame's width instead of 24% and
+   would have reached into the reading column. So the camera went back along
+   its own view axis, which keeps the bearing §31 searched for what stands
+   behind the subject. */
+const STANDS: Record<string, { x: number; y: number; z: number }> = {
+  enargeia: { x: 3, y: 62, z: -835 },
+  homonoia: { x: -220, y: 152, z: -1614 },
+  philoi: { x: -991, y: 57, z: 169 },
+  basis: { x: -1508, y: 35, z: 1243 },
+};
+
+export const STATIONS: Station[] = SCENES.map((scene) => ({
+  slug: scene.slug,
+  site: scene.site,
+  ground: scene.pad,
+  radius: scene.radius,
+  tall: scene.tall,
+  stand: STANDS[scene.slug]!,
+}));
 
 /* §22's opening pose, unchanged and not this module's to move. The route
    starts where the world already opens. */

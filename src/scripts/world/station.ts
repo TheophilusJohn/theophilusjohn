@@ -112,6 +112,37 @@ const READ_TAU = 0.09;
    orders of magnitude clear of anything real. */
 const JUMP = 400;
 
+/* ── The arrival (§0.3's 0% row, §34) ───────────────────────────────────
+   "High over the landscape, the name in `--paper`, stations visible in the
+   distance." Two of those three clauses had never belonged to a step: §31
+   sited the route and put Enargeia in the opening frame, §32 built the
+   content *at* a station, and neither was wrong to skip this — until §34
+   there was nothing in the world for the frame to contain.
+
+   So the first 9.5% of the route carried no type at all. `bandAt(0)` is
+   station −1 at weight 0 and the first non-zero weight is 1,601 units in;
+   the document's own hero is behind `visibility: hidden`; a first-time
+   visitor arrived at an unnamed landscape.
+
+   **It is not a clone of the document's hero and that is deliberate.** The
+   hero is `--t-hero` at 18vw, which is the right size for a page whose
+   subject is the type and the wrong size for a frame whose subject is the
+   landscape — it would fill it. This is `--t-2xl`, the size §29 measured as
+   composed over the world and the same one every station's headline uses,
+   in the column the reading already occupies. One register, two things in
+   it.
+
+   **And it leaves the way everything else on the route leaves**: a ramp off
+   scroll, gone by 1,200 — four hundred units before Enargeia's machine ID
+   begins to resolve, so the two are never both on screen. It rides `y`
+   directly rather than a band weight because there is no band at 0; the
+   arithmetic is the same shape and the cap makes it smooth without damping
+   (at 12 scroll units a frame it is 1.4% of an opacity). */
+const ARRIVE_OUT = [350, 1200];
+/** The hint goes first. It is an instruction, and an instruction that is
+    still on screen once the reader has obeyed it is noise. */
+const HINT_OUT = [200, 800];
+
 /* The band weight at which the address bar changes hands. Well clear of
    both ramps, so nothing flaps, and it *leads* the writeup — which is
    what §17 measured document mode's own threshold doing. */
@@ -248,6 +279,37 @@ export function buildStation(
   const scrim = document.createElement('div');
   scrim.className = 'scrim';
   root.append(scrim);
+
+  /* A landmark of its own, for the reason every panel is one: `<main>` is
+     behind an opaque canvas and out of the accessibility tree in world
+     mode, so anything outside a labelled region is content no screen reader
+     can place. And an `<h1>` rather than an `<h2>` — the document's own is
+     hidden, so in world mode this is the page's heading. */
+  const arrival = document.createElement('section');
+  arrival.className = 'arrival';
+  arrival.setAttribute('aria-labelledby', 'world-arrival-h');
+  {
+    const col = document.createElement('div');
+    col.className = 'col';
+    const name = document.createElement('h1');
+    name.id = 'world-arrival-h';
+    name.className = 'headline';
+    name.textContent = 'Theophilus John';
+    const sub = document.createElement('p');
+    sub.className = 'sub';
+    /* The document's own line, read rather than retyped — §32's rule for
+       every other word in this file. It is the one sentence that says what
+       the site is, and a reader who never leaves world mode would otherwise
+       never see it. */
+    sub.textContent =
+      document.querySelector('.hero .sub span')?.textContent?.trim() ?? '';
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.textContent = 'Scroll to fly';
+    col.append(name, sub, hint);
+    arrival.append(col);
+    root.append(arrival);
+  }
 
   const panels: Panel[] = [];
 
@@ -403,7 +465,14 @@ export function buildStation(
        band edge does not cut a fade that is still running. `put()` writes
        nothing for a panel whose numbers have not moved, so the three that
        are not on cost four comparisons each. */
-    let lit = 0;
+    /* The arrival, before the panels, because the scrim below takes the
+       maximum over both and the first thing on the route is the name. */
+    const opening = y === null ? 0 : 1 - ramp(y, ARRIVE_OUT);
+    put(arrival, '--in', opening);
+    put(arrival, '--hint', y === null ? 0 : 1 - ramp(y, HINT_OUT));
+    hide(arrival, opening < 0.004);
+
+    let lit = Math.max(0, opening * 0.5);
     for (let i = 0; i < panels.length; i++) {
       const panel = panels[i]!;
       const target = i === live ? band.weight : 0;

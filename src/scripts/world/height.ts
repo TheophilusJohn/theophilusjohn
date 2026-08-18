@@ -192,39 +192,124 @@ const RANGE_MASK_HIGH = 0.42;
 /* ── The cluster, as a modulation layer ────────────────────────────────
    §0.2: "the traffic heightfield from §16 does not disappear — it becomes
    a *layer* on the procedural base, raising ground where message density is
-   high." So `h(p)` comes back as five Gaussians weighted by share, and it
-   is a *term* rather than the terrain.
+   high." So `h(p)` comes back as five Gaussians on a ring, and it is a
+   *term* rather than the terrain.
 
    It does two things, and the second is what stops it being five lumps
    again. It raises the ground under the cluster, and it opens the range
    mask there — so what the traffic builds is a massif with crests of the
    same terrain everywhere else has, not a dome sitting on a plain.
 
-   **Sited and driven elsewhere.** §32 decides where Homonoia stands and
-   §35 brings back the election that moves the shares; equal shares is what
-   an idle cluster looks like and is the honest placeholder until there is a
-   simulation to read. Note for §35: this runs inside the worker, so a share
-   change is a message and a regeneration of the chunks within
-   CLUSTER_REACH, not a uniform. */
+   ── The massif is the half that does not move (§34) ─────────────────────
+   Until §34 this term read `shares` and §16's note said the election would
+   drive it. Two things were wrong with that and both are measured.
+
+   **The clamp ate the shares.** At σ=160 against a 120-unit ring the five
+   Gaussians overlap so heavily that the sum is over 1.4 everywhere inside
+   the massif whatever the shares are: `uplift` came back **1.400 at all
+   five nodes for `[1,0,0,0,0]` exactly as for equal shares**, so the ground
+   heights under the cluster were 51.3 / 41.4 / 85.1 / 105.3 / 88.8 either
+   way. Whatever the simulation did to the shares, the ground could not
+   have answered.
+
+   **And it should not be the massif that moves.** The massif is the
+   biggest thing in §22's opening frame — the world's front door — and a
+   term that ends every few seconds may not re-cut the horizon a reader is
+   arriving at from three kilometres away. So the shape stays put and what
+   answers the election is `swell` below: a *deviation*, one narrow summit
+   per node, zero-mean by construction, so a term changes which of the five
+   summits is the high one and leaves the mountain they stand on alone. */
 export const CLUSTER_SITE = { x: -520, z: -900 };
 export const CLUSTER_NODES = 5;
-const CLUSTER_RING = 120;
+export const CLUSTER_RING = 120;
 const CLUSTER_SIGMA = 160;
 export const CLUSTER_REACH = CLUSTER_RING + CLUSTER_SIGMA * 3;
 const CLUSTER_AMP = 26;
 
-export const shares = new Float32Array(CLUSTER_NODES).fill(1 / CLUSTER_NODES);
+/** Where node `i` stands, on the ring the massif is built around. §34's
+    scene puts a pylon on each of these and `swell` raises the one holding
+    the term, so there is one answer to "where is node i" and the ground and
+    the structure read it. */
+export function clusterNode(i: number): { x: number; z: number } {
+  const a = (i / CLUSTER_NODES) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: CLUSTER_SITE.x + Math.cos(a) * CLUSTER_RING,
+    z: CLUSTER_SITE.z + Math.sin(a) * CLUSTER_RING,
+  };
+}
 
-/* 0 at the edge of reach, about 1 at the centre with equal shares. */
+/* 0 at the edge of reach, 1.4 across the middle of it. Shares-independent
+   now, so this is the same number in the worker, on the main thread, in
+   Node and at every LOD — which is what lets §34 leave the whole of chunk
+   generation alone. */
 export function uplift(x: number, z: number): number {
   let sum = 0;
   for (let i = 0; i < CLUSTER_NODES; i++) {
-    const a = (i / CLUSTER_NODES) * Math.PI * 2 - Math.PI / 2;
-    const dx = x - (CLUSTER_SITE.x + Math.cos(a) * CLUSTER_RING);
-    const dz = z - (CLUSTER_SITE.z + Math.sin(a) * CLUSTER_RING);
-    sum += shares[i]! * CLUSTER_NODES * Math.exp(-(dx * dx + dz * dz) / (2 * CLUSTER_SIGMA * CLUSTER_SIGMA));
+    const n = clusterNode(i);
+    const dx = x - n.x;
+    const dz = z - n.z;
+    sum += Math.exp(-(dx * dx + dz * dz) / (2 * CLUSTER_SIGMA * CLUSTER_SIGMA));
   }
   return Math.min(sum, 1.4);
+}
+
+/* ── The swell, which is the election (§34) ─────────────────────────────
+   The one thing on this site that could not be built by someone who had
+   not implemented Raft (§4.7): a term ends and the landscape rearranges
+   because a distributed system elected a different leader.
+
+   **It is not part of `height()` and that is the load-bearing decision.**
+   Everything the workers bake — the surface, its normals, the marched
+   shadow, the cover density, and `scatter.ts`'s answer to where a conifer
+   stands — is a pure function of (x, z) and has to stay one: a term that
+   changed it would mean regenerating every chunk within 600 units on every
+   election, and a placement that changed would put a baked pool of shade
+   where no tree is standing. So the field the worker sees never moves, and
+   the deviation is carried on the main thread instead: `terrain.ts` adds it
+   as a vertex term with its own analytic normal, `blades.ts` and
+   `stands.ts` lift what stands on it by the same number, and §24's floor
+   adds it so the camera cannot be swallowed by a rising summit.
+
+   **Zero-mean, so the massif does not pump.** The weights are a
+   distribution — they sum to 1 — and each node's Gaussian is scaled by how
+   far its own share is from an equal one. Five equal shares is therefore
+   exactly zero everywhere, which is both what an idle cluster looks like
+   and what the worker has baked.
+
+   σ is a *third* of the massif's, because these have to read as five
+   summits where the massif reads as one mountain: at 62 units against a
+   120-unit ring, a node's own summit is 1.00 of the term and its nearest
+   neighbour's contribution 0.08. */
+export const SWELL_SIGMA = 62;
+export const SWELL_AMP = 78;
+/** Past this the term is under a twentieth of a unit and is not evaluated —
+    the gate `terrain.ts` and the two scattered layers branch on. */
+export const SWELL_REACH = CLUSTER_RING + SWELL_SIGMA * 3;
+
+/** The live distribution. Written by `consensus.ts` through `setShares`,
+    read here and nowhere else, and equal in every worker for ever — a
+    worker never imports the simulation, so its copy of this file is the
+    baseline by construction rather than by discipline. */
+export const shares = new Float32Array(CLUSTER_NODES).fill(1 / CLUSTER_NODES);
+
+export function setShares(next: ArrayLike<number>): void {
+  for (let i = 0; i < CLUSTER_NODES; i++) shares[i] = next[i] ?? 0;
+}
+
+/** How far the ground at (x, z) is from where the worker baked it. */
+export function swell(x: number, z: number): number {
+  const dx0 = x - CLUSTER_SITE.x;
+  const dz0 = z - CLUSTER_SITE.z;
+  if (dx0 * dx0 + dz0 * dz0 > SWELL_REACH * SWELL_REACH) return 0;
+  let sum = 0;
+  for (let i = 0; i < CLUSTER_NODES; i++) {
+    const n = clusterNode(i);
+    const dx = x - n.x;
+    const dz = z - n.z;
+    sum += (shares[i]! - 1 / CLUSTER_NODES) *
+      Math.exp(-(dx * dx + dz * dz) / (2 * SWELL_SIGMA * SWELL_SIGMA));
+  }
+  return sum * SWELL_AMP;
 }
 
 /* ── The water level (§26) ──────────────────────────────────────────────
