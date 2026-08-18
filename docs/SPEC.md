@@ -645,7 +645,7 @@ never short of where they scrolled to.
 scrollbar and world mode does not, because there is no document scroll to
 report — so a 1px rail stands at the right edge in §4.3's own language:
 `--rule` track, `--leader` fill from the top, the four settles marked at
-18.3 / 41.4 / 68.2 / 91.3%, the live one wider and in the accent. It reports
+13.6 / 36.2 / 61.5 / 84.0%, the live one wider and in the accent. It reports
 and takes no pointer: a scrollbar you can grab would be a second way to move
 the camera. Hidden with the stick out, like the writeup, because off the
 route there is no route position to report.
@@ -866,17 +866,23 @@ are back where you were, still on the route.
 **The dwell is the reading.** A station's column is 715 to 1,150px tall
 against a frame of about 700 — the writeup is longer than the screen it is
 read on, and that is a fact about writeups, not a layout to solve. So the
-600 scroll units in which the camera holds its settle pose move the column
-instead, one unit to one pixel. There is no second scroll position and no
-wheel to intercept.
+1,500 scroll units in which the camera holds its settle pose move the column
+instead — the beats own the first 1,000 of them and the column the last 500,
+at one unit to one pixel unless the column overruns the frame by more than
+that, in which case it is scaled so the whole of it still arrives by the end
+of the dwell. There is no second scroll position and no wheel to intercept.
 
-**The metric strip takes its own width** — `min(64ch, 50vw)`, two even
-tracks, gaps in from `--s-8` — which is §0.3's first constraint answered
-without dropping a metric. So does the headline, at `max-content` up to
-52vw, because a 45ch column re-breaks the `<br>` the frontmatter authored.
-Both stop short of the subject at 67% of the frame. **The strip sits above
-the summary**, which is what three contiguous phases cost and is §29's own
-judged frame besides.
+**The metric strip is two even tracks** — `repeat(2, minmax(0, 1fr))`, gaps
+`--s-6` and `--s-4` — which is §0.3's first constraint answered without
+dropping a metric and without breaking out of the column at all: at 54ch the
+widest value, 334.9 MiB, is 216px against a 264px track, so the `min(64ch,
+50vw)` breakout the 45ch column needed is gone. The headline still takes its
+own width, at `max-content` up to 52vw, because a 45ch column re-breaks the
+`<br>` the frontmatter authored. Both stop short of the subject at 67% of
+the frame. **The strip sits below the summary**, in the document's own
+order: putting it above read well — it is §29's own judged frame — but the
+two modes are meant to be the same page, and that is the half of it that
+wins.
 
 **The URL follows, by `replaceState` and never by push.** §4.6's rule
 binds here too: the route crosses four stations and pushing on arrival

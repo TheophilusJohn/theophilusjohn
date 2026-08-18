@@ -8,7 +8,10 @@ so** rather than substituting an approach.
 
 Steps 1–33 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
-than no marker.
+than no marker. (**Steps 1–4 predate this file**: it has opened at step 5
+since its first commit, `05cafce`, and 1–4 are the Astro 7 document-mode
+scaffold in `def1c2b`. The numbering is kept as it is so `Do step N` and
+every §N reference across the repo keep meaning the same thing.)
 
 **`/` is the world** (§33), on WebGPU at 1024px and up with motion on.
 Everything else, and `?doc`, is the document — which is still the whole
@@ -4351,14 +4354,20 @@ picture of the system rather than a monument to it (SPEC §0.4): an engineer
 who knows the domain should recognise what they are looking at without being
 told.
 
-- **Enargeia** — a machine thinking, running on the visitor's own hardware
+- **Enargeia** — a machine thinking, running on the visitor's own hardware.
+  **And not a datacenter** (SPEC §0.4) — the negative half of that line is
+  the hard half, because racks are what "many machines" reaches for and the
+  whole point is that this one runs on the hardware in front of the reader
 - **Homonoia** — five nodes passing something between them, one holding the
   term. **This absorbs the old cluster step**: the traffic simulation from
   §15–§16 comes back here, the election is the set piece (SPEC §4.7's one
   thing to get right), and the ground under it is where §16's heightfield
   term raises a massif
 - **Philoi** — two workstations, the same document open on both, edits
-  arriving
+  arriving. **Nothing is discarded, and a reader has to be able to see
+  that** (SPEC §0.4) — it is the property the writeup claims and the one
+  thing a scene of a CRDT is for; two cursors that merely both move show
+  collaboration, not convergence
 - **Basis** — modules wired together with a request tracing through them.
   Deliberately the quietest
 
@@ -4366,8 +4375,36 @@ told.
 the cities' register, or human with the route descending to a few units.
 **Decide by looking at one before building four** — and ask before modelling.
 
+### The arrival frame, which is the other thing this step owns
+
+SPEC §0.3's route table describes 0% as *"Arrival. High over the landscape,
+the name in `--paper`, stations visible in the distance"*, and two of those
+three clauses have never belonged to a step. §31 sited the route and put
+Enargeia in the opening frame; §32 built the content at a station; neither
+was wrong to skip these, because both are about what the arrival frame
+*contains* rather than where the camera is, and until this step there is
+nothing in the world to contain.
+
+- **The name in `--paper` at 0%.** Today a first-time visitor arrives at an
+  unnamed landscape: `bandAt(0)` is station −1 at weight 0, the first
+  non-zero weight is at scroll 1,601 of 16,867, and the document's own hero
+  is behind `visibility: hidden`. So the first 9.5% of the route carries no
+  type at all. It is **not** a clone of the document's hero — that is
+  `--t-hero` at 18vw and would fill the frame the landscape is the subject
+  of — and it is not §33's business either: §33 is entry and loading, and
+  this is route content that resolves and leaves like everything else on
+  the route. Whatever it is, it rides `bandAt`-style weight off scroll so
+  it is gone by the time Enargeia's ID resolves
+- **"Stations" is plural in that row.** Only the first is required to be in
+  the opening frame (SPEC §0.3's siting criteria, met at §31). Whether a
+  second silhouette is legible from 190 units up is a fact about *this*
+  step's geometry and scale choice, not about the siting — so it is decided
+  here, by looking, and if the answer is no then the spec line is the thing
+  to correct
+
 **Done when:** a term ends and the ground under Homonoia rearranges, with
-three stations standing elsewhere in the world.
+three stations standing elsewhere in the world; the arrival frame carries
+the name and reads as arriving somewhere named.
 
 ### 35. Collision and the unlock
 Oriented boxes in a spatial hash, a sphere against a box, resolved by
@@ -4386,9 +4423,43 @@ both hold.
   not a hidden key — and the choice persists. Scrolling from inside it picks
   the route back up at the nearest station
 
+### Open: how a chunked world knows a building is near
+
+**Theo's question, and it is deliberately not answered here.** Everything
+solid in this world arrives with terrain that streams — a quadtree of
+chunks generated in three workers, in any order, retired on an idle clock
+(§22, §25) — and a collision query has to know which boxes are near the
+camera without walking every proxy in a 5.2km world. The options are
+different architectures, not tunings, and the wrong one is expensive to
+undo once four scenes, two cities and ten landmarks carry proxies:
+
+- **A static table, independent of chunk streaming.** Every proxy in one
+  spatial hash built at load, because everything solid is authored and its
+  position is known before the world starts. Simplest, and it never
+  disagrees with itself — but it holds every box in memory whether or not
+  that ground is loaded, and §36 takes the world to 10km
+- **Proxies carried on the chunk**, registered when it generates and
+  retired with it. Memory follows the view for free and it matches how
+  everything else in the world is scoped — but it makes solidity a
+  function of LOD, and the camera moves faster than chunks arrive
+  (§24 measured 632 chunks over 75s of boosted flight). A building whose
+  chunk has not landed is a building you fly through, which is exactly
+  §0.3's "a bad proxy is worse than none" arriving by the back door
+- **A coarse hash keyed to the quadtree but populated independently** —
+  proxies bucketed by the level-3 cell they sit in and loaded by distance
+  rather than by whether the terrain chunk exists. Decouples solidity from
+  LOD while keeping the residency win, at the cost of a second lifetime to
+  reason about
+
+**Placement is already pure** (§28's rule), which is what makes any of the
+three possible: a proxy is a function of where a thing is, and nothing
+about it depends on which chunk happens to be resident. **Decide before
+authoring proxies, not after.**
+
 **Done when:** you cannot get inside anything built, sliding along a wall
 works, and a returning visitor is not made to scroll the route again.
-**Report:** the proxy convention, box counts, the cost of a query per frame.
+**Report:** the proxy convention, box counts, the cost of a query per frame,
+and which of the three above was chosen and what it cost.
 
 ### 36. The cities
 Houston and Delhi, oversized, visitable, solid (SPEC §0.2). Towers 180–320
@@ -4430,5 +4501,17 @@ accessibility 100 in document mode; escapable, and nothing world-only, in
 world mode. The DPR 1.5 cap is re-decided here on frame time rather than on
 focus (SPEC §4.7).
 
+**And 60fps on integrated graphics is the one budget line nothing has ever
+measured.** SPEC §6 has asked for it since the beginning and every frame
+number in this file — §30's 0.83ms at cruise, §31's 41-pose sweep at 0.865
+median, every per-layer figure from §25 to §30 — was taken on the same
+machine's discrete GPU. It is not an unowned requirement; it is an owned one
+with no instrument behind it, which reads the same as passing right up until
+it doesn't. Fill it here or the number is a wish: a fill-bound machine is
+where the DPR cap, the blade disc, the sky dome's two fractal noises and the
+mote billboards all get their real prices, and three of those were cheap
+enough to keep only because vertex work was free.
+
 **Report:** ms/frame, draw calls, chunk generation cost, bundle both sides,
-LCP both modes, axe across every state.
+LCP both modes, axe across every state — **and the frame budget re-measured
+on integrated graphics**, per layer, against the 8ms cruise ceiling.
