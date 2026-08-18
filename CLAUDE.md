@@ -44,6 +44,34 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §37 the other ten landmarks stand in it, and none of them is a
+station.** `landmark.ts` is the eighth module with no three and no DOM in it —
+it imports `height.ts` and `cover.ts`'s hash and nothing else — and it owns
+the stadium, the datacenter hall, the dish array, the turbines, the torii
+gate, the court, the bridge, the lighthouse, the standing stones and the
+wreck: **212 boxes into `built.ts`'s existing mesh and nineteen lights into
+the additive layer, for no new draw call at all**. Every site is *searched*,
+one rule per silhouette, and the rule is the landmark — flat ground for a
+bowl, a summit for a gate, a steady hillside for the array, a crest for the
+turbines, a valley with abutments on both sides for the bridge. All ten are
+at least 445 units off the flown route. **Scale is what keeps them apart from
+the four scenes**: 17 to 136 units against stations of 40–70 and towers of
+180–320, and the court is at true basketball-court size, which is the joke.
+**Nothing lit here wears `--leader`** — it is `--mint`, §30's token, because
+a lit thing in the leader's colour is a promise of content and §0.2 says a
+landmark must not make one. A lamp is a signal that does not travel; the
+lighthouse's turning light is a *rate*, and the fade distance is authored per
+signal now so "visible from further than it should be" is 2,600 units rather
+than a claim. `kind 5` is the only new part kind since §34 — a rotor blade
+turning about its part's **local z**, carrying the integral of `wind.ts`'s
+gust so a gust speeds the five turbines up as it passes them.
+
+**And the proxy is the geometry minus what moves.** Every box is pushed to
+both lists in one call (§36's rule), so the fifteen turbine blades are the
+only omission — a blade's place is a function of the clock and a hash entry
+is not. Three of the ten are places rather than objects: you fly through the
+torii, down the datacenter's fifteen-unit aisle and under the bridge.
+
 **And the world is inhabited (SPEC §0.2–§0.4, after step 29).** Scroll is the
 route and free flight is what the last station unlocks; the four projects are
 *scenes* of the systems rather than structures; twelve landmarks and two
@@ -142,8 +170,11 @@ four-unit sphere can occupy rather than inside the drawn outline — every gap
 in these four scenes is narrower than the sphere is wide, so a box spanning
 one is exact. Basis's six struts are deliberately **not** in it. Measured:
 zero reachable cells inside anything carrying a proxy, over 21.5M lattice
-cells; the route's closest approach is **22.67 units** to a proxy and to a
-drawn box alike; a query is **0.061µs a frame on the route** and 0.98 at its
+cells (§37 added 3.79M more, also zero); the route's closest approach is the
+same number to a proxy and to a drawn box alike, which is the check that
+matters — **22.67 units at the baked distribution and 12.31 with a node
+holding the term** (§37's correction; §35 and §36 both recorded the first as
+the minimum); a query is **0.055µs a frame on the route** and 0.98 at its
 worst, against the floor clamp's 1.8. `stick.ts` is the other half — `F` is
 gone, the offer is a `<button>` at the opposite end of `.escape`'s edge with
 the rail between them, it ramps in over 300 units at the end of the last
@@ -191,7 +222,9 @@ agrees on, `scatter.ts` (§28) is what stands on it, `air.ts` (§30) is what
 floats over it, `terrain-worker.ts` runs the generator off the main thread,
 and `terrain.ts`, `water.ts`, `blades.ts`, `stands.ts`, `motes.ts`,
 `clouds.ts`, `sky.ts`, `built.ts` and `swell.ts` are the parts that know what
-a mesh is. Keep it that
+a mesh is. **`scenes.ts`, `city.ts` and `landmark.ts` are on the pure side of
+that line too**: everything standing in this world is authored as boxes and a
+rule, and `built.ts` is the only file that knows what a mesh is made of. Keep it that
 way: a worker that reaches anything in three is a second copy of the
 renderer.
 
@@ -1133,6 +1166,47 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   in §36's Houston measured **1.05ms against the empty plain's 1.61**, in both
   orders. The build with 250 more boxes in it renders that frame half a
   millisecond faster than the one without them.
+- **A bearing convention is invisible to every other check.** `landmark.ts`'s
+  `yawFor` was `90 + bearing` where `turn` and `built.ts`'s `rot` both send a
+  part's local +z to `(sin θ, cos θ)`, which makes it `90 − bearing`. The two
+  agree at 90° and nowhere else: the dish array came back running **122° off
+  the contour** it was sited on, the turbines across their own crest, the
+  torii's opening 27° off its approach. Nothing else caught it — every part
+  stood on the ground, nothing floated, the flood fill found no way inside,
+  the clearances were fine. What catches it is asserting the **bearing between
+  two placed parts** against the bearing that was asked for, which is one line
+  per landmark.
+- **A rule that describes a shape's neighbourhood is not a rule about the
+  shape.** "The ground is higher at both ends" scores a **saddle**, not a
+  crest, and the first turbine site sat four units below the flank beside it.
+  A crest is above the ground either side of it *and* holds its own height
+  along itself — two tests, and the second one alone is a col.
+- **An additive lamp inside the box that is meant to be emitting it is
+  depth-tested away.** The layer does not write depth but it does test it, so
+  a billboard at the centre of a lighthouse's lamp room, or a floodlight at
+  the centre of its own head, is drawn and discarded — measured, **no change
+  at all in an 80-pixel window over nine seconds** of the beacon's own cycle,
+  which reads as a light that does not work rather than as one that is
+  hidden. Put the lamp in open air; where the housing would enclose it, make
+  the housing mullions.
+- **A repeated placement is only as varied as it is coprime with the field it
+  reads.** §37's turbine row was pitched at 120 against `wind.ts`'s 120-unit
+  gust wave, so all five rotors sat at the same phase and turned in unison —
+  the exact failure the gust term was added to prevent. At 96 they sit a
+  fifth of a cycle apart. Check a pitch against every wavelength the thing
+  standing on it reads.
+- **A landmark's lights may not wear `--leader`, and the reason is §0.2 rather
+  than §2.** The accent marks state and a landmark has none, but the binding
+  argument is that a landmark must be distinct enough that nobody flies to one
+  expecting content — and a lit thing in the leader's colour is a promise of
+  content. `--mint` is this world's light that is not state.
+- **A "closest approach" swept over states is wrong if the geometry is not
+  re-read for each one.** §35 and §36 both recorded the route's least
+  clearance to anything built as 22.67 and §36 added that the swell "only ever
+  lifts the masts further from the path". It is the other way round — the
+  route climbs out *over* Homonoia — and the true minimum is **12.31**, with a
+  node holding the term and its crown 60 units higher. The claim is what
+  stopped anyone re-checking the number, which is the more expensive half.
 - **The compositor can present at 30 Hz with the tab genuinely foreground**,
   and then every rAF interval in a flight test is vsync rather than work —
   a median of exactly 33.3ms with a p99 of 35.0 is the tell. Nothing timed as
@@ -1152,7 +1226,10 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §36: **55.69 KiB (57,024)** — **unchanged in content**,
+  1024px). Measured at §37: **unchanged to the byte** on a §36 build in the
+  same session at the same gzip level, and the entry script byte-identical at
+  17,380 uncompressed — which is what a step that adds only world-mode code
+  should do. Earlier, at §36: **55.69 KiB (57,024)** — **unchanged in content**,
   17,380 bytes uncompressed either way, and the only bytes that differ are
   the eight-character world-chunk hash the entry script names. Earlier, at
   §35: **55.69 KiB (57,023)** — **unchanged to the
@@ -1168,7 +1245,13 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §36: **222.48 KiB** (224,412 + 3,407 worker), up
+  own merits. Measured at §37: **224.92 KiB** (230,322 = 226,729 + 3,593
+  worker), up **2,503** on a §36 build in the same session at the same gzip
+  level — ten landmarks, 212 boxes, nineteen lamps, the rotor kind and the
+  per-signal fade distance. **The worker is +186**, which is `paved()` reading
+  twelve sites instead of two and the ten-site table it reads them from: the
+  second time since §28 that a step has put anything in one, and it is ten
+  circles rather than ten landmarks. CSS unchanged at 3,131. Earlier, at §36: **222.48 KiB** (224,412 + 3,407 worker), up
   **1,388** on a §35 build in the same session at the same gzip level — two
   cities, 250 boxes, the `paved()` disc and the bound. **The worker is +115**
   and it is the first thing since §28 to land in one: `cover.ts` asks whether
@@ -1209,8 +1292,16 @@ budgeted apart and a reader never pays both.
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
 - **8ms/frame at cruise.** §0.2's block (steps 25–28 and 30) is finished and
-  §34 is the first thing since to spend any of it. **§36's two cities spend
-  none**: one forced pose into both builds, both orders, nine poses — draw
+  §34 is the first thing since to spend any of it. **§37's ten landmarks
+  spend none either, and two of them give it back**: one forced pose into both
+  builds, both orders, nine poses — draw calls **identical at every one**,
+  triangles +2,546, and the DPR 1 delta is −0.026 to +0.022 with the two
+  orders disagreeing in sign at four of the nine. At DPR 1.5, **inside the
+  datacenter hall it is −0.327 / −0.353 and under the bridge deck −0.282 /
+  −0.211** — §26's water and §36's Houston for the third time, because an
+  opaque surface covering the sky takes the dome's two fractal noises off it.
+  A roof over your head is the cheapest thing this world can draw. Earlier,
+  **§36's two cities spend none**: one forced pose into both builds, both orders, nine poses — draw
   calls **identical at every one** (the cities are instances in a mesh that
   already existed), triangles +3,000, and the DPR 1 delta is −0.023 to +0.061
   with the two orders disagreeing in sign at four of the nine. At DPR 1.5,
@@ -1258,7 +1349,11 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§36 adds none at all** — 47 to 62 over nine poses,
+- Under 100 draw calls. **§37 adds none at all** — 47 to 71 over nine poses,
+  identical between a §37 build and a §36 one, because everything built in the
+  world is still two draw calls and §37's nineteen lights go into the layer
+  the four scenes' messages already travel in. Earlier, **§36 adds none at
+  all** — 47 to 62 over nine poses,
   identical between a §36 build and a §35 one, because everything built in
   the world is still two draw calls. Measured at §30 on built code against a §28 build,
   same harness, same session: **58 / 45 / 24** at 70, 190 and 520 units of
@@ -1350,10 +1445,16 @@ budgeted apart and a reader never pays both.
   four numbers** — 22.67 / 32.04 / 92.23 / 107.27, swept every scroll unit at
   five arrival clocks over thirty-three cluster states — which is the check
   that Homonoia's proxy is its geometry, and it is how §35's placement bug
-  was caught. The minimum is at the *baked* distribution: the swell only ever
-  lifts the masts further from the path. A collision query costs **0.061µs a
-  frame on the route**, 0.199 flying around Homonoia and **0.980 pressed into
-  a mast** with both passes resolving, against the altitude clamp's 1.8
+  was caught. **§37 corrects the minimum: it is 12.31, not 22.67.** 22.67 is
+  the baked distribution; the route climbs out *over* Homonoia, so the swell
+  moves a mast **toward** the path rather than away from it, and with node 0
+  holding the term the crown rises 60.02 units into a clearance of 73.9.
+  Proxy and drawn box agree at 12.31 too. A collision query costs **0.055µs a
+  frame on the route**, 0.043 through §37's turbine row, **0.257 down the
+  datacenter aisle** — the densest query in the world, twenty-six boxes inside
+  120 units — and 0.98 pressed into a mast, against the altitude clamp's 1.8.
+  The table is **495 boxes over 594 cells, 29,740 bytes** (§36: 294 / 467 /
+  18,560)
 - **The route is flown two ways** (§31), because they measure different
   things. A reader (a 600px burst, then 700ms) never sees the speed cap bind
   at the end of a gesture — 283 units/s median, and the camera is where the

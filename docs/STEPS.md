@@ -4756,6 +4756,13 @@ cluster states (the baked distribution plus four terms at eight phases),
 2.83M poses. The minimum is at the *baked* state: the swell only ever lifts
 Homonoia's masts further from the path.
 
+> **Wrong, and corrected at §37.** The route climbs out *over* Homonoia, so a
+> summit rising under a mast brings the mast toward the camera. Re-measured
+> per cluster state on the shipped `resolve`, the least clearance is **12.31**
+> with node 0 holding the term, not 22.67 — which is the figure this sweep
+> returns if the geometry is not re-read after the shares change. The
+> cross-check itself still holds: proxy and drawn box agree at 12.31 too.
+
 **A query costs less than the floor it runs beside.** 200,000 calls per
 row, after a warm-up batch:
 
@@ -5030,7 +5037,9 @@ Homonoia's four overlapping boxes per mast resolve twice where a city's do not:
 The route's closest approach to anything is **unchanged at 22.67**, and the
 per-scene set reproduces §34's and §35's numbers exactly — 92.23 / 22.67 /
 32.04 / 107.27 — with the cities more than 600 units off the route at their
-nearest.
+nearest. *(§37: 22.67 is the baked-distribution figure and the sentence after
+it here — that the swell only ever lifts a mast away from the path — is
+false. The least clearance is 12.31, with a node holding the term.)*
 
 ### Cost
 
@@ -5055,6 +5064,356 @@ enough in silhouette that nobody flies to one expecting content.
 **Siting is searched, not chosen** — the height field knows where ridges,
 shores and flat ground are, the way §22 found the opening pose and §29 sited
 its slab. Each gets a proxy per §35's convention.
+
+*Done.* **Ten landmarks, 212 boxes, nineteen lights, and not one new draw
+call.** They go into `built.ts`'s existing instanced mesh — 644 boxes now
+against §36's 425 — and the lights go into the additive layer the four
+scenes' messages already travel in, which is `stands.ts`'s construction for
+the fifth time. `landmark.ts` is the **eighth module with no three and no DOM
+in it**: it imports the field and `cover.ts`'s hash and nothing else, so Node
+runs the `.ts` and every count, height, span and clearance below is that
+file's own output.
+
+| | boxes | proxy | lights | tall | what it is |
+|---|---|---|---|---|---|
+| stadium | 40 | 40 | 4 | 66 | 14 segments × 2 tiers, 4 floodlight masts, a pitch, a figure on a plinth |
+| datacenter | 26 | 26 | **12** | 34 | a 120 × 44 hall on ten columns, twelve racks in two rows |
+| dish array | 36 | 36 | – | 43 | six machines, each a pedestal, a mount and a four-slat face |
+| turbines | 30 | **15** | – | 136 | five towers, five nacelles, **fifteen blades that turn** |
+| torii | 10 | 10 | – | 49 | two pillars, nuki, gakuzuka, shimaki, kasagi, two upturned ends |
+| court | 12 | 12 | 2 | 17 | **a 30 × 16.4 deck at true scale**, two hoops, two lamp posts |
+| bridge | 17 | 17 | – | 55 | a 280-unit deck on six piers over a 41-deep valley |
+| lighthouse | 13 | 13 | 1 | 75 | a rock, four drums, a gallery, a four-mullion lantern, a shed |
+| standing stones | 15 | 15 | – | 29 | five stones on `height.ts`'s own five-node ring |
+| wreck | 13 | 13 | – | 52 | a broken stump and 130 units of fallen shaft in five sections |
+
+Scale is deliberate and it is the whole of §0.2's "distinct from a station":
+everything here is **17 to 136 units** against `scenes.ts`'s 40–70 and
+`city.ts`'s 180–320, so a landmark is never the biggest thing in a frame that
+has a station or a city in it, and the court — at true basketball-court size —
+is the smallest thing in the world by a factor of twenty.
+
+### Ten sites, ten rules, and the rule is the landmark
+
+Each is searched against the shipped `height.ts` on a 20-unit lattice over the
+bounded world (103,041 samples), refused within 320 of the flown route and
+within its own keep-out of everything already standing, and then refined at 4
+units against its own footprint. The rule *is* the landmark: a bowl wants flat
+ground, a gate wants a summit, a bridge wants a valley with abutments on both
+sides of it.
+
+| | at | what the rule asked for, and what it got |
+|---|---|---|
+| stadium | 156, 512 | the flattest ground left: **5.3 units of relief over the 86 the bowl covers** |
+| datacenter | 4, 1524 | flat and sheltered: 6.9 over 74, ringed by ground 14 higher |
+| dish array | 580, 2500 | a **steady** hillside: mean slope 0.184, gradient drift scored across the array's own 200 units |
+| turbines | 2360, −420 | a crest: **65.3 against flanks of 45.7 and 35.4**, holding 54–68 over the 480 it stands on |
+| torii | −468, 1924 | the highest point left: **87.9**, against a field whose highest ground is 128 |
+| court | 744, 1948 | a plateau: 3.9 of relief over its 26, standing 13 above the mean inside 200 |
+| bridge | 340, 1340 | a crossing: **280 across, 41 deep**, abutments at 60.9 and 60.2 — 0.7 apart, which is why the deck is level |
+| lighthouse | 1796, 288 | a rock in a lake: **0.7 units proud of `WATER`, 91% of the ground inside 150 under it** |
+| stones | −1192, −1868 | open and proud: 7.3 over its 60, 2 above the mean inside 420 |
+| wreck | −1220, −940 | a dry basin: a floor 4 above `WATER` with **no standing water inside 200** and the rim 22 above it |
+
+**None of them is on the route and none is near anything else.** Closest
+approach of the flown path to a landmark is **445 units** (the stadium) and
+then 492 (the wreck); the nearest two landmarks to each other are the
+datacenter and the bridge at 383, which is a pair you see together and not a
+pair that overlaps.
+
+### `--mint`, and it is §0.2 rather than §2
+
+Four of the ten carry light: §0.2 asks the stadium for floodlights, the hall
+for lit racks, the court for a lamp and the lighthouse for a turning one.
+None of them may wear `--leader`. Hard rule 2 is the first reason — the accent
+marks state and a landmark has none — but the binding one is a line further
+up in the spec: a landmark must be *distinct enough that nobody flies to one
+expecting content*, and a lit thing in the colour Homonoia's leader wears is a
+promise of content. So the nineteen lamps wear **`--mint`**, which §30 gave
+the motes and which is this world's light that is not state.
+
+**A lamp is a signal that does not travel.** `from` and `to` are the same
+point, the arc is zero and the span is the whole cycle, so §34's billboard
+resolves to a fixed dot with no state in it and the layer gains nothing but
+instances. The one shader change is a `varying` tint selected on the group,
+which is a constant interpolating to itself.
+
+**And the fade distance is authored per signal now** rather than being one
+number for the layer, because §0.2 asks the lighthouse for a light "visible
+from further than it should be" and that is a fact about one lamp. Measured
+as shipped: the court's lamps are gone by 320, the hall's by 620, the
+stadium's by 900, the four scenes' messages by 1,000 — and the beacon carries
+to **2,600**, which is most of the way across the world.
+
+**The turning light is a rate, not a beam.** A beam is a second geometry with
+a pitch this world does not have, and from anywhere it can be seen from —
+across a lake — what a turning light *is* is a flash. So the beacon is a lamp
+with a nine-second cycle alive for 0.24 of it. Measured on built code, the
+loop stopped, one pose, the frame differenced between `uTime` 5 and `uTime` 1:
+**+133.2 levels of luma at the beacon's own projected pixel**, 4,980 pixels
+gaining more than three, and nothing anywhere else in the frame.
+
+### The rotor, which is the only new kind since §34
+
+`kind 5` is a turbine blade and it is the only part in the world that moves
+under its own arithmetic. It turns about the part's **local z** — which after
+the yaw is the nacelle's axis — where every other rotation in this codebase is
+about world up, and the instance's position is the **hub** rather than the
+blade. That is §35's placement lesson one axis over: a rotation turns a box
+about its own centre and does not move it, so a blade that is not centred on
+the hub has to have its offset turned by the same angle its box is. Both come
+off one `cos`/`sin` pair and cannot drift apart, and for every other kind that
+pair is (1, 0) and the radius is 0, so the whole construction is the identity.
+
+**The rate is `wind.ts`'s gust wave and what the shader carries is its
+integral.** A shader has a clock and not a state, so `SPIN_GUST·cos(φ)`
+differentiates to `2π·SPIN_GUST·GUST_HZ·sin(φ)` — in phase with the strength
+`wind.ts` gives at the same point. Measured off the shipped constants: the
+rotor runs **0.029 to 0.081 turns a second**, a revolution every 12.4 to 34.4
+seconds, and `SPIN_GUST` is at **2.12× headroom** below the value at which the
+bottom of a gust would turn a turbine backwards.
+
+**Nothing had to be jittered to keep the five out of step, and one number
+had to change so they weren't.** `along` is per instance, so the gust reaches
+the five at different times — but the row was pitched at 120 on the first
+build and `wind.ts`'s wave is **120 units long**, which put all five at the
+same phase of it: five rotors turning in unison, which is the one thing a wind
+farm never looks like. At 96 the five sit **0.203 of a cycle apart**, measured
+(0.943 / 0.740 / 0.537 / 0.334 / 0.130), which is a fifth each, and the gust
+crosses the row in 42.5 seconds.
+
+Apparent motion, §30's instrument: a blade tip is 37 from the hub and its peak
+speed is 18.8 units a second, which is **0.150 / 0.060 / 0.030 °/frame at 120,
+300 and 600 units** — against the mote that §30 measured at 0.066 and had to
+add a near fade for. The turbines stand 2,284 off the route, so 300 units is
+the near end of where anyone sees them. Measured in the browser, frames
+differenced against `uTime` 0 at one held pose: **8,276 pixels differing by
+more than 20 levels after three seconds**, 12,444 after six, 20,244 after
+fifteen.
+
+### The proxy is the geometry, minus what moves
+
+§35's convention and §36's application of it: every box is pushed to both
+lists in one call, so a landmark cannot acquire §35's placement bug — there is
+no second expression for where a box is — and "the closest approach to a proxy
+and to a drawn box are the same number" holds by construction.
+
+The one deliberate omission is the **fifteen turbine blades**, which is
+Basis's struts one reason further on: a blade's place is a function of the
+clock and a proxy in a spatial hash is not, so a rotor whose collision lagged
+its geometry by half a turn would be §0.3's "bouncing off nothing" arriving on
+a schedule. The tower under it is solid and the tower is what a reader can fly
+into. Measured: flying through a rotor disc at hub height, **7 poses of 241
+end inside something and all seven are the nacelle**.
+
+**You cannot get inside anything.** Flood the free space around each landmark
+from outside on a 2-unit lattice — free being `resolve()`'s own answer — then
+ask of every cell it reaches whether it is inside a drawn part, using
+`built.ts`'s own transform:
+
+| landmark | lattice | free | reached | sealed |
+|---|---|---|---|---|
+| stadium | 94×49×101 | 298,446 | all | **0** |
+| datacenter | 82×32×63 | 87,725 | 87,662 | **0** |
+| dish array | 170×45×107 | 503,420 | all | **0** |
+| turbines | 180×70×132 | 1,471,943 | all | **0** |
+| torii | 44×40×25 | 32,302 | all | **0** |
+| court | 30×24×27 | 11,255 | all | **0** |
+| bridge | 26×43×173 | 74,910 | all | **0** |
+| lighthouse | 34×53×31 | 34,863 | all | **0** |
+| stones | 49×30×47 | 41,294 | all | **0** |
+| wreck | 100×42×70 | 176,959 | all | **0** |
+
+**3.79M cells, zero sealed, deepest reach into drawn geometry 0.00.** The
+datacenter's 63 unreachable free cells are a pocket the lattice cannot connect
+and are the safe direction of the two (§35): unreachable free space hides
+nothing.
+
+### Three of them are places rather than objects
+
+A landmark you can only look at is scenery. Three of these are volumes, and
+the numbers are the shipped `resolve` bisected for the largest sphere that
+fits, against a camera of four:
+
+| | poses inside | narrowest clearance |
+|---|---|---|
+| **torii, through the gate** | 0 of 241 | **12.00** — half of a 29 × 24 opening, exactly |
+| torii, straight at a pillar | 21 of 241 | 0.00 |
+| **datacenter, down the aisle** | 0 of 241 | **7.00** — the roof above and the floor below |
+| datacenter, in from the side between two columns | 0 of 241 | 4.50 |
+| datacenter, into a rack | 36 of 241 | 0.00 |
+| datacenter, at an end wall | 18 of 241 | 0.00 |
+| **bridge, under it across the valley** | 0 of 241 | **16.00** |
+| bridge, along the deck | 0 of 241 | 7.50 |
+| bridge, under it along the valley | 102 of 241 | 0.00 — the six piers |
+| stadium, in over the rim | 0 of 241 | 8.00 |
+| stadium, straight at the stands | 60 of 241 | 0.00 |
+| dish array, into a face | 0 of 241 | 13.57 |
+
+The aisle is the number the hall is designed around rather than a leftover: a
+camera is eight across, so a four-unit aisle is a hall you can see into and
+not one you can fly down, and the difference between those two is what this
+landmark is for. The first build had racks at ±9 and an aisle of four.
+
+### Nothing grows in a street, and six of the ten are a street
+
+`paved()` takes ten more sites, and **`reach` is a measurement rather than a
+footprint**: conifers and stone were counted over each site's own footprint
+first, and the six that came back over 0.15 get a disc.
+
+| | conifers | stone | paved |
+|---|---|---|---|
+| stadium | 0.779 | 0.068 | 76 |
+| stones | 0.651 | 0.066 | 40 |
+| datacenter | 0.463 | 0.024 | 78 |
+| dish array | 0.339 | 0.052 | 180 |
+| court | 0.175 | 0.038 | 24 |
+| torii | 0.000 | **0.644** | 26 |
+| turbines | 0.082 | 0.142 | – |
+| bridge | 0.051 | 0.137 | – |
+| wreck | 0.043 | 0.038 | – |
+| lighthouse | 0.000 | 0.001 | – |
+
+A conifer at the foot of a turbine is a picture; conifers growing through a
+stadium's stands are not, and boulders piled through a gate is the same
+failure with the other surface. **The bridge is the clearest case of the other
+kind** — what is under it is a valley and the trees in it are the point.
+
+**Twelve sites through that loop are cheaper than the two were.** The test is
+squared now, so a sample outside a footprint — which is very nearly all of
+them — costs a multiply and a compare rather than a square root. Interleaved in
+fresh processes, three runs each: **1.516–1.691 ms a level-0 chunk against a
+two-city control's 1.508–1.551**, and 1.230–1.238 at level 3 against
+1.235–1.264. Inside the noise, and the level-3 figures are on the faster side.
+
+### What it cost the frame, and again the answer is less than nothing
+
+One forced pose driven into both builds (§34's rule), both orders (§28's), the
+loop stopped, batches of 240 timed between two `onSubmittedWorkDone`:
+
+| pose | draws | Δ tris | Δ ms at DPR 1 | Δ ms at DPR 1.5 |
+|---|---|---|---|---|
+| the arrival | 47 → 47 | +2,546 | +0.008 / +0.005 | +0.038 / −0.009 |
+| Basis's settle (the offer) | 58 → 58 | +2,546 | +0.001 / +0.018 | +0.016 / +0.000 |
+| Houston, down a street | 63 → 63 | +2,546 | +0.009 / +0.010 | +0.003 / −0.002 |
+| stadium, over the rim | 64 → 64 | +2,546 | +0.022 / +0.010 | −0.042 / −0.039 |
+| **datacenter, in the hall** | 71 → 71 | +2,546 | −0.012 / −0.011 | **−0.327 / −0.353** |
+| turbines, at the rotors | 60 → 60 | +2,546 | +0.000 / +0.008 | −0.056 / −0.011 |
+| **bridge, under the deck** | 66 → 66 | +2,546 | −0.001 / −0.026 | **−0.282 / −0.211** |
+| dish array, from below | 67 → 67 | +2,546 | −0.002 / −0.002 | −0.014 / −0.041 |
+| torii, at the gate | 66 → 66 | +2,546 | −0.013 / +0.013 | +0.015 / +0.008 |
+
+**Draw calls do not move at any pose**, because a landmark is instances in a
+mesh that already existed. At DPR 1 the whole thing is inside the noise and
+the two orders disagree in sign at four of the nine.
+
+**And under the bridge deck and inside the datacenter hall it is worth a third
+of a millisecond in the right direction.** That is §26's water and §36's
+Houston for the third time and it is the same argument: the sky dome runs two
+fractal noises per sky pixel, DPR 1.5 is where the frame is fill-bound, and an
+opaque surface covering the sky is a negative cost. A roof over your head is
+the cheapest thing this world can draw.
+
+### The table
+
+**495 boxes over 594 hash cells, 29,740 bytes**, against §36's 294 / 467 /
+18,560 — and §35 chose a static table on exactly this arithmetic. Adding ten
+landmarks to it was one array spread.
+
+| where | µs/call | boxes tested |
+|---|---|---|
+| every frame on the route | 0.055 | 0.2 of 495 |
+| through the turbine row | 0.043 | 0.5 |
+| down the middle of Houston | 0.123 | 4.9 |
+| round the stadium rim | 0.211 | 10.6 |
+| **down the datacenter aisle** | **0.257** | 15.0 |
+| inside a Homonoia mast (resolving) | 0.979 | 4.0 |
+
+The aisle is the densest query in the world now — twenty-six boxes inside 120
+units — and it is a quarter of a microsecond, against the altitude clamp's 1.8.
+
+### Four bugs, and every one of them was found by an instrument rather than by looking
+
+1. **`yawFor` had the wrong sign.** `turn` and `built.ts`'s `rot` both send
+   local +z to `(sin θ, cos θ)`, so the bearing a part faces is `90 − θ`; it
+   was written `90 + θ`, which is the same number at 90° and wrong everywhere
+   else. The dish array came back running **122° off the contour** it was
+   sited on, the turbines across their own crest rather than along it, and the
+   torii's opening 27° off the approach instead of square to it. **None of
+   that is visible in a count, a clearance or a flood fill** — every landmark
+   stood on the ground, nothing floated, nothing could be got inside. What
+   catches it is measuring the bearing between two placed parts against the
+   bearing that was asked for, which is now six assertions and cost nothing.
+2. **The crest rule was scoring a saddle.** "The ground is higher at both
+   ends" is what a col is; the first site sat four units *below* the flank
+   beside it. A crest is above the ground either side of it and holds its own
+   height along itself, which is two tests and not one.
+3. **The lamps were inside the boxes meant to be emitting them.** The additive
+   layer does not write depth but it does test it (§15), so a billboard at the
+   centre of a lamp room is drawn and then discarded. Measured before the fix:
+   the beacon and the four floodlights produced **no change at all over nine
+   seconds of their own cycle** — which reads as a light that does not work
+   rather than as one that is hidden. The fix is geometric: put the lamp in
+   open air, and where the housing would enclose it make the housing four
+   mullions and a roof. The lighthouse's lantern is now the datacenter's
+   argument at a fortieth of the size.
+4. **The turbine row was pitched at the gust's own wavelength** — above.
+
+### A defect in a recorded number: the route's least clearance is 12.31, not 22.67
+
+§35 recorded the flown route's closest approach to anything built as **22.67
+units**, at Homonoia's climb-out, "swept every scroll unit at five arrival
+clocks over thirty-three cluster states"; §36 reproduced it and added that
+"the minimum is at the baked distribution: the swell only ever lifts the masts
+further from the path." **The second half of that is false, and it takes the
+number with it.**
+
+Measured on the shipped `resolve`, every scroll unit, five arrival clocks, per
+cluster state:
+
+| shares | least clearance | where |
+|---|---|---|
+| baked (equal) | **22.67** | scroll 8874 |
+| node 0 holds the term | **12.31** | scroll 8638 |
+| node 3 holds the term | 12.58 | scroll 8874 |
+| node 1 / 2 / 4 hold | 39.31 / 33.80 / 33.80 | scroll 8873 |
+
+The tell is what the swell does at the binding box: **+60.02 units**, and the
+camera clears node 0's crown by exactly that much less. The route *climbs out
+over* Homonoia — 73.9 units above the crown at the baked distribution — so a
+summit rising under a mast brings the mast toward the path, not away from it.
+The equal-shares figure is the one a sweep finds if the geometry is not
+re-read after the shares change, which is the shape of the original error.
+
+Nothing is broken by it: 12.31 is three times the camera's own radius and the
+route still never touches anything. What was wrong was a claim, and it was
+load-bearing — it is the reason nobody re-checked. The proxy and the drawn
+geometry agree on 12.31 to the hundredth, which is §36's cross-check holding.
+
+### Cost
+
+World chunk **+2,317 bytes** gzipped over a §36 build in the same session at
+the same gzip level, the worker **+186**: **224.92 KiB** (230,322 = 226,729 +
+3,593), against §36's 222.48. The worker's share is `paved()` reading twelve
+sites and the ten-site table it reads them from — the second time since §28
+that a step has put anything in one, and it is ten circles rather than ten
+landmarks. CSS unchanged at 3,131.
+
+**Document JS is unchanged to the byte**: 56,112 either way, and the entry
+script is 17,380 uncompressed either way. Nothing in this step lands in
+document mode.
+
+Nothing here is information: a landmark carries no writeup, no machine ID and
+no name, so hard rule 6 has nothing to be given. No new DOM node, so §36's
+axe-clean states stand unchanged.
+
+**One thing for §38 to own.** The arrival frame has built things on its
+horizon now — the run of masts and, past them, §37's own silhouettes, hazed
+and two or three units of screen height. §34 solved the name's contrast
+against a landscape with nothing standing in it, and §38 is where that is
+re-measured against one that has. The frame cost is already known to be
+nothing (draw calls 47 → 47, +0.008 / +0.005 ms at DPR 1); what is not
+measured is the brightness under the `<h1>`.
 
 ### 38. Brightness, performance, accessibility
 Re-solved for a world with cities in it. The measurement harness from

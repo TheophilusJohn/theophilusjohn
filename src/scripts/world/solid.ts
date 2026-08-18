@@ -9,11 +9,11 @@
    needs a physics engine.
 
    **The sixth module with no three and no DOM in it**, after `height.ts`,
-   `route.ts`, `cover.ts`'s family and `scenes.ts` (and `city.ts` since §36)
-   — which is what lets a Node harness flood-fill the space around a scene
-   and answer "can a sphere of radius four reach the inside of anything
-   built" without a GPU. Every number in the §35 and §36 reports is this
-   file's own output.
+   `route.ts`, `cover.ts`'s family and `scenes.ts` (and `city.ts` since §36,
+   `landmark.ts` since §37) — which is what lets a Node harness flood-fill the
+   space around a scene and answer "can a sphere of radius four reach the
+   inside of anything built" without a GPU. Every number in the §35, §36 and
+   §37 reports is this file's own output.
 
    ── Which of §35's three architectures, and why ─────────────────────────
    **A static table, independent of chunk streaming.** Every proxy in one
@@ -25,11 +25,13 @@
    **48 boxes: a 1,728-byte Float32Array and an index of 81 entries over 25
    cells, 2,376 bytes all told**, and §35 guessed that §36's two cities and
    §37's ten landmarks would be "a few hundred more". **§36 built them and it
-   is 294 boxes over 467 cells: 18,560 bytes**, which is the whole of what a
-   residency scheme would be saving. It is a bad trade at any world size, and
-   it is a *worse* one now that the table has to answer a query inside a
-   city: the two cities are the densest part of it and a query there tests
-   0.7 to 8 boxes at 0.05 to 0.17µs, against a mast's 0.98.
+   is 294 boxes over 467 cells: 18,560 bytes**, and **§37's ten landmarks take
+   it to 495 over 594: 29,740** — which is the whole of what a residency
+   scheme would be saving. It is a bad trade at any world size, and it is a
+   *worse* one now that the table has to answer a query inside something: the
+   densest place in the world is §37's datacenter aisle, twenty-six boxes
+   inside 120 units, and a query there tests fifteen of the 495 at **0.257µs**
+   against a mast's 0.98 and the floor clamp's 1.8.
 
    The other two were rejected on correctness rather than on cost:
 
@@ -45,11 +47,19 @@
      matter, and this file is the only place that would have to change when
      it is: `BUILT` is assembled here and read through one function, so a
      residency scheme is a change to how the table is filled and to nothing
-     else. §36 exercised that: adding two cities is one array spread.
+     else. §36 and §37 both exercised that: adding two cities and then ten
+     landmarks is one array spread each.
 
    **Placement is already pure** (§28's rule) — a proxy is a function of
    where a thing is and nothing about it depends on which chunk is resident,
    which is what makes all three possible and this one trivial.
+
+   ── What is deliberately not in it ──────────────────────────────────────
+   Basis's six struts (§35) and **§37's fifteen turbine blades**. A blade's
+   place is a function of the clock and an entry in a spatial hash is not, so
+   a rotor whose collision lagged its geometry by half a turn would be §0.3's
+   "bouncing off nothing" arriving on a schedule. The tower under it is in the
+   table, and the tower is what a reader can fly into.
 
    ── The one thing that moves ────────────────────────────────────────────
    Homonoia's masts ride the swell: the summit under a node rises by up to
@@ -61,13 +71,15 @@
 
 import { CITIES } from './city';
 import { swell } from './height';
+import { LANDMARKS } from './landmark';
 import { SCENES } from './scenes';
 
-/** Everything in the world that carries a proxy. §36's cities are read
-    exactly as the four scenes are — a city's `pad` is zero and its parts
-    carry world heights, which is the only difference and it is arithmetic
-    rather than a case. */
-const BUILT = [...SCENES, ...CITIES];
+/** Everything in the world that carries a proxy. §36's cities and §37's ten
+    landmarks are read exactly as the four scenes are — their `pad` is zero
+    and their parts carry world heights, which is the only difference and it
+    is arithmetic rather than a case. Three kinds of built thing, one table,
+    and this file has never had to know there is more than one. */
+const BUILT = [...SCENES, ...CITIES, ...LANDMARKS];
 
 /** The camera's radius (§0.3). Four units, so it stops a little short of a
     surface rather than touching it. */

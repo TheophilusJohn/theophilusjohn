@@ -524,21 +524,37 @@ flies to one expecting content.
 |---|---|
 | **Houston** | A tight cluster of towers on flat ground that stops abruptly. Visitable, below. **Built §36** |
 | **Delhi** | Low, dense, spread wide, with an arch and a tower above it. Visitable, below. **Built §36** — and the tower is not fluted, which is §34's aliasing lesson rather than a shortcut: ribs at the pitch a flute needs put two edges in one pixel from anywhere outside the city |
-| **The stadium** | A bowl with floodlights, lit, empty, and a figure on a plinth outside it. No crest and no wordmark — the silhouette does the work |
-| **A datacenter hall** | Long, low, lit racks visible through it. The only landmark that is literally the subject of the site |
-| **A dish array** | Six or eight radio telescopes on a hillside, all pointed the same way. Machines listening and agreeing on what they heard |
-| **Wind turbines** | On a ridge, and they turn with the gust wave §27 already built. Free motion |
-| **A torii gate** | On a peak. Pure silhouette, and it reads as a threshold rather than a building |
-| **A basketball court** | One, lit, netted, on a plateau where it has no business being. The smallest thing in the world |
-| **A bridge** | Across a valley. Infrastructure that connects, and a line to follow |
-| **A lighthouse** | On a lake, one turning light, visible from further than it should be |
-| **Five standing stones** | A Raft cluster as a monument. Legible only to someone who knows what five nodes means |
-| **A wreck** | A collapsed tower or a dry dock. A world with a past does not read as generated |
+| **The stadium** | A bowl with floodlights, lit, empty, and a figure on a plinth outside it. No crest and no wordmark — the silhouette does the work. **Built §37**: fourteen segments at two radii, and they overlap — the ring closes, so there is no way in but over the rim |
+| **A datacenter hall** | Long, low, lit racks visible through it. The only landmark that is literally the subject of the site. **Built §37** — and *through it* is the specification: the long sides are ten columns rather than two walls, and the aisle between the racks is fifteen units against a camera of eight, so it is a hall you fly down |
+| **A dish array** | Six or eight radio telescopes on a hillside, all pointed the same way. Machines listening and agreeing on what they heard. **Built §37**: six, and the face is four slats stepping up and back, because nothing in this world has a pitch — the shared step is what makes the shared pointing impossible to get wrong |
+| **Wind turbines** | On a ridge, and they turn with the gust wave §27 already built. Free motion. **Built §37**: five, and the rotor is the only new part kind since §34 — the shader carries the *integral* of `wind.ts`'s strength, so a gust speeds the rotors up as it passes and reaches the five at different times |
+| **A torii gate** | On a peak. Pure silhouette, and it reads as a threshold rather than a building. **Built §37** on the highest ground left in the world, turned so its opening faces the origin — a threshold read edge-on is two posts |
+| **A basketball court** | One, lit, netted, on a plateau where it has no business being. The smallest thing in the world. **Built §37 at true scale** — a 30 × 16.4 deck and a rim 3.05 above it — which is the joke, in a world where a tower is 320 |
+| **A bridge** | Across a valley. Infrastructure that connects, and a line to follow. **Built §37**: a 280-unit deck on six piers over a valley 41 deep, and the piers are 47 apart, so you fly *under* it as well as along it |
+| **A lighthouse** | On a lake, one turning light, visible from further than it should be. **Built §37** on a rock 0.7 units proud of the water line. The turning light is a *rate*: from across a lake, which is the only place it is seen from, a turning beam is a flash |
+| **Five standing stones** | A Raft cluster as a monument. Legible only to someone who knows what five nodes means. **Built §37** on `height.ts`'s own five-node ring formula at a thirtieth of Homonoia's radius — the monument and the running cluster are the same five places |
+| **A wreck** | A collapsed tower or a dry dock. A world with a past does not read as generated. **Built §37** — both, as it turned out: the siting rule found a dry lake bed, so the tower has fallen into water that has since gone |
 
 **Siting is searched, not chosen.** The height field knows where ridges,
 shores and flat ground are; §22 found the opening pose that way and §29
 sited its slab that way. A landmark on an arbitrary patch reads as dropped;
 one at the head of a valley reads as sited.
+
+**And the rule is the landmark** (§37). Ten searches, one per silhouette,
+each refusing anything within 320 units of the flown route and within its own
+keep-out of everything already standing. What each rule asks for is what the
+thing *is*: a bowl wants flat ground, a gate wants a summit, a bridge wants a
+valley with abutments squarely on both sides of it and the ground still
+rising beyond them — which is what tells a crossing from a col. Two of the
+ten rules were wrong on the first build and both were wrong in the same way,
+by asking for a shape's *neighbourhood* instead of the shape: "the ground is
+higher at both ends" is a saddle, not a crest.
+
+**Nothing lit here may wear `--leader`** (§37). Hard rule 2 is the first
+reason — the accent marks state and a landmark has none — but the binding one
+is the paragraph above: a lit thing in the colour Homonoia's leader wears is
+a promise of content, which is exactly what a landmark must not make. The
+world's light that is not state is `--mint`, which §30 gave the motes.
 
 ##### The two cities, and they are visitable
 
@@ -801,11 +817,21 @@ numbers per station, the scene's radius and its height, and the poses
 followed: all four now frame at 24.0–24.1% of the width.
 
 **The route does not fly through anything it built.** Closest approach of the
-flown path to any box of any scene, swept every two scroll units at both ends
-of the arrival clock: 22.7 units (Homonoia's climb-out, past a mast), 32.0
-(Philoi's, past a screen frame), 92.2 and 107.3. §35's camera radius is four,
-so there is nothing on the route for collision to resolve — which is right,
-since collision is for free flight.
+flown path to any box of any scene: **12.31 units** (Homonoia's climb-out,
+past a mast, *while that mast's node holds the term*), then 32.0 (Philoi's,
+past a screen frame), 92.2 and 107.3. §35's camera radius is four, so there
+is nothing on the route for collision to resolve — which is right, since
+collision is for free flight.
+
+**Corrected at §37, and the correction is the interesting part.** §35 and §36
+both recorded 22.67 here and §36 added that "the swell only ever lifts the
+masts further from the path". It does the opposite: the route climbs out
+*over* Homonoia — 73.9 units above a crown at the baked distribution — so a
+summit rising thirty units under a mast brings the mast **toward** the
+camera, and 22.67 is the figure a sweep returns when the geometry is not
+re-read after the shares change. Still three times the camera's radius, and
+still nothing to resolve; what was wrong was a claim, and a claim is what
+stops anyone re-checking.
 
 #### The settle, and §29's four constraints
 

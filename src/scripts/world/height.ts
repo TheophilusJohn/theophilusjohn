@@ -245,6 +245,42 @@ export const CITY_SITES = [
   { slug: 'delhi', x: 600, z: -2100, reach: 700 },
 ] as const;
 
+/* ── Where the other ten stand (§37) ────────────────────────────────────
+   Here for the same reason the cities are, and the reason is `paved()` and
+   nothing else: the worker has to be able to ask "does anything grow at
+   (x, z)" without importing what a stadium is made of. `landmark.ts` reads
+   its own site out of this table, exactly as `city.ts` does — one answer to
+   "where is the stadium", on both sides of the worker boundary.
+
+   **Searched, not chosen**, each against the rule its own silhouette needs:
+   the flattest ground for the bowl and the hall, a steady hillside for the
+   dishes, a crest for the turbines, a summit for the gate, a small flat top
+   with the ground falling away for the court, a valley with abutments on
+   both sides for the bridge, a rock with water round it for the lighthouse,
+   open ground proud of what surrounds it for the stones, and a dry basin for
+   the wreck. Every one of them is at least 500 units off the flown route
+   (§0.2: findable, never on it) and at least 383 from anything else built.
+
+   **`reach` is what is paved, and four of the ten pave nothing.** It is a
+   measurement rather than a footprint: conifers and stone were counted over
+   each site's own footprint and the six that came back over 0.15 get a disc.
+   A turbine with a conifer at its foot is a picture; a stadium bowl with
+   conifers growing through the stands is not. The bridge is the clearest
+   case of the other kind — what is under it is a valley, and the trees in it
+   are the point. */
+export const LANDMARK_SITES = [
+  { slug: 'stadium', x: 156, z: 512, reach: 76 },
+  { slug: 'datacenter', x: 4, z: 1524, reach: 78 },
+  { slug: 'dishes', x: 580, z: 2500, reach: 180 },
+  { slug: 'turbines', x: 2360, z: -420, reach: 0 },
+  { slug: 'torii', x: -468, z: 1924, reach: 26 },
+  { slug: 'court', x: 744, z: 1948, reach: 24 },
+  { slug: 'bridge', x: 340, z: 1340, reach: 0 },
+  { slug: 'lighthouse', x: 1796, z: 288, reach: 0 },
+  { slug: 'stones', x: -1192, z: -1868, reach: 40 },
+  { slug: 'wreck', x: -1220, z: -940, reach: 0 },
+] as const;
+
 export const CLUSTER_SITE = { x: -520, z: -900 };
 export const CLUSTER_NODES = 5;
 export const CLUSTER_RING = 120;

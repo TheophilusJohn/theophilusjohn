@@ -78,10 +78,12 @@ import type Node from 'three/src/nodes/core/Node.js';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import { bands } from './band';
 import { CITIES } from './city';
+import { LANDMARKS, SPIN_GUST, SPIN_HZ } from './landmark';
 import type { Cluster } from './consensus';
 import { fog } from './fog';
 import type { Palette } from './palette';
 import { B_CYCLE, E_PASS, P_LINES, P_PITCH, SCENES } from './scenes';
+import { GUST_LENGTH, GUST_SPEED, WIND } from './wind';
 import { gate, nearSwell, swellLift } from './swell';
 import { haze } from './sky';
 import { SUN } from './sun';
@@ -191,11 +193,14 @@ const P_HOT = 0.9;
 const P_SLIDE = 0.18;
 
 const SIGNAL_ALPHA = 0.55;
-/** Past this a signal is gone. Homonoia's legs are read from 774 units at
-    the settle and its own arcs are 240 across, so the layer has to survive
-    the whole of that and nothing beyond it. */
-const SIGNAL_FAR = 1000;
-const SIGNAL_FAR_IN = 860;
+/** How wide the fade at the far end is. **The distance itself is authored per
+    signal** since §37 (`Signal.far`) rather than being one number for the
+    layer: §0.2 asks the lighthouse for a light "visible from further than it
+    should be", which is a fact about one lamp — 2,600 units against the four
+    scenes' 1,000 and the stadium's 900 — and a layer constant cannot carry
+    it. The band is the layer's, because what it is for is the pop and that
+    is the same at any range. */
+const SIGNAL_FADE = 140;
 
 const TAU = Math.PI * 2;
 
@@ -256,7 +261,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
      brings is *fill* — a tower is 320 units of surface — and fill is paid
      for where the camera is, which is why §36 measures inside one and
      outside one rather than at three altitudes. */
-  const parts = [...SCENES, ...CITIES].flatMap((s) => s.parts.map((part) => ({ scene: s, part })));
+  const parts = [...SCENES, ...CITIES, ...LANDMARKS].flatMap((s) => s.parts.map((part) => ({ scene: s, part })));
   const N = parts.length;
   const aPos = new Float32Array(N * 3);
   const aSize = new Float32Array(N * 3);
@@ -323,11 +328,46 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
   const rot = (v: Node<'vec3'>) =>
     vec3(v.x.mul(turn.x).add(v.z.mul(turn.y)), v.y, v.z.mul(turn.x).sub(v.x.mul(turn.y)));
 
+  /* ── §37's rotor, and it is one turn in the plane the yaw does not use ──
+     `kind 5` is a turbine blade: it turns about the part's **local z**, which
+     after the yaw is the nacelle's own axis, where every other rotation in
+     this file is about world up. So there are two turns stacked here and they
+     compose in the one order that works — the blade turns in the rotor plane,
+     then the whole rotor faces the wind.
+
+     `a` is the blade's phase in turns and `b` its radius, and the instance's
+     position is the **hub**. That is §35's lesson one axis over: an instance's
+     rotation turns its box about its own centre and does not move it, so a
+     blade that is not centred on the hub has to have its offset turned by the
+     same angle its box is — which is why both come off `rc`/`rs` below and
+     cannot drift apart.
+
+     **The rate is `wind.ts`'s gust wave**, and what is written here is the
+     rate's *integral* because a shader has a clock and not a state:
+     `SPIN_GUST·cos(φ)` differentiates to `2π·SPIN_GUST·GUST_HZ·sin(φ)`, which
+     is in phase with the strength `wind.ts` gives at the same point. `along`
+     is per instance, so a gust travelling the ridge reaches the five turbines
+     at different times and nothing had to be jittered to keep them apart.
+
+     For every other kind `rc` is 1, `rs` is 0 and `radius` is 0, so the whole
+     construction is the identity — `ctl.z` carries Enargeia's per-cell weight
+     and Philoi's screen index and may not be read as a radius by either. */
+  const isRotor = kind.equal(5);
+  const along = pos.x.mul(WIND.x).add(pos.z.mul(WIND.z));
+  const phi = along.sub(time.mul(GUST_SPEED)).div(GUST_LENGTH).mul(TAU);
+  const spin = time.mul(SPIN_HZ).add(a).add(phi.cos().mul(SPIN_GUST)).mul(TAU);
+  const rc = isRotor.select(spin.cos(), float(1));
+  const rs = isRotor.select(spin.sin(), float(0));
+  const radius = isRotor.select(ctl.z, float(0));
+  const spinZ = (v: Node<'vec3'>) =>
+    vec3(v.x.mul(rc).add(v.y.mul(rs)), v.y.mul(rc).sub(v.x.mul(rs)), v.z);
+  const hub = vec3(radius.mul(rs), radius.mul(rc), 0);
+
   material.positionNode = pos
     .add(vec3(0, lift.sub(drop), 0))
-    .add(rot(positionLocal.mul(size).mul(grow)));
+    .add(rot(spinZ(positionLocal.mul(size).mul(grow)).add(hub)));
 
-  const normal = rot(attribute<'vec3'>('normal', 'vec3')).normalize();
+  const normal = rot(spinZ(attribute<'vec3'>('normal', 'vec3'))).normalize();
 
   /* ── How lit a part is, by kind ─────────────────────────────────────── */
   const wave = fract(time.div(E_PASS));
@@ -351,6 +391,10 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     enargeia,
     kind.equal(2).select(homonoia, isLine.select(philoi, kind.equal(4).select(basis, float(0)))),
   )).clamp(0, 1));
+  /* Nothing §37 draws in this mesh is ever hot, and that is hard rule 2
+     rather than an omission: `--leader` marks state, a landmark has none, and
+     a lit box in the accent would read as a station with something to say.
+     `kind 5` falls through every branch above to 0 by construction. */
 
   /* §28's shading, ending the way every opaque surface in this world ends:
      band the compressed lighting term, then mix toward the sky in the
@@ -382,7 +426,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
      `span` is how much of that cycle it is alive for.
 
      One draw call for everything travelling in the world. */
-  const sig = SCENES.flatMap((s) => s.signals.map((signal) => ({ scene: s, signal })));
+  const sig = [...SCENES, ...LANDMARKS].flatMap((s) => s.signals.map((signal) => ({ scene: s, signal })));
   const M = sig.length;
   const sGeo = new InstancedBufferGeometry();
   {
@@ -395,7 +439,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
   const sFrom = new Float32Array(M * 3);
   const sTo = new Float32Array(M * 3);
   const sRun = new Float32Array(M * 4);
-  const sWho = new Float32Array(M * 3);
+  const sWho = new Float32Array(M * 4);
   sig.forEach(({ scene, signal }, i) => {
     for (let k = 0; k < 3; k++) {
       const o = k === 0 ? scene.site.x : k === 1 ? scene.pad : scene.site.z;
@@ -406,14 +450,15 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     sRun[i * 4 + 1] = signal.phase;
     sRun[i * 4 + 2] = signal.arc;
     sRun[i * 4 + 3] = signal.span;
-    sWho[i * 3] = signal.group;
-    sWho[i * 3 + 1] = signal.node;
-    sWho[i * 3 + 2] = signal.size;
+    sWho[i * 4] = signal.group;
+    sWho[i * 4 + 1] = signal.node;
+    sWho[i * 4 + 2] = signal.size;
+    sWho[i * 4 + 3] = signal.far;
   });
   sGeo.setAttribute('iFrom', new InstancedBufferAttribute(sFrom, 3));
   sGeo.setAttribute('iTo', new InstancedBufferAttribute(sTo, 3));
   sGeo.setAttribute('iRun', new InstancedBufferAttribute(sRun, 4));
-  sGeo.setAttribute('iWho', new InstancedBufferAttribute(sWho, 3));
+  sGeo.setAttribute('iWho', new InstancedBufferAttribute(sWho, 4));
   sGeo.instanceCount = M;
 
   const camRight = uniform(new Vector3(1, 0, 0));
@@ -438,7 +483,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     const from = attribute<'vec3'>('iFrom', 'vec3');
     const to = attribute<'vec3'>('iTo', 'vec3');
     const run = attribute<'vec4'>('iRun', 'vec4');
-    const who = attribute<'vec3'>('iWho', 'vec3');
+    const who = attribute<'vec4'>('iWho', 'vec4');
     const corner = attribute<'vec2'>('qOff', 'vec2');
 
     const cycle = fract(time.mul(run.x).add(run.y));
@@ -474,7 +519,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     const view = cameraViewMatrix.mul(vec4(where, 1));
     const ahead = step(view.z, -1);
     const range = where.distance(cameraPosition);
-    const shrink = ahead.mul(smoothstep(SIGNAL_FAR, SIGNAL_FAR_IN, range));
+    const shrink = ahead.mul(smoothstep(who.w, who.w.sub(SIGNAL_FADE), range));
 
     sMaterial.positionNode = where.add(
       camRight.mul(corner.x).add(camUp.mul(corner.y)).mul(who.z.mul(shrink)),
@@ -517,7 +562,21 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     const r = corner.length();
     const disc = smoothstep(0.5, 0.34, r).mul(0.35).add(smoothstep(0.2, 0.05, r).mul(0.65));
 
-    sMaterial.colorNode = palette.lead;
+    /* ── Why a lamp is not `--leader`, and it is §0.2 rather than §2 ────
+       Hard rule 2 says the accent marks state, and a landmark has none: it
+       carries no writeup, no machine ID and nothing that is current. But the
+       binding reason is one line further up — §0.2 asks that a landmark be
+       "distinct enough in silhouette from the four stations that nobody flies
+       to one expecting content", and a lit thing in the colour Homonoia's
+       leader wears is a promise of content. So the nineteen lamps wear
+       `--mint`, which §30 gave the motes and which is this world's light that
+       is *not* state, and the two are never in one frame's worth of doubt.
+
+       A varying, for the reason the mass's `hot` is one: the tint is a
+       property of the instance and a constant interpolates to itself. */
+    const tint = varying(mix(palette.lead, palette.mint, step(3.5, who.x)));
+
+    sMaterial.colorNode = tint;
     sMaterial.opacityNode = disc.mul(gain);
   }
 

@@ -26,7 +26,7 @@
    low-frequency noise for clumping, because uniform scatter is the tell that
    something was placed by a computer. */
 
-import { CITY_SITES, WATER, height, landform, noise2, rangeMask, uplift } from './height';
+import { CITY_SITES, LANDMARK_SITES, WATER, height, landform, noise2, rangeMask, uplift } from './height';
 
 /* ── Altitude ───────────────────────────────────────────────────────────
    The field runs -24.6 to 126.2 inside the bounded world with a mean of 11.2
@@ -102,14 +102,26 @@ export const ramp = (a: number, b: number, x: number) => {
    made of: `height.ts` carries the two centres for exactly that reason.
 
    The ramp is a third of the reach wide, so the city's own ground is bare,
-   the country around it is not, and there is no edge between them to see. */
+   the country around it is not, and there is no edge between them to see.
+
+   **§37 puts ten more sites through the same loop and it is cheaper than the
+   two were.** The test is squared now, so a sample outside a footprint —
+   which is very nearly all of them — costs a multiply and a compare rather
+   than a square root, and only the site that actually contains the sample
+   pays for the hypotenuse. Four of the ten pave nothing at all (`reach` 0)
+   and fall out of the same compare. */
 const PAVED_OUT = 1.34;
+
+const PAVED = [...CITY_SITES, ...LANDMARK_SITES];
 
 export function paved(x: number, z: number): number {
   let f = 1;
-  for (const c of CITY_SITES) {
-    const d = Math.hypot(x - c.x, z - c.z);
-    if (d < c.reach * PAVED_OUT) f *= ramp(c.reach, c.reach * PAVED_OUT, d);
+  for (const c of PAVED) {
+    const out = c.reach * PAVED_OUT;
+    const dx = x - c.x;
+    const dz = z - c.z;
+    if (dx * dx + dz * dz >= out * out) continue;
+    f *= ramp(c.reach, out, Math.hypot(dx, dz));
     if (f <= 0) return 0;
   }
   return f;

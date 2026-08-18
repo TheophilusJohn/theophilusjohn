@@ -53,7 +53,14 @@ export type Kind =
       which screen it is drawn on. Both are read off a table. */
   | 3
   /** Basis's modules. `a` is the module's place along the trace. */
-  | 4;
+  | 4
+  /** §37's rotor blade, and the only part in the world that moves under its
+      own arithmetic rather than under a clock somebody hands it. `a` is the
+      blade's phase in turns and `b` its radius from the hub — the part's own
+      (x, y, z) is the **hub**, not the blade, because a blade's place is a
+      function of the time and its box has to turn about a point it is not
+      centred on (§35's lesson about yaw, one axis over). */
+  | 5;
 
 /** One box. Centre and half-extents, in **site-local** units: x and z from
     the site, y from the pad. `yaw` is about world up. */
@@ -92,7 +99,18 @@ export type Signal = {
       three pixels at 0.55 alpha through half a fog is not a message being
       sent. */
   size: number;
+  /** How far away it is gone, in units. Authored per signal since §37 rather
+      than one constant for the layer, and the lighthouse is the whole reason:
+      §0.2 asks for a light "visible from further than it should be", which is
+      a number about one lamp and not about the layer it is drawn in. The four
+      scenes all take `SIGNAL_FAR`. */
+  far: number;
 };
+
+/** What a message between two masts is worth being drawn at. Homonoia's legs
+    are read from 774 units at the settle and its own arcs are 240 across, so
+    the layer has to survive the whole of that and nothing beyond it. */
+export const SIGNAL_FAR = 1000;
 
 /** One box of a scene's **collision proxy** (§35), in the same site-local
     frame `Part` is in. `ride` is whether it moves with the swell — true only
@@ -267,7 +285,7 @@ function enargeia(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
      picture: something comes *out* of it. */
   const signals: Signal[] = [{
     from: [0, top + 6, 0], to: [0, top + 30, 0],
-    rate: 1 / E_PASS, phase: 0, arc: 0, group: 0, node: -1, span: 0.34, size: 4.0,
+    rate: 1 / E_PASS, phase: 0, arc: 0, group: 0, node: -1, span: 0.34, size: 4.0, far: SIGNAL_FAR,
   }];
 
   /* **Two boxes for ninety-six parts**, and that is the shape of the whole
@@ -372,7 +390,7 @@ function homonoia(pad: number): { parts: Part[]; signals: Signal[]; proxy: Solid
         signals.push({
           from: at[i]!, to: at[j]!,
           rate: 1 / 1.9, phase: k / 2 + (i * 0.13 + j * 0.29) % 1,
-          arc: 16, group: 1, node: i, span: 1, size: 9.5,
+          arc: 16, group: 1, node: i, span: 1, size: 9.5, far: SIGNAL_FAR,
         });
       }
     }
@@ -491,8 +509,8 @@ function philoi(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
      are the case a CRDT is *for*, and two that took turns would be showing
      a lock. */
   for (let k = 0; k < 2; k++) {
-    signals.push({ from: seat[0]!, to: seat[1]!, rate: 1 / P_CYCLE, phase: k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4 });
-    signals.push({ from: seat[1]!, to: seat[0]!, rate: 1 / P_CYCLE, phase: 0.25 + k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4 });
+    signals.push({ from: seat[0]!, to: seat[1]!, rate: 1 / P_CYCLE, phase: k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4, far: SIGNAL_FAR });
+    signals.push({ from: seat[1]!, to: seat[0]!, rate: 1 / P_CYCLE, phase: 0.25 + k * 0.5, arc: 7, group: 2, node: -1, span: 0.42, size: 2.4, far: SIGNAL_FAR });
   }
   return { parts, signals, proxy };
 }
@@ -571,7 +589,7 @@ function basis(): { parts: Part[]; signals: Signal[]; proxy: Solid[] } {
     signals.push({
       from: p, to: q, rate: 1 / B_CYCLE,
       phase: -i / (B_NODES.length - 1), arc: 0, group: 3, node: i,
-      span: 1 / (B_NODES.length - 1), size: 2.6,
+      span: 1 / (B_NODES.length - 1), size: 2.6, far: SIGNAL_FAR,
     });
   }
   /* **The struts are not in it, and that is the deliberate half of the
