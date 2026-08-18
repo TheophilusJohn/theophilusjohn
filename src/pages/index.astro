@@ -111,8 +111,32 @@ const bands = [
   <section class="wrap about" id="about" data-path="/about" aria-labelledby="about-h">
     <h2 id="about-h" class="meta">About</h2>
     <div class="prose">
-      <p>Placeholder. Write this last — it is the easiest page to overthink and the least load-bearing.</p>
-      <p><a href="/theo-john-resume.pdf">Resume (PDF)</a></p>
+      <p>
+        I'm a computer science master's student at the University of Houston–Clear Lake, where
+        I also administer the lab environment — a mixed Ubuntu and Windows Server estate used
+        by students and faculty. Before that I spent three years at Tata Consultancy Services
+        as a systems engineer, working on TCS BaNCS, a core banking platform.
+      </p>
+      <p>
+        Most of what I build ends up being about the same problem: getting separate things to
+        agree. Raft is that problem stated formally. CRDTs are that problem without a referee.
+        Migrating a directory service is that problem with a deadline and real users. Running
+        inference in a browser is the one exception, and it's there because I wanted to know
+        whether the arithmetic would fit.
+      </p>
+      <p>
+        I'm interested in systems and infrastructure work — the layer where the guarantees are
+        made rather than assumed.
+      </p>
+      {/* The separators are expressions, not literal text at the end of a
+          line: Astro strips the newline *and* the space before the next
+          tag, so `·` followed by a line break renders as `·<a>` with the
+          two words run together. Same bug the footer pair had. */}
+      <p class="ends">
+        Based in Houston. <a href="/theo-john-resume.pdf">Resume</a>{' · '}
+        <a href="https://github.com/TheophilusJohn">GitHub</a>{' · '}
+        <a href="mailto:theophilusjohn@gmail.com">theophilusjohn@gmail.com</a>
+      </p>
     </div>
   </section>
 </Base>
@@ -191,4 +215,14 @@ const bands = [
   .about > .meta { display: block; margin-bottom: var(--s-4); }
   .about .prose { max-width: var(--measure); color: var(--muted); }
   .about .prose p { margin-bottom: var(--s-4); }
+
+  /* The dot-separated run at the end is a *row of links*, not links inline
+     in a sentence, which is the distinction §3 drew when it grew the
+     project rows: WCAG 2.2 asks 24px and these are 16 tall, and the
+     exception does not cover a row. Same fix as `.links`, at the same
+     breakpoint — the box grows, the ink does not move. The separators stay
+     outside the anchors so no link is named "· GitHub". */
+  @media (max-width: 640px) {
+    .about .ends a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
 </style>
