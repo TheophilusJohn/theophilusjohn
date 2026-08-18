@@ -183,25 +183,41 @@ html[data-world] { overflow: hidden; }
    pushes the meta row's far end 160px past the column it belongs to. */
 .station .col .stack { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
 
-/* The two blocks, and between them they are §4.8's three
-   landmark states: nothing, the name resolved, the writeup
-   open. The travel is small for the same reason §17's beats
-   keep theirs small — a long one under a scrub turns a
-   cross-fade into two things sliding past each other. */
+/* Three blocks, three bands, one cascade: the name, then
+   the numbers, then the reading. Each carries its own
+   arrival, and the travel is small for the same reason
+   §17's beats keep theirs small — a long one under a scrub
+   turns a cross-fade into two things sliding past each
+   other. */
 .station .col .name,
-.station .col .body {
+.station .col .facts,
+.station .col .read {
   opacity: var(--in, 0);
   transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
 }
-.station .col .body { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6); }
+
+/* The wrapper carries only the reader's own dismissal, so
+   it defaults to 1 rather than to 0 and never fights the
+   two blocks inside it for the same number. Nested opacity
+   multiplies, which is exactly the composition wanted. */
+.station .col .body { opacity: var(--in, 1); }
+
+.station .col .body,
+.station .col .facts,
+.station .col .read {
+  display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-6);
+}
 
 /* Hidden rather than undisplayed, and the layout is the
-   reason: the column's height must not change when the
-   writeup opens or the headline jumps under the reader at
-   the exact moment they arrive. visibility is also what
-   takes it out of the tab order and the accessibility tree,
-   so Tab cannot reach a link that is not on screen. */
+   reason: the column's height must not change between the
+   phases of the arrival, or the headline jumps under the
+   reader at the exact moment they arrive. visibility is
+   also what takes it out of the tab order and the
+   accessibility tree, so Tab cannot reach a link that is
+   not on screen. */
 .station .col .body[data-out],
+.station .col .facts[data-out],
+.station .col .read[data-out],
 .station .act[data-out] { visibility: hidden; }
 
 /* Selectable and clickable, unlike the layer around it. */

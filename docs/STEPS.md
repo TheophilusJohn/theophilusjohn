@@ -3137,7 +3137,10 @@ the reading half clear. The two numbers §34 gets to change per station are the
 scene's radius and its height; everything else follows.
 
 **The route is 21 keyframes over 12,067 scroll units**, with the settles at
-19%, 43%, 71% and 95%. Travel is paced at one scroll unit per world unit with
+19%, 43%, 71% and 95%. (**22 over 12,567 since §32**, settles at 18.3 / 41.4
+/ 68.2 / 91.2%: the last station had no climb-away, which is recorded under
+§32 — the ramp-out, the overshoot and §35's own beat all wanted the key that
+every other station already had.) Travel is paced at one scroll unit per world unit with
 a floor of 1,100, because the leg to the massif is 536 units and at pace alone
 it was flown in a fifth of the scroll the leg after it took. The opening pose
 owns the first 500 so that "arrival" is a beat rather than the first wheel
@@ -3451,6 +3454,144 @@ KiB)** of 400, up **1,541**, and the worker is byte-identical — the content
 layer bakes nothing. Document JS **56,507 (55.18 KiB)** of 120, up **38**,
 which is the two captured addresses and the Lenis re-measure. CSS 2,035 →
 **2,524**.
+
+### Three fixes, after looking at it
+
+**1. The column read the raw route position, so at speed it stepped.**
+Document mode does not, and the reason is two layers of smoothing rather
+than one: Lenis eases the scroll *and* GSAP's `scrub: 1` lerps the timeline
+toward wherever that lands. Here `scroll.ts` damps the gesture but its output
+is still a position, and a band weight taken straight off a position
+inherits every step in it.
+
+The weight is damped **once, upstream** now, and the three ramps, the scrim
+and the address bar all read the damped copy — `1 - exp(-dt/τ)`, never a
+per-frame constant. **Two τ, deliberately far apart.** The fades take
+**0.30s**, which is longer than `scroll.ts`'s own 0.22, so the words settle
+*after* the camera does — the right order, and the one that reads as
+arriving. The reading takes **0.09s**, five frames at 60Hz: it is the
+reader's wheel moving text, and lag there is what feels broken, so it needs
+just enough to take the step out of a 35px-a-frame scrub and no more.
+
+A jump is exempt, which is §31's own rule one level up: a deep link, the
+back button and §35's rejoin move the route by thousands of units in a
+frame, and easing that fades the column in from nothing under a camera that
+is already there. The route's cap is 420 world units a second against a peak
+of 1.130 world units per scroll unit, so the largest step a gesture can
+produce is about 12 scroll units — the threshold is 400.
+
+Measured on built code, both builds in one browser session at a steady 16.7ms
+rAF, flying the whole route three ways. The figures are the **largest and
+95th-percentile single-frame change** in the first block's opacity, the last
+block's, and the reading in pixels:
+
+| | first block | last block | reading, worst | reading, p95 |
+|---|---|---|---|---|
+| slow (a notch, then 250ms) | 0.090 → **0.062** | 0.098 → **0.057** | 11.7 → **8.6** px | 11.5 → **8.5** |
+| a reader (600px, then 700ms) | 0.127 → **0.098** | 0.151 → **0.065** | 37.7 → **30.3** | 34.0 → **18.8** |
+| a scrub (1,500px/s) | 0.125 → **0.098** | 0.151 → **0.050** | 255.8 → **65.5** | 255.8 → **31.3** |
+
+**A quarter of the screen of text moving in one frame is what the scrub was
+doing**, and it is 65px now, with the 95th percentile down from 256 to 31.
+The last block's worst opacity step is down 67%. The first block's is the
+least improved and that is the ramp's own gain rather than the damping:
+`NAME_IN` compresses 0.40 of the band onto 0–1 and a smoothstep peaks at
+1.5×, so 3.75× of whatever the weight does. Ten frames for a headline at a
+1,500px/s scrub is the floor worth having — a longer one would never reach
+full before the station is behind the reader.
+
+The other tell that it is easing rather than stepping is the count: at
+reading pace the reading now moves on **295 frames instead of 72**, at a
+median of 0.6px instead of 15.9.
+
+**2. Three phases, not two.** The body splits into `.facts` (the metric
+strip and the links) and `.read` (the summary and the writeup), each
+independently banded. Three equal ramps of **0.40 of the band, staggered by
+0.25**:
+
+| | band | scroll units of the 700-unit approach |
+|---|---|---|
+| the name — machine ID, period, headline | **0.10 → 0.50** | 70 → 350 |
+| the numbers | **0.35 → 0.75** | 245 → 525 |
+| the reading | **0.60 → 1.00** | 420 → 700 |
+
+Equal lengths and a stagger shorter than a ramp, so they overlap in pairs
+and the column arrives as one cascade rather than three cuts. The first
+begins at 0.10 rather than 0 so a station merely on the horizon shows
+nothing, and **the last ends at exactly 1.0**, which is the settle keyframe
+— the pose the whole composition is judged at. Measured on the approach into
+Enargeia: at y=1930 the name is at 0.967 and the numbers at 0.176; at y=2080
+the numbers are up and the reading is at 0.372; at the settle all three read
+**1.000**. Leaving runs it backwards — at y=12300 on the climb out of Basis,
+the name is 1.000, the numbers 0.509, the reading 0.
+
+The wrapper keeps the reader's dismissal and the two blocks keep the
+arrival, so nested opacity multiplies them rather than one number
+arbitrating both. Column height is **1,168px at Homonoia before and after**
+— `visibility`, never `display`, so no phase changes the layout.
+
+**It costs one reorder: the numbers now sit above the summary.** That is
+what three *contiguous* phases require, and it is not a loss — it is §29's
+own judged frame, which was the machine ID, the headline at display size,
+the metric strip, and then a paragraph.
+
+**3. Basis, diagnosed before it was fixed — and it was neither hypothesis.**
+
+- **The state ramps are identical at all four.** Measured out of `route.ts`
+  in Node: 0.06 / 0.20 / 0.39 / 0.61 / 0.80 / 0.94 / 1.00 over the last 600
+  scroll units at every station. They are a function of the band weight and
+  of nothing else, so a shorter column cannot make them finish early.
+- **The approach is not the fastest either.** Total world path from the
+  previous station's hold to the settle, per scroll unit: Enargeia 0.511,
+  Homonoia 0.516, Philoi **0.626**, Basis 0.563. Philoi's arrival is the
+  quickest of the four.
+- **What is actually different is that the last station has no climb-away.**
+  `bands[3].after` indexed one past the end of the key list, so `bandAt` held
+  Basis's weight at **1.00 to the final scroll unit** — the writeup never
+  ramped out — and `LENGTH` *was* the end of the dwell. That second half is
+  the one a reader feels: `scroll.ts` clamps `want` to `LENGTH`, so **every
+  overshoot lands on the tail of the reading**. One flick anywhere in the
+  approach flies the whole arrival at the 420-unit cap and parks with the
+  column scrolled to its bottom and nowhere further to go. That is "arrives
+  faster and ends abruptly", and it is one cause with two symptoms.
+
+Fixed in `route.ts`, by the code path the other three already use: the last
+station climbs away too. It has no next station to aim at, so it turns back
+at the massif — the biggest thing in the world, and what §22's opening frame
+is composed against — and the route ends at (−1408, 177, 1047) looking
+across the ground it crossed, with Philoi about 8° off the view axis. §35
+hangs the offer of the stick on that key. Basis's band now ramps 1.000 →
+0.000 over the climb exactly as the other three do, and the route is 22
+keyframes over **12,567** units with the settles at 18.3 / 41.4 / 68.2 /
+91.2%. Least clearance over the ground is unchanged at **13.00 units** (at
+Enargeia's settle, as before) and the peak rate is unchanged at **1.130**
+world units per scroll unit.
+
+**What was left alone, and why.** Basis's dwell is still mostly empty — its
+column runs 119px past the frame against Homonoia's 476, so the reading ends
+119 of 600 scroll units in. The rate could be scaled per station to spend
+the whole dwell everywhere, and it is not: a wheel notch that moved Basis's
+short column at a fifth of Homonoia's speed is exactly the inconsistency
+that reads as broken. One scroll unit is one pixel at every station, and
+what the tail of the dwell is *for* is §31's residual creep.
+
+**Cost, re-measured against the §32 build in one session at 60Hz**, 12-second
+windows at 1512×804:
+
+| | recalcs/frame | recalc ms/frame | layouts | task ms/frame |
+|---|---|---|---|---|
+| no station — §32 / now | 1 / 1 | 0.073 / **0.072** | **0 / 0** | 2.210 / 2.201 |
+| writeup open — §32 / now | 1 / 1 | 0.057 / **0.055** | **0 / 0** | 1.996 / 1.985 |
+| dismissed — §32 / now | 1 / 1 | 0.057 / **0.050** | **0 / 0** | 2.144 / 2.117 |
+
+**Layouts stay at zero.** Six custom properties a frame instead of five, and
+a loop over four panels instead of one, cost nothing measurable — the
+inactive three write nothing, because `put()` compares before it sets.
+
+Everything else re-verified: twelve deep links land, axe clean in both modes,
+back and forward, the stick, and both escapes. **Bundle** 216,279 + 3,250
+worker = **214.38 KiB** (+294 on §32, worker byte-identical), document
+56,508 (55.18 KiB), CSS 2,548 (+24).
 
 ### 33. Entry
 World-first routing (SPEC §0.1), the loader, the escape hatch, mode memory.

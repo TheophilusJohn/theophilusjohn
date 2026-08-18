@@ -610,8 +610,12 @@ curve. `curve.ts`'s discipline applies and it is why that module was written
 the way it was: the pose is a pure function of its input and lives in one
 module with no three and no DOM in it (§4.7's camera).
 
-**Built at §31, and the route is 21 keyframes over 12,067 scroll units**,
-with the settles at 19%, 43%, 71% and 95%. Travel is paced at one scroll unit
+**Built at §31, and the route is 22 keyframes over 12,567 scroll units**,
+with the settles at 18.3%, 41.4%, 68.2% and 91.2%. (21 over 12,067 as §31
+shipped it; §32 gave the last station the climb-away every other station
+already had, because without one the writeup never ramps out, every
+overshoot lands on the tail of the reading, and there is no pose for §35's
+offer of the stick to be made from.) Travel is paced at one scroll unit
 per world unit, so a long leg takes longer to fly than a short one, and the
 opening pose owns the first 500 so that arrival is a beat rather than the
 first wheel notch — drifting twelve units through them rather than holding,
@@ -794,10 +798,15 @@ units a second and the nearest visible ground at cruise is 315 units out
 (name and machine ID resolve), arrived (the writeup opens).
 
 **Built at §32, and the three states are one number** — `bandAt()`'s own
-weight, which §31 already computes for the route. The name resolves over
-0.10–0.55 of it and the writeup opens over 0.62–1.0, reaching 1 exactly at
-the settle keyframe. "Distant" is the absence of the panel: nothing stands
-at a station until §34, so the silhouette arrives with the scene.
+weight, which §31 already computes for the route, **damped once at 0.30s and
+then read three times**. Three ramps of 0.40 of the band staggered by 0.25:
+the name over 0.10–0.50, the metric strip over 0.35–0.75, the reading over
+0.60–1.00, so the column arrives as a cascade and the last of it reaches 1
+exactly at the settle keyframe. The reading's own scroll is damped much less
+(0.09s) — it is the reader's wheel moving text, and lag there is what feels
+broken. A jump is exempt from both, which is §31's rule one level up.
+"Distant" is the absence of the panel: nothing stands at a station until
+§34, so the silhouette arrives with the scene.
 
 **The writeup opens in the world.** In DOM, over the scene — the same HTML
 the document serves, cloned node for node rather than retyped, classes and
@@ -818,7 +827,9 @@ wheel to intercept.
 tracks, gaps in from `--s-8` — which is §0.3's first constraint answered
 without dropping a metric. So does the headline, at `max-content` up to
 52vw, because a 45ch column re-breaks the `<br>` the frontmatter authored.
-Both stop short of the subject at 67% of the frame.
+Both stop short of the subject at 67% of the frame. **The strip sits above
+the summary**, which is what three contiguous phases cost and is §29's own
+judged frame besides.
 
 **The URL follows, by `replaceState` and never by push.** §4.6's rule
 binds here too: the route crosses four stations and pushing on arrival

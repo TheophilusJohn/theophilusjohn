@@ -15,7 +15,9 @@
      machine — they are `bandAt()`'s own weight, which is already 0 across
      the travel, a smoothstep over the last 700 scroll units of the
      approach, 1 across the dwell and a ramp back out over the climb away.
-     Two ranges of that one number are the two blocks' opacity;
+     **Damped once** (see below) and then read three times: three ranges of
+     that one number are the three blocks' opacity, staggered so the column
+     arrives as a cascade — the name, then the numbers, then the reading;
    - **the column's own travel**, which is the answer to the thing that
      measures wrong: the writeup at 45ch is 715 to 1,150 units tall and the
      frame is ~700, so a station's reading does not fit the screen it is
@@ -33,17 +35,57 @@
 
 import { DWELL, STATIONS, bandAt, stops } from './route';
 
-/* Where in a station's band each block resolves. The name leads, because
-   §0.3's route table says the ID and the headline resolve *as you close*;
-   the writeup reaches 1 exactly at the settle keyframe, which is what
-   "arrived" means. */
-const NAME_IN = [0.10, 0.55];
-const OPEN_IN = [0.62, 1.0];
+/* Where in a station's band each block resolves — three equal ramps of
+   0.40, staggered by 0.25, so they overlap in pairs and the column arrives
+   as one cascade rather than as three cuts. In scroll units each is 280 of
+   the approach's 700 and the stagger is 175.
+
+   The first begins at 0.10 rather than at 0, so a station merely on the
+   horizon shows nothing; the last ends at **exactly 1.0**, which is the
+   settle keyframe, because that is what "arrived" means and the whole
+   composition is judged at that pose. The order is §0.3's route table read
+   literally — the ID and the headline resolve *as you close*, then the
+   numbers, then the reading. */
+const NAME_IN = [0.10, 0.50];
+const FACTS_IN = [0.35, 0.75];
+const READ_IN = [0.60, 1.0];
 
 /* Closing is a fade rather than a cut, and it is the same exponential
    everything else in the world eases on. Short: this one is a reader's
    own click, not a movement of the world. */
 const SHUT_TAU = 0.16;
+
+/* ── Damping ────────────────────────────────────────────────────────────
+   The column read the raw route position, so at a flick the fades stepped
+   rather than eased — document mode does not, because Lenis smooths the
+   scroll *and* GSAP's `scrub: 1` lerps the timeline toward it over about a
+   second. Both halves of that are missing here: `scroll.ts` damps the
+   gesture but its output is still a position, and a band weight taken
+   straight off a position inherits every jitter in it.
+
+   So the weight is damped **once, upstream**, and every derived value —
+   the three ramps, the scrim, the address bar — inherits the smoothing
+   rather than repeating it. Framerate-independent, like everything else
+   here: `1 - exp(-dt/τ)`, never a fixed per-frame factor.
+
+   **The two constants are deliberately far apart, and that is the point.**
+   0.30s on the fades is longer than `scroll.ts`'s own 0.22, so the content
+   settles *after* the camera does, which is the right order — the world
+   arrives and then the words do. The reading is the opposite case: it is
+   the reader's wheel moving text, and lag there is the thing that feels
+   broken, so 0.09s — five frames at 60Hz, enough to take the step out of a
+   35px-a-frame scrub and not enough to feel detached from the hand. */
+const FADE_TAU = 0.30;
+const READ_TAU = 0.09;
+
+/* §31's rule one level up: damping must not apply to a jump. A deep link,
+   the back button and §35's rejoin all move the route by thousands of units
+   in a frame, and easing that fades the column in from nothing under a
+   camera that is already there. The route's cap is 420 world units a second
+   against a peak of 1.130 world units per scroll unit, so the largest step
+   a gesture can produce is about 12 scroll units at 30Hz — 400 is two
+   orders of magnitude clear of anything real. */
+const JUMP = 400;
 
 /* The band weight at which the address bar changes hands. Well clear of
    both ramps, so nothing flaps, and it *leads* the writeup — which is
@@ -84,6 +126,19 @@ const lift = (from: Element, sel: string): HTMLElement | null => {
   return src ? strip(src.cloneNode(true) as HTMLElement) : null;
 };
 
+/** One phase of the cascade, or nothing if the project has none of its
+    parts — Basis has no metrics, and an empty block would spend a third of
+    the arrival on a blank. */
+function block(section: Element, name: string, parts: string[]): HTMLElement | null {
+  const el = document.createElement('div');
+  el.className = name;
+  for (const sel of parts) {
+    const part = lift(section, sel);
+    if (part) el.append(part);
+  }
+  return el.childElementCount ? el : null;
+}
+
 /* The one clone that is not a clone: the document's headline is an `<h3>`
    under the page's `<h1>` and the "Work" `<h2>`, and neither of those is in
    the accessibility tree in world mode — the document is `visibility:
@@ -108,9 +163,22 @@ type Panel = {
   el: HTMLElement;
   col: HTMLElement;
   stack: HTMLElement;
+  /** The three blocks of the cascade. Either of the last two may be absent:
+      Basis has no metrics, and a project with no writeup would have no
+      reading. A phase with nothing in it is not built. */
   name: HTMLElement;
   body: HTMLElement;
+  facts: HTMLElement | null;
+  read: HTMLElement | null;
   act: HTMLButtonElement;
+  /** Displayed at all — kept until the damped weight reaches 0, so a panel
+      is never cut off mid-fade by the reader leaving its band. */
+  on: boolean;
+  /** The damped band weight. Everything visible is a function of this and
+      of nothing else, which is what "damp once, upstream" means. */
+  fade: number;
+  /** The damped reading offset, in pixels. Its own, much shorter, τ. */
+  off: number;
   /** The reader's own decision, and it resets when they leave. */
   shut: boolean;
   /** Eased toward `shut`, so closing is a fade. */
@@ -176,13 +244,22 @@ export function buildStation(jump: (y: number) => void) {
     if (top) row.append(top);
     name.append(row, headlineOf(section, `world-${station.slug}-h`));
 
+    /* One wrapper for the reader's own dismissal, two blocks inside it for
+       the last two phases of the arrival. Opacity nests, so the dismissal
+       and the arrival multiply rather than fighting over one number.
+
+       **The numbers sit above the summary**, which is a change from the
+       document's order and is what having three contiguous phases costs —
+       and it is not a loss: it is §29's own judged frame, which was the
+       machine ID, the headline at display size, the metric strip, and then
+       a paragraph. */
     const body = document.createElement('div');
     body.className = 'body';
     body.id = `world-${station.slug}`;
-    for (const sel of ['.summary', '.stats', '.links', '.prose']) {
-      const part = lift(section, sel);
-      if (part) body.append(part);
-    }
+    const facts = block(section, 'facts', ['.stats', '.links']);
+    const read = block(section, 'read', ['.summary', '.prose']);
+    if (facts) body.append(facts);
+    if (read) body.append(read);
 
     stack.append(name, body);
     col.append(stack);
@@ -198,7 +275,10 @@ export function buildStation(jump: (y: number) => void) {
     el.append(col);
     root.append(el);
 
-    const panel: Panel = { slug: station.slug, el, col, stack, name, body, act, shut: false, k: 0, over: 0 };
+    const panel: Panel = {
+      slug: station.slug, el, col, stack, name, body, facts, read, act,
+      on: false, fade: 0, off: 0, shut: false, k: 0, over: 0,
+    };
     act.addEventListener('click', () => {
       panel.shut = !panel.shut;
       act.textContent = panel.shut ? 'Read' : 'Close';
@@ -244,68 +324,106 @@ export function buildStation(jump: (y: number) => void) {
     history.replaceState(history.state, '', path + location.search);
   }
 
+  /* Leaving and coming back re-opens: a dismissal is about this arrival,
+     not about the project. The `data-out` attributes go with it, so the
+     next `measure()` sees the whole column rather than whatever the last
+     arrival happened to leave hidden. */
+  function reset(panel: Panel) {
+    panel.shut = false;
+    panel.k = 0;
+    panel.off = 0;
+    panel.act.textContent = 'Close';
+    panel.act.setAttribute('aria-expanded', 'true');
+    for (const el of [panel.body, panel.facts, panel.read, panel.act]) {
+      el?.removeAttribute('data-out');
+    }
+  }
+
+  let from: number | null = null;
+
   function update(y: number | null, dt: number) {
     const band = y === null ? { station: -1, weight: 0 } : bandAt(y);
-    const i = band.weight > 0 ? band.station : -1;
+    const live = band.weight > 0 ? band.station : -1;
+    here = live;
 
-    if (i !== here) {
-      if (here >= 0) {
-        const left = panels[here]!;
-        left.el.removeAttribute('data-here');
-        // Leaving and coming back re-opens: a dismissal is about this
-        // arrival, not about the project.
-        left.shut = false;
-        left.k = 0;
-        left.act.textContent = 'Close';
-        left.act.setAttribute('aria-expanded', 'true');
-        // Cleared so the next measure sees the whole column rather than
-        // whatever this arrival happened to leave hidden.
-        left.body.removeAttribute('data-out');
-        left.act.removeAttribute('data-out');
+    const jumped = y === null || from === null || dt <= 0 || Math.abs(y - from) > JUMP;
+    from = y;
+    const fadeK = jumped ? 1 : 1 - Math.exp(-dt / FADE_TAU);
+    const readK = jumped ? 1 : 1 - Math.exp(-dt / READ_TAU);
+    const shutK = jumped ? 1 : 1 - Math.exp(-dt / SHUT_TAU);
+
+    /* Every panel, every frame, not just the live one — a panel is held on
+       screen until its *damped* weight reaches 0, so the reader crossing a
+       band edge does not cut a fade that is still running. `put()` writes
+       nothing for a panel whose numbers have not moved, so the three that
+       are not on cost four comparisons each. */
+    let lit = 0;
+    for (let i = 0; i < panels.length; i++) {
+      const panel = panels[i]!;
+      const target = i === live ? band.weight : 0;
+
+      if (target > 0 && !panel.on) {
+        panel.on = true;
+        panel.el.setAttribute('data-here', '');
+        measure(panel);
       }
-      here = i;
-      if (here >= 0) {
-        panels[here]!.el.setAttribute('data-here', '');
-        measure(panels[here]!);
+      panel.fade += (target - panel.fade) * fadeK;
+      if (target === 0 && panel.fade < 0.002) panel.fade = 0;
+      if (!panel.on) continue;
+      if (panel.on && target === 0 && panel.fade === 0) {
+        panel.on = false;
+        panel.el.removeAttribute('data-here');
+        reset(panel);
+        continue;
       }
+
+      const w = panel.fade;
+      panel.k += ((panel.shut ? 1 : 0) - panel.k) * shutK;
+      const open = 1 - panel.k;
+
+      const named = ramp(w, NAME_IN);
+      const facts = ramp(w, FACTS_IN);
+      const read = ramp(w, READ_IN);
+
+      put(panel.name, '--in', named);
+      // The wrapper carries the dismissal alone; the blocks carry the
+      // arrival. Nested opacity multiplies, so the two never contend.
+      put(panel.body, '--in', open);
+      if (panel.facts) put(panel.facts, '--in', facts);
+      if (panel.read) put(panel.read, '--in', read);
+      // The way out appears with the first thing there is to close.
+      put(panel.act, '--in', facts);
+
+      /* The scrim is §17's and it is the reading half of the frame held
+         still — so it is up whenever there is type in front of it, and it
+         is up further when there is more. Three rungs for three phases. */
+      lit = Math.max(lit, named * 0.45, facts * 0.7 * open, read * open);
+
+      // Out of the tab order and out of the tree when it is not on screen,
+      // rather than transparent and still focusable behind an opaque canvas.
+      hide(panel.body, open * Math.max(facts, read) < 0.004);
+      hide(panel.act, facts < 0.004);
+      if (panel.facts) hide(panel.facts, facts < 0.004);
+      if (panel.read) hide(panel.read, read < 0.004);
+
+      /* The dwell, spent as reading. One scroll unit is one pixel of column
+         unless the column is longer than the dwell, in which case the whole
+         of it still arrives by the end — a reader who scrolls off a station
+         has finished it either way. The rate is the same at every station on
+         purpose: a wheel notch that moved Basis's short column at a fifth of
+         Homonoia's speed is the thing that reads as broken. */
+      if (i === live) {
+        const rate = Math.max(1, panel.over / DWELL);
+        const span = Math.min(Math.max(((y ?? 0) - stops[i]!.y) * rate, 0), panel.over);
+        panel.off += (span * open - panel.off) * readK;
+      }
+      put(panel.col, '--up', -panel.off);
     }
 
-    setPath(i >= 0 && band.weight >= PATH_AT ? `/projects/${panels[i]!.slug}` : '/');
-
-    if (here < 0) {
-      put(scrim, 'opacity', 0);
-      return;
-    }
-
-    const panel = panels[here]!;
-    panel.k += ((panel.shut ? 1 : 0) - panel.k) * (1 - Math.exp(-dt / SHUT_TAU));
-
-    const named = ramp(band.weight, NAME_IN);
-    const open = ramp(band.weight, OPEN_IN);
-    const shown = open * (1 - panel.k);
-
-    put(panel.name, '--in', named);
-    put(panel.body, '--in', shown);
-    put(panel.act, '--in', open);
-    /* The scrim is §17's and it is the reading half of the frame held
-       still — so it is up whenever there is type in front of it, and it is
-       up further when there is more. Half for a resolving headline, all of
-       it for an open writeup. */
-    put(scrim, 'opacity', Math.max(named * 0.5, shown));
-
-    // Out of the tab order and out of the tree when it is not on screen,
-    // rather than transparent and still focusable behind an opaque canvas.
-    hide(panel.body, shown < 0.004);
-    hide(panel.act, open < 0.004);
-
-    /* The dwell, spent as reading. One scroll unit is one pixel of column
-       unless the column is longer than the dwell, in which case the whole
-       of it still arrives by the end — a reader who scrolls off a station
-       has finished it either way. */
-    const at = stops[here]!.y;
-    const rate = Math.max(1, panel.over / DWELL);
-    const off = Math.min(Math.max(((y ?? 0) - at) * rate, 0), panel.over);
-    put(panel.col, '--up', -off * (1 - panel.k));
+    put(scrim, 'opacity', lit);
+    // Off the damped weight too, so the address bar follows the frame
+    // rather than leading it by a fifth of a second.
+    setPath(live >= 0 && panels[live]!.fade >= PATH_AT ? `/projects/${panels[live]!.slug}` : '/');
   }
 
   addEventListener('resize', () => {

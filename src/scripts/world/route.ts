@@ -34,7 +34,7 @@
    scrolling. The subject is re-aimed as it creeps, so the near ground slides
    and the composition holds. */
 
-import { height } from './height';
+import { CLUSTER_SITE, height } from './height';
 
 const DEG = Math.PI / 180;
 
@@ -249,16 +249,32 @@ function build() {
     keys.push({ y: (y += DWELL), pose: settle });
     bands.push({ approach: approachAt, settle: approachAt + 1, hold: approachAt + 2, after: approachAt + 3 });
 
-    const next = STATIONS[i + 1];
-    if (!next) return;
-    const on = Math.hypot(next.site.x - s.site.x, next.site.z - s.site.z);
-    const px = settle.x + ((next.site.x - s.site.x) / on) * DEPART_ON;
-    const pz = settle.z + ((next.site.z - s.site.z) / on) * DEPART_ON;
+    /* **Every station climbs away, including the last one**, and that is a
+       §32 correction to this step. Without it `bands[3].after` indexes past
+       the end of the key list, so `bandAt` holds the last station's weight
+       at 1.00 to the final scroll unit — the writeup never ramps out — and
+       `LENGTH` *is* the end of the dwell, so every overshoot lands there:
+       one flick anywhere in the approach flies the whole arrival at the cap
+       and parks on the tail of the reading. Measured, that is the whole of
+       "Basis arrives faster and ends abruptly"; the ramps themselves are
+       identical at all four (0.06 / 0.20 / 0.39 / 0.61 / 0.80 / 0.94 / 1.00
+       over the last 600 units) and the approach is not the fastest of the
+       four either.
+
+       The last one has no next station to aim at, so it turns back at the
+       massif — the biggest thing in the world and what §22's opening frame
+       is composed against — and the route ends looking across the ground it
+       crossed, with Philoi about 8° off the view axis. §35 hangs the offer
+       of the stick on this key. */
+    const toward = STATIONS[i + 1]?.site ?? CLUSTER_SITE;
+    const on = Math.hypot(toward.x - s.site.x, toward.z - s.site.z);
+    const px = settle.x + ((toward.x - s.site.x) / on) * DEPART_ON;
+    const pz = settle.z + ((toward.z - s.site.z) / on) * DEPART_ON;
     keys.push({
       y: (y += CLIMB_OUT),
       pose: {
         x: px, y: Math.max(height(px, pz), s.ground) + DEPART_UP, z: pz,
-        yaw: Math.atan2(-(next.site.x - px), -(next.site.z - pz)) / DEG,
+        yaw: Math.atan2(-(toward.x - px), -(toward.z - pz)) / DEG,
         pitch: -8,
       },
     });

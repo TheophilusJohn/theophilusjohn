@@ -52,11 +52,16 @@ of the sections already on the page — classes and Astro scope attributes
 and all — so the register cannot drift from document mode's, and it strips
 ids and inline styles because `projects.ts` leaves GSAP's `opacity: 0` on a
 headline for most of a pin. The three landmark states are **one number**,
-`bandAt()`'s weight, and the address bar is `replaceState` in one direction
-and a route jump on popstate in the other. **The dwell is the reading**: a
-station's column is taller than the frame, so the 600 scroll units in which
-the camera holds its pose move the column instead — one gesture, one scroll
-position, nothing intercepted.
+`bandAt()`'s weight — **damped once, upstream, at 0.30s**, and then read
+three times as a staggered cascade (the name, the numbers, the reading, the
+last reaching 1 exactly at the settle keyframe). The address bar is
+`replaceState` in one direction and a route jump on popstate in the other.
+**The dwell is the reading**: a station's column is taller than the frame,
+so the 600 scroll units in which the camera holds its pose move the column
+instead — one gesture, one scroll position, nothing intercepted — and that
+one is damped at 0.09s rather than 0.30, because a reader's own wheel moving
+text must not lag. Both are exempt on a jump, which is §31's rule one level
+up.
 
 **The landscape is a set of files that cannot see a GPU and a few that can**
 (§22). `height.ts` is the field and imports nothing — no three, no DOM — so
@@ -727,6 +732,24 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
 - A residual motion that is a pure function of scroll **stops exactly when the
   scroll stops**, which is the thing it exists to prevent. The clock is the
   second input, and it is the only one a pose module may not hold itself.
+- **A value derived from a damped position is not itself damped.** The
+  gesture being smooth says nothing about what reads it: a band weight taken
+  off `scroll.ts`'s output stepped by 0.15 of an opacity and 256px of text in
+  one frame at a 1,500px/s scrub. Document mode only looks smoother because
+  it has *two* layers — Lenis eases the scroll and GSAP's `scrub: 1` lerps
+  the timeline toward wherever that lands. Damp once, upstream of everything
+  derived, and exempt a jump.
+- **A ramp is a gain on whatever feeds it.** Compressing 0.40 of a band onto
+  0–1 and smoothstepping it multiplies the input's per-frame step by 3.75, so
+  the block with the narrowest band is the one that still looks snappy after
+  the damping is added. Read the ramp width before blaming τ.
+- **The last item in a generated series is the one with no successor**, and
+  a loop that builds the link *between* items silently omits it. `route.ts`
+  gave every station a climb-away except the fourth, which left its band with
+  no ramp-out, pinned the writeup open to the final scroll unit, and — because
+  the gesture is clamped to `LENGTH` — collapsed every overshoot onto the tail
+  of the last reading. It reads as "the last one arrives faster", which is
+  what sends you looking at the wrong thing.
 - **Lenis clamps a scroll target to its own cached limit**, and every
   programmatic jump in this codebase is made *because* the document just
   changed height — a pin created, a pin released, a deep link corrected. Its
@@ -783,11 +806,12 @@ budgeted apart and a reader never pays both.
   document + scene together; it bound at §20 (254.8 KiB, 5.2 spare) and that
   is why the WebGL 2 tier does not ship and why the terrain was a Phong
   material rather than a standard one. Both decisions still stand on their
-  own merits. Measured at §32: **214.10 KiB** (215,985 + 3,250 worker), up
-  **1,541** on a §31 build in the same session at the same gzip level, of
+  own merits. Measured at §32: **214.38 KiB** (216,279 + 3,250 worker), of
   which the worker is 0 — the content layer bakes nothing and the worker is
-  byte-identical. CSS 2,035 → **2,524** (+489) for the station layer and the
-  `--scrim` token. §31 with every hook removed: **212.5 KiB** (214,426
+  byte-identical. That is +294 for the damping, the third phase and the last
+  climb-away, over 214.10 KiB (215,985) as §32 first shipped, itself up
+  **1,541** on a §31 build in the same session at the same gzip level. CSS
+  2,035 → **2,548** for the station layer and the `--scrim` token. §31 with every hook removed: **212.5 KiB** (214,426
   + 3,223 worker), of which the route and its driver are 2,205 bytes and none
   of them the worker. §30: **210.4 KiB** (212,221
   + 3,223 worker), of which motes and the cloud volume are 2,253 bytes and
@@ -858,7 +882,16 @@ budgeted apart and a reader never pays both.
   main-thread task time. It measures its own column on arrival, on resize
   and on `fonts.ready`, never per frame, which is what holds the layout
   count at zero. rAF is unreportable from that session — the compositor
-  presented at 30 Hz (33.3 median, 34.1 p95) in all eight samples
+  presented at 30 Hz (33.3 median, 34.1 p95) in all eight samples.
+  **Re-measured after §32's smoothing pass**, against that build in one 60Hz
+  session: still **one recalc a frame and zero layouts**, at 0.055ms open
+  against the old build's 0.057, and 0.072 with no station against 0.073.
+  Six custom properties a frame instead of five, over four panels instead of
+  one, is inside the noise — `put()` compares before it sets, so the three
+  panels that are not on screen write nothing. What the pass is *for* is
+  measurable in the other instrument: the worst single-frame step in the
+  reading at a 1,500px/s scrub went from **255.8px to 65.5**, p95 255.8 to
+  31.3, and the last block's worst opacity step from 0.151 to 0.050
 - Chunk generation is tracked apart from render cost, because at this scale
   what breaks is a hitch when new ground arrives, not a low average.
   Measured at §24 over 75s of boosted flight: level at 190, 549 chunks at
@@ -885,8 +918,9 @@ budgeted apart and a reader never pays both.
   reproduced now that the world is 6.4km across
 - The camera's clearance over the ground is **exactly 6.000 units** in every
   flight that tries to break it, and the clamp costs 1.8µs a frame. The route
-  never reaches it: its least clearance is **13.0 units** by construction and
-  12.6 as flown
+  never reaches it: its least clearance is **13.00 units** by construction —
+  at Enargeia's settle, and unchanged by §32's extra keyframe — and 12.6 as
+  flown
 - **The route is flown two ways** (§31), because they measure different
   things. A reader (a 600px burst, then 700ms) never sees the speed cap bind
   at the end of a gesture — 283 units/s median, and the camera is where the
