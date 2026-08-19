@@ -122,8 +122,19 @@ function fits() {
   const ok = sections.every((s) => {
     const cs = getComputedStyle(s.el);
     const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-    const content =
-      s.stage.getBoundingClientRect().bottom - s.top.getBoundingClientRect().top;
+    /* **Offset geometry, not client rects: a transform is not layout.**
+       `reveal()`'s entrance holds `y: 24` on `.top` until its trigger
+       fires, and a client rect reports that — so the same page measured
+       24px shorter with the entrance pending than with it settled, and
+       whether it was pending depended on which call to `decide()` this
+       was. That is the whole of the load/resize disagreement: a fresh load
+       at 850 measured 837 and pinned, a resize into 850 measured 861 and
+       did not, and the section that pinned was 11px taller than the
+       viewport it was pinned in — which is the failure this rule exists to
+       prevent, arriving through the rule itself. `offsetTop`/`offsetHeight`
+       ignore transforms and both elements' offset parent is the section,
+       which is `position: relative` under `data-beats`. */
+    const content = s.stage.offsetTop + s.stage.offsetHeight - s.top.offsetTop;
     return Math.ceil(content + pad) <= innerHeight;
   });
   if (!ok) for (const s of sections) delete s.el.dataset.beats;

@@ -5884,3 +5884,103 @@ clip instead of 25.6.
 The other half of §3's item — `/theo-john-resume.pdf` not existing — is
 closed too: the file is in `public/`, and the header nav and the about
 section both resolve to it (200, 57,019 bytes, one page).
+
+## After §38 — the fit rule, and the header as one thing
+
+### The pins: the stage needs 861 at 1512 wide, and 804 is not enough
+
+§13's rule is all four or none, and what it measures is the tallest beat
+against the viewport. Measured on the built site, one fresh load per height,
+with the stage layout applied:
+
+| section | needs |
+|---|---|
+| enargeia | 665 |
+| **homonoia** | **861** |
+| philoi | 681 |
+| basis | 640 |
+
+So the binding number at 1512 wide is **861px**, against 804 of viewport on
+a MacBook with default chrome. **They do not fit, and nothing here crams
+them in**: the stage is 16px of machine-ID row, a 48px gap, 733 of beats and
+64 of section padding, and there is no slack in any of it that is not either
+type scale or content.
+
+| height | fresh load | resize into it | needs |
+|---|---|---|---|
+| 720 | 0 pinned | 0 pinned | 861 |
+| 804 | 0 pinned | 0 pinned | 861 |
+| 850 | 0 pinned | 0 pinned | 861 |
+| 900 | **4 pinned** | **4 pinned** | 861 |
+| 1080 | **4 pinned** | **4 pinned** | 861 |
+
+**And 77 of those 861 pixels arrived at §38.** The sentence the world-only
+audit added to `homonoia.mdx` — the four beats of an election, which the
+scene shows and the writeup did not say — takes Homonoia's stage from
+**784 to 861**. At 784 the binding section is under 804 and a 1512×804
+laptop pins all four. That is a content decision rather than a layout one,
+so it is recorded here rather than acted on: hard rule 6 wants the sentence,
+and the pinned stage wants it shorter.
+
+### The load/resize disagreement was the entrance tween, not the pins
+
+A fresh load at 850 pinned all four; a resize into 850 pinned none.
+The suspect was `fits()` measuring while the previous size's pins were up.
+It is not. **It is `reveal()`'s entrance holding `y: 24` on `.top`.**
+
+`fits()` measured `stage.getBoundingClientRect().bottom −
+top.getBoundingClientRect().top`, and a client rect includes transforms. A
+section whose entrance has not fired yet is translated down 24px, so the
+gap between the machine ID and the stage measures 24 instead of 48 and the
+section reads **24px shorter than it is** — measured, the same page at the
+same width: 837 with the entrance pending, 861 with it settled. Which one
+`fits()` got depended on which call to `decide()` it was: the first runs
+before `reveal()` exists, the one on `fonts.ready` runs after it, and the
+resize path runs after `settle()` has reverted them.
+
+The fix is to measure layout rather than paint: `offsetTop` and
+`offsetHeight` ignore transforms, and both elements' offset parent is the
+section, which is `position: relative` under `data-beats`. Measured after:
+861 in both states, and the two paths agree at all five heights.
+
+**It also means 850 no longer pins, and that is the point.** A section that
+measured 837 in a 850px viewport was 861 tall — the pin held eleven pixels
+of writeup below the fold for the length of the pin, which is the exact
+failure §13's rule exists to prevent, arriving through the rule itself.
+
+### The header: the toggles are the header's right edge
+
+They were the last child of `<nav>`, so the nav's own `flex-wrap` could drop
+them onto a line of their own the moment the links filled a row — at 780px
+they sat under WORK/ABOUT/RESUME with nothing beside them. They are controls
+rather than links, so `nav` was the wrong parent anyway; they are a sibling
+of it now, inside a `.head-end` group that is one flex item of the header.
+
+**`nowrap` on the group and `wrap` on the nav inside it** is the whole of
+the fix: the *links* are what may take a second row, and the toggles stay
+beside that block. The banner landmark is still their home, so nothing left
+a landmark by the move — axe is clean in all ten states.
+
+| width | header | links | toggles | tap target | h-scroll |
+|---|---|---|---|---|---|
+| 360 | two rows: wordmark, then the group | x 20–160 | x 236–332, **same row as the links** | 44×44 | 0 |
+| 780 | one row | x 501–641 | x 665–726, right edge | 26×24 | 0 |
+| 1024 | one row | x 681–873 | x 897–958, right edge | 26×24 | 0 |
+| 1512 | one row | x 1156–1348 | x 1372–1433, right edge | 26×24 | 0 |
+
+At every width the toggles end at the page gutter — 28, 39, 51, 64px from
+the right edge, which is the gutter's own clamp — so the header reads as one
+line that happens to wrap rather than two rows that lost each other. They
+never leave the header, which is §9's rule: reduced motion is what a
+struggling reader reaches for and it may not go below the fold.
+
+### One thing found and not fixed: the World link shows at ≤640px
+
+`[hidden]` is a UA rule, and the tap-target block sets `display:
+inline-flex` on every `nav a` — author styles outrank it. Measured: at 360
+and 640 the way back into the world is on screen at 36×44 with its `hidden`
+attribute still set; at 700 it is correctly `display: none`; at 1024 the
+script has removed the attribute because there is an adapter. It is
+pre-existing (the tap-target rule and §33's reveal were written in different
+steps), it is one selector to fix, and it changes what is on screen at phone
+width — so it is a decision rather than a cleanup, and it is recorded here.

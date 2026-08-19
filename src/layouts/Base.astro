@@ -155,8 +155,17 @@ const nav = [
 
   <header class="wrap site-head">
     <a href="/" class="wordmark">theophilusjohn.com</a>
-    <nav aria-label="Primary">
-      {nav.map((n) => <a href={n.href}>{n.label}</a>)}
+    {/* One end of the header, and it moves as one thing (after §38). The
+        toggles used to be the last child of the nav, which let them wrap
+        onto a line of their own the moment the links filled a row —
+        measured at 780px, where they sat under WORK/ABOUT/RESUME/WORLD
+        with nothing beside them and read as a second header that had lost
+        the first. They are controls rather than links, so nav is the wrong
+        parent for them anyway; the banner landmark is still their home, so
+        nothing leaves a landmark by this. */}
+    <div class="head-end">
+      <nav aria-label="Primary">
+        {nav.map((n) => <a href={n.href}>{n.label}</a>)}
       {/* §33 — the way back in. §0.1 specifies the way *out* of the world
           and stops there, which on its own is a one-way door: a reader who
           escapes once has `tj:mode` set to doc for good and no way to
@@ -167,9 +176,10 @@ const nav = [
           the body, which asks for a real adapter first. A control that
           offers something this machine cannot do is worse than no control:
           it would take the reader to a curtain that gives up. */}
-      <a href="/?world" data-enter hidden>World</a>
+        <a href="/?world" data-enter hidden>World</a>
+      </nav>
       <Toggles />
-    </nav>
+    </div>
   </header>
 
   <main id="main"><slot /></main>
@@ -199,9 +209,23 @@ const nav = [
        nav wraps too, as a floor for viewports narrower than 360. */
     .site-head { flex-wrap: wrap; }
 
+    /* The links and the toggles, as one flex item — so the header's own
+       wrap moves both of them or neither, and the toggles are always at
+       the right edge with the links immediately left of them.
+
+       `nowrap` here and `wrap` on the nav inside it is the whole of the
+       fix: the *links* are what may take a second row, and the toggles
+       stay beside that block instead of dropping under it. The nav also
+       aligns its rows to the right, so a wrapped second row of links ends
+       against the toggles rather than leaving a hole between them. */
+    .head-end {
+      display: flex; align-items: center; flex-wrap: nowrap;
+      gap: var(--s-6); min-width: 0;
+    }
+
     .site-foot { border-top: 1px solid var(--rule); margin-top: var(--s-24); }
     .wordmark { font-family: var(--font-mono); font-size: var(--t-sm); text-decoration: none; }
-    nav { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-4); }
+    nav { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-4); min-width: 0; }
     nav a {
       font-family: var(--font-mono); font-size: var(--t-meta);
       letter-spacing: 0.12em; text-transform: uppercase;
