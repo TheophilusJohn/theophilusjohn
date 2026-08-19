@@ -5838,3 +5838,49 @@ budget names, and it is 434ms of 3,000.
 And the same caveat §33 filed: world-mode LCP names the hero `<h1>`, which
 on a world load is behind an opaque curtain and never seen. The number a
 reader lives is the last column.
+
+---
+
+## After §38 — the hero's last letter, which §3 left open
+
+§3's second open item, and the one it declined to decide: at 360px
+`--t-hero` resolved to 64.8px against 345–360px of clip, so *Theophilus*
+came back as *Theophilu*. The bleed is deliberate — at 1512 the word lands
+exactly on the right edge — but a whole letter gone reads as broken rather
+than as designed, and §3 was right that fixing it means changing the curve.
+
+**A knee rather than a lower slope**, because the desktop bleed may not
+move: `clamp(3.5rem, min(18vw, 19.5vw − 0.6rem), 16rem)`. The two lines
+cross where 1.5vw = 9.6px, which is **640 exactly** — the breakpoint the tap
+targets already use — so `min` takes the shallower line below it and 18vw
+above. The floor drops 4rem → 3.5rem because a 4rem floor binds at 360 and
+would undo the knee; it now binds under 336px, where the word fits inside
+the clip whole.
+
+Measured on the built CSS, phone emulation (overlay scrollbars, so the clip
+is the viewport) and a narrow desktop window (a classic scrollbar, 15px in
+— the harsher case, and the one a naive harness hides), with the final "s"
+measured as a `Range` over that one character against
+`documentElement.clientWidth`:
+
+| width | size | "s" visible, before → after (phone) | on a desktop window | bleed | h-scroll |
+|---|---|---|---|---|---|
+| 320 | 56px *(floor)* | 0% → **51%** | 0% → 6% | 16px | 0 |
+| 360 | 60.6px | 33% → **95%** | 0% → **52%** | 1.9px | 0 |
+| 390 | 66.45px | 37% → **87%** | 0% → 49% | 4.9px | 0 |
+| 414 | 71.13px | 38% → 81% | 4% → 45% | 8px | 0 |
+| 640 | 115.2px | 38% (unchanged) | 16% | 42px | 0 |
+| 768 | 138.24px | 38% (unchanged) | 19% | 50.4px | 0 |
+| 1024 | 184.32px | 38% (unchanged) | 24% | 67.2px | 0 |
+| 1440 | 256px | 54% (unchanged) | 44% | 68.5px | 0 |
+| 1512 | 256px | 100% (unchanged) | 92% | −3.5px | 0 |
+
+**640 and up is identical in every column** — same size, same bleed, same
+fraction of the letter — which is the whole point of putting the knee there.
+And at 360 the hero now has the relationship the 1512 frame has, reached
+from the other side: the word runs to the edge and stops, 1.9px past the
+clip instead of 25.6.
+
+The other half of §3's item — `/theo-john-resume.pdf` not existing — is
+closed too: the file is in `public/`, and the header nav and the about
+section both resolve to it (200, 57,019 bytes, one page).

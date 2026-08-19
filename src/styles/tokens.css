@@ -52,7 +52,27 @@
 
   /* ── Type scale ───────────────────────────────────────
      Use these. No arbitrary font sizes anywhere else. */
-  --t-hero:  clamp(4rem, 18vw, 16rem);
+  /* The hero bleeds off the right edge on purpose, and 18vw alone bled a
+     whole letter at phone width: at 360 the word measured 366px of ink into
+     345–360 of clip, so "Theophilus" read as "Theophilu" and the bleed
+     stopped looking deliberate. §3 measured it and left it open as Theo's
+     call, since the type scale is the design; this is that call, made after
+     §38.
+
+     **A knee at 640, not a lower slope**, because the desktop bleed is the
+     design and must not move: below 640 the second line is the shallower of
+     the two and above it `min` picks 18vw back up, so 768, 1024, 1440 and
+     1512 are unchanged to the pixel — measured, 138.24 and 256 either way.
+     The crossover is where `19.5vw − 0.6rem` meets `18vw`, which is 1.5vw =
+     9.6px, which is 640 exactly.
+
+     At 360 that is 60.6px: the word still reaches the edge (1.9px past the
+     clip on a phone) and the final "s" is 95% visible, against 33% before —
+     the same relationship the 1512 hero has, arrived at from the other
+     side. The floor is 3.5rem rather than 4 because a 4rem floor would
+     bind at 360 and undo the knee; it now binds under 336px, where the word
+     fits inside the clip whole. */
+  --t-hero:  clamp(3.5rem, min(18vw, 19.5vw - 0.6rem), 16rem);
   --t-2xl:   clamp(2.5rem, 7vw, 5.5rem);
   --t-xl:    clamp(1.75rem, 3.5vw, 2.75rem);
   --t-lg:    1.25rem;
