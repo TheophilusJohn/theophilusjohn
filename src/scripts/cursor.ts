@@ -30,6 +30,7 @@
    contenteditable, where this dot is not a substitute for a caret. */
 
 import gsap from 'gsap';
+import { inWorld, onModeChange } from './mode';
 import { motionOff, onMotionChange } from './motion';
 
 const FINE = matchMedia('(pointer: fine)');
@@ -96,11 +97,6 @@ function hide() {
   if (el) delete el.dataset.shown;
 }
 
-/* The head script writes this before first paint (§33), so it is already
-   answered when this module runs. It is read live rather than captured
-   because it has exactly one transition — see the observer below. */
-const inWorld = () => root.dataset.mode === 'world';
-
 function init() {
   if (el || motionOff() || !FINE.matches || inWorld()) return;
 
@@ -147,16 +143,8 @@ onMotionChange((off) => (off ? destroy() : init()));
    this query after load. */
 FINE.addEventListener('change', () => (FINE.matches ? init() : destroy()));
 
-/* **The mode moves exactly once and only in one direction**, and missing it
-   is the whole reason this is an observer rather than a read at import:
-   `world.ts` deletes `data-mode` when the adapter request comes back empty,
-   and that load is document mode reached late (§0.1's bottom tier) — a real
-   document, un-inerted, scrolling, and entitled to a cursor. A one-shot
-   check at import would leave that reader with no dot at all and no way to
-   get one. The other direction cannot happen from here — entering the world
-   is a navigation, not an attribute — but it costs nothing to be symmetric
-   and it keeps the gate true rather than merely true so far. */
-new MutationObserver(() => (inWorld() ? destroy() : init()))
-  .observe(root, { attributeFilter: ['data-mode'] });
+/* The mode moves once and only one way — see `mode.ts`, which owns the
+   observer now that three modules ask the same question. */
+onModeChange((world) => (world ? destroy() : init()));
 
 init();

@@ -10,6 +10,7 @@
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { inWorld, onModeChange } from './mode';
 import { motionOff, onMotionChange } from './motion';
 
 const SPEED = 45; // px per second
@@ -33,8 +34,14 @@ for (const band of document.querySelectorAll<HTMLElement>('.log-band')) {
   );
 
   let onScreen = false;
+  /* **And not in world mode** (§44). The bands are behind an opaque canvas
+     on a document that is `inert` and `visibility: hidden`, so this is
+     three infinite tweens writing a transform a frame at 45px/s for
+     nobody. `onScreen` cannot catch it: ScrollTrigger reports them active,
+     because the document is laid out exactly as it always was and only
+     hidden — being invisible is not being off screen. */
   const apply = () => {
-    if (onScreen && !motionOff()) tween.play();
+    if (onScreen && !motionOff() && !inWorld()) tween.play();
     else tween.pause();
   };
   applies.push(apply);
@@ -85,5 +92,11 @@ for (const band of document.querySelectorAll<HTMLElement>('.log-band')) {
 /* An infinite marquee has no final state to skip to, so switching motion
    off stops it where it stands rather than seeking it anywhere. */
 onMotionChange(() => {
+  for (const apply of applies) apply();
+});
+
+/* And the same both ways for the mode: the adapter-refused load is a real
+   document and its bands should drift. */
+onModeChange(() => {
   for (const apply of applies) apply();
 });

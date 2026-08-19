@@ -35,6 +35,7 @@
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { inWorld, onModeChange } from './mode';
 import { motionOff, onMotionChange, jumpTo, jumpBy } from './motion';
 
 const STAGE = matchMedia('(min-width: 900px)');
@@ -343,6 +344,23 @@ function rejump() {
    this lands on, the other is cleared. */
 function decide() {
   if (motionOff()) return;
+  /* **And nothing in world mode** (§44). Four pinned stages with scrubbed
+     timelines on a document that is `inert` and `visibility: hidden` under
+     an opaque canvas is the most expensive thing left running for nobody —
+     and the pins also add their own scroll distance to a page the reader
+     cannot see. Nothing is lost by unpinning them: the station panels are
+     what world mode reads instead (§32), and they are cloned from these
+     very sections.
+
+     `unpin()` rather than an early return, because the mode can arrive
+     after the beats are already built: a load that asks for the world and
+     is refused an adapter runs this twice, and the second pass has to be
+     able to put back what the first took away. */
+  if (inWorld()) {
+    keepingPlace(unpin);
+    settle();
+    return;
+  }
   keepingPlace(() => {
     unpin();
     pin();
@@ -369,6 +387,14 @@ onMotionChange((off) => {
   } else {
     keepingPlace(pin);
   }
+});
+
+/* The mode, both ways, for the reason motion is both ways: the
+   adapter-refused load becomes a document after this module has already
+   run, and it is entitled to its pins. */
+onModeChange(() => {
+  decide();
+  rejump();
 });
 
 decide();
