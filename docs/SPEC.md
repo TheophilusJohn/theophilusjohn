@@ -682,12 +682,14 @@ One scroll, top to bottom, and it is a flight.
 | 100% | The end of the route, and the offer of the stick |
 
 **Position along the route is scroll position**, damped, evaluated on a
-curve. `curve.ts`'s discipline applies and it is why that module was written
+curve. `route.ts` carries §18's discipline and is why that module was written
 the way it was: the pose is a pure function of its input and lives in one
-module with no three and no DOM in it (§4.7's camera).
+module with no three and no DOM in it (§4.7's camera). (Said as `curve.ts`
+here until §44 — that file was §18's and was deleted at §21; the discipline
+outlived it, the module did not.)
 
 **Built at §31, and the route is 22 keyframes over 17,144 scroll units**,
-with the settles at 13.4%, 35.6%, 62.1% and 84.2%. (16,867 and
+with the settles at 13.4%, 35.6%, 62.1% and 84.3%. (16,867 and
 13.6 / 36.2 / 61.5 / 84.0 until §34 moved Homonoia's stand back to 774 units,
 which is the only camera §34 touched.) (21 over 12,067 as §31 shipped
 it; §32 gave the last station the climb-away every other station already
@@ -723,7 +725,7 @@ never short of where they scrolled to.
 scrollbar and world mode does not, because there is no document scroll to
 report — so a 1px rail stands at the right edge in §4.3's own language:
 `--rule` track, `--leader` fill from the top, the four settles marked at
-13.4 / 35.6 / 62.1 / 84.2% (computed from `stops`, so §34 moving Homonoia's
+13.4 / 35.6 / 62.1 / 84.3% (computed from `stops`, so §34 moving Homonoia's
 stand moved them without touching this file), the live one wider and in the
 accent. It reports
 and takes no pointer: a scrollbar you can grab would be a second way to move
@@ -979,7 +981,7 @@ should recognise what they are looking at without being told.**
   every twelve seconds, one strut at a time.
 
 **Two draw calls for everything built in the world** — one instanced box mesh
-for 356 parts and one additive layer for the 51 things travelling between
+for 182 parts and one additive layer for the 51 things travelling between
 them — which is `stands.ts`'s construction and for its reason. What makes one
 part differ from the next is six floats in its instance.
 
@@ -1024,7 +1026,7 @@ summits, and a node off its own summit breaks the one agreement the scene is
 stand-off rather than §31's 498. The *camera* moved instead, back along its
 own view axis so the searched bearing is kept: `(−220, 152, −1614)`. All four
 now frame at 24.0–24.1% of the width. The route is 17,144 units and the
-settles are at 13.4 / 35.6 / 62.1 / 84.2%.
+settles are at 13.4 / 35.6 / 62.1 / 84.3%.
 
 | | site | pad | radius | tall | stand-off |
 |---|---|---|---|---|---|
@@ -1341,7 +1343,7 @@ page; §43 solves it on `--void-lift`, which is *the darkest a surface may be*
 (§4.7) and in the light set is the token one rung off the page at 0.845. The
 measured floor under these glyphs over the day world is 0.886, so the token
 now bounds the ground it was solved for rather than sitting exactly on it:
-L 0.541 → **`#6F5FB4`**, relative luminance **0.1492** against §40's predicted
+L 0.541 → **`#6F5FB4`**, relative luminance **0.1486** against §40's predicted
 target of 0.1578. Measured after: **4.87:1** on the page, **4.71:1** at the
 worst of the five station frames, and every one of §38's 52 measurements
 clears 4.5 in all four appearances. It is one hex value and the world chunk is
@@ -1578,6 +1580,29 @@ Everything about loading, DPR, mobile, fallbacks and pausing is inherited from �
 - Reduced motion → don't initialise at all, native cursor only
 
 **Decided (§13): `--leader`, not amber.** The palette moved off amber to lavender in §2 and this line was not updated with it — it means the accent, and §5 already allows the accent on a live link. The "project rows" are now the full-height stages of §4.3, so the ring is what the cursor becomes over a project: an outline rather than more ink, since that is where the pointer sits over text being read.
+
+**Decided (§44): document mode only, and this is a third absolute gate
+beside touch and reduced motion.** Written before the reversal at §21, when
+the document was the site and there was nowhere else for a cursor to be;
+after §33 the world loads first and this module never asked which one it was
+in. What that cost, measured: the dot is at z-index 100, which is over the
+canvas (50), the station panel (60) and both corner controls (70), so a
+`--paper` point sat on the landscape with nothing under it to point at — and
+`html[data-cursor] *` is not scoped by mode either, so the native arrow was
+also taken away from the way out and the stick. None of the three states
+means anything there: `.project` is a document node behind an opaque canvas,
+so the ring never opens and every frame reads `default`.
+
+`cursor.ts` reads `data-mode` — which the head script has already written
+before first paint — and **observes it**, because it has one transition and
+it matters: `world.ts` deletes the attribute when the adapter request comes
+back empty, and that load is §0.1's bottom tier reached late. It is a real
+document, un-inerted and scrolling, and it must get a cursor; a one-shot
+read at import would leave that reader without one. Verified in all four
+states — world with an adapter (no element, no `data-cursor`, native arrow
+back on the canvas), world with the adapter refused (element built the
+moment `data-mode` goes), document at 1512 with a fine pointer (unchanged),
+and document at 390 on touch (unchanged).
 
 ### 4.6 One page, no transitions
 
@@ -2467,7 +2492,7 @@ calls rather than architectural ones. The architecture is decided.
   else in either appearance, which is a cleaner statement of the rule than the
   one §39 shipped.
 - ~~**How much margin `--leader-ink` needs**, found at §40 and left for §43.~~
-  *Answered at §43: 4.86 on the page, because the ground it is solved on is
+  *Answered at §43: 4.87 on the page, because the ground it is solved on is
   `--void-lift` and not `--void`.* `#7464B9` → **`#6F5FB4`**, §39's method
   with §42's ground under it, and the two things that were supposed to be able
   to rescue it were measured out first — the halo's ceiling is 4.53 and the
@@ -2475,6 +2500,35 @@ calls rather than architectural ones. The architecture is decided.
   page, 4.71:1 at the worst of the five station frames, and 208 of 208
   measurements clear 4.5:1 across four appearances. The record of what it was
   before is below.
+
+  **Corrected at §44: the 208 did not cover the beats.** They were taken with
+  the station panel settled, and the scrim is not one number — `station.ts`
+  brings it up a rung per beat (0.45 named, 0.60 lead, 0.80 facts, 1.00 open),
+  so the summary and the metric strip are both read over a scrim that is two
+  thirds up. Measured across five stations at every rung, worst covered-pixel
+  block: at 0.98 everything is 4.64–7.50 and was never the problem; at **0.80**
+  the strip's 10px labels are **3.44 / 3.45 / 4.14** at night and its values
+  **3.49–4.34** at day; at **0.60** the way out of the panel is **3.44** at
+  night and **3.61** at day. So this is not a `--leader-ink` question at all —
+  `--dim` and `--leader-ink` fail together, at 10px and at 44px, which is the
+  tell that the ground moved rather than the ink.
+
+  **And `--scrim`'s own 92% is a dead lever, which is the one thing §43 did
+  not try.** §43 swept the scrim *element's* opacity and found 0.05, but it
+  measured that over the way out, which has no scrim behind it. Swept where
+  the scrim actually is the backdrop — five stations, four rounds, interleaved
+  so the world's clock is spread across the values rather than confounded with
+  them — the token's own percentage buys **0.17 at day and 0.23 at night**
+  across its entire range to 100%.
+
+  The fix is §38's halo, widened from the name row to everything above the
+  writeup body, which is exactly the set that can be on screen while the scrim
+  is still coming up. Measured after: **every element at its token's own
+  ceiling in both appearances at every rung** — 5.07 and 7.65 at night, 4.87
+  and 5.06–5.10 at day, which is what a backdrop of pure `--void` reads as.
+  Frame cost is nil (927 glyphs behind the halo, writeup open, both
+  appearances, both orders: identical medians and zero long tasks), the world
+  chunk is byte-identical, and the CSS is +2 gzipped.
   §39 solved it as *the lightest value that clears 4.5:1 against `--void`* —
   4.54, three hundredths — on the reasoning that the closest to the source is
   the best answer. Over the world a glyph does not sit on `--void`; it sits on
@@ -2488,7 +2542,7 @@ calls rather than architectural ones. The architecture is decided.
   §40 on purpose** — §41 and §42 replace the ground behind every one of those
   measurements, and a value solved against a white-out is solved against a
   world that will not exist. §43 solved it on the finished ground at
-  **0.1492**, inside §40's own prediction with a quarter of a ratio point in
+  **0.1486**, inside §40's own prediction with a quarter of a ratio point in
   hand.
 - ~~**Whether the world's rim light inverts at day.**~~ *Answered at §41: it
   inverts, and nothing was changed to make it.* `--leader` does not move
@@ -2548,6 +2602,6 @@ Splines, instancing and LOD need no course — a docs page each.
 ### Known traps
 
 - `await renderer.init()` before first render. WebGPU init is async; WebGL was not
-- **Superseded (§15): there is nothing to feature-detect on the renderer.** `isWebGPURenderer` belonged to the `WebGPURenderer` class, and naming that class is what drags the WebGL 2 backend into the bundle — so the site builds a `Renderer` on a `WebGPUBackend` directly and does not have the flag. The question is asked before Three loads at all: `navigator.gpu.requestAdapter()` in `field.ts`, whose answer decides whether the scene chunk is fetched. (`capabilities.isWebGL2` is undefined under WebGPU and was never the right question either.)
+- **Superseded (§15): there is nothing to feature-detect on the renderer.** `isWebGPURenderer` belonged to the `WebGPURenderer` class, and naming that class is what drags the WebGL 2 backend into the bundle — so the site builds a `Renderer` on a `WebGPUBackend` directly and does not have the flag. The question is asked before Three loads at all: `navigator.gpu.requestAdapter()` in `world.ts`, whose answer decides whether the scene chunk is fetched. (Named `field.ts` here until §44; the question survived the rename, the file did not.) (`capabilities.isWebGL2` is undefined under WebGPU and was never the right question either.)
 - Never mix `three` and `three/webgpu` imports in one codebase. Use `three/webgpu` everywhere
 - WebGPU support in Three is not universally called production-ready — Threlte's docs still advise against it in production while recommending r171+ if used. **There is no fallback backend to contain that risk (§15); the document is the fallback**, and it is the whole site. Expect breaking changes across versions: Three is pinned at 0.185.1 and an upgrade is a step of its own, not a dependency bump

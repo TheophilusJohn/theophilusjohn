@@ -149,7 +149,7 @@ const ROCK_LIFT = 0.12;
 
 /* ── Why an object's light is compressed ───────────────────────────────
    **The bands are placed around flat ground and these are not flat ground.**
-   `sun.ts` puts the key light 32° up so a level surface sits at `N·L` 0.52,
+   `sun.ts` puts the key light 32° up so a level surface sits at `N·L` 0.53,
    and `band.ts` puts its two edges at 0.64 and 0.90 — which is a 14° tilt to
    leave the low band and 38° to reach the top. A cone standing upright has
    facets at every angle: its sunward face is at 0.99 and the one next to it

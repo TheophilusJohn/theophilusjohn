@@ -65,7 +65,7 @@ value on pure `--void` is 4.54. So §39's method stays and the *ground* moves �
 rather than against a rung, which is why it was the only one with nothing in
 hand. Solved on **`--void-lift`** (the darkest a surface may be, 0.845, and
 the measured floor under these glyphs is 0.886): `#7464B9` → **`#6F5FB4`**,
-luminance 0.1633 → **0.1492**, **4.87:1** on the light page and **4.71:1** at
+luminance 0.1633 → **0.1486**, **4.87:1** on the light page and **4.71:1** at
 the worst station frame. §40 predicted 0.1578 from a white-out world and was
 inside a hundredth. **The night quadrant is identical at all 52 rows** and the
 dark document identical at all 17 probes in both contrast states — `var(--leader)`
@@ -330,9 +330,12 @@ of 180 to 320, decided on §24's six-unit camera floor rather than on taste.
 `consensus.ts` is Raft as a pure function of the clock — `stateAt(t)` is
 total, so a harness walks any phase of any term by asking for the second it
 wants, which is the correction to §15's `Math.random()` leader. `built.ts`
-draws all four scenes in **two draw calls**: one instanced box mesh for 356
+draws all four scenes in **two draw calls**: one instanced box mesh for 182
 parts and one additive layer for 51 travelling signals, `stands.ts`'s
-construction for the third time. And `swell.ts` is the ground answering the
+construction for the third time. (Recorded as 356 until §44, which is the
+same arithmetic that produced the 441 corrected above.) **Since §36 and §37
+those two calls carry the whole world**: 644 boxes — 182 scenes, 250 city,
+212 landmark — and 70 signals, 51 of them the scenes' and 19 §37's lamps. And `swell.ts` is the ground answering the
 election — see below, because it is the load-bearing decision of the step.
 
 **The election moves the ground and the field does not move.** `uplift()` was
@@ -1031,7 +1034,7 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   the ground. The error in the other direction is invisible, because §25's
   morph carries a chunk in from a parent that has none.
 - **The bands are placed around flat ground, and an object is not flat
-  ground.** At a 32° sun a level surface is `N·L` 0.52 and 14° of tilt changes
+  ground.** At a 32° sun a level surface is `N·L` 0.53 and 14° of tilt changes
   band; an upright cone's sunward face is 0.99 and the facet beside it 0.10,
   so three bands become four across one tree. Compress an object's own `N·L`
   into a range before `band.ts` cuts it, or conifers come back as white
@@ -1723,7 +1726,7 @@ budgeted apart and a reader never pays both.
   `scene.DP0-OWWi.js` hash, same 3,593-byte worker — because the token the
   step moves is read into a uniform and never compiled into a shader. That is
   also what makes every §41 and §42 world measurement unchanged by
-  construction. 221.87 KiB of 400. Earlier, at §42: **227,198
+  construction. 225.38 KiB of 400 (chunk + worker, §38's convention; the chunk alone is 221.87, which is what §42 and §43 reported). Earlier, at §42: **227,198
   gzipped** (799,236 raw), up **216** on a §41 worktree built in the same
   session at the same gzip level — the fog's floor and its day density, the
   water's dark end and its glance, the cloud forms' face, two blend switches
@@ -1731,7 +1734,7 @@ budgeted apart and a reader never pays both.
   saying twice here: §42 is the first step to give `fog()` a parameter, and
   `fog.ts` is imported by eight files — but nothing in a worker calls it, so
   the whole step tree-shakes out exactly as `band.ts`, `sky.ts` and `solid.ts`
-  do. 221.87 KiB of 400. Earlier, at §41: **226,982
+  do. 225.38 KiB of 400 (chunk + worker, §38's convention; the chunk alone is 221.87, which is what §42 and §43 reported). Earlier, at §41: **226,982
   gzipped** (798,703 raw), up **72** on a §40 build in the same session at the
   same gzip level — nine token names and one lerp per rung. **The worker is
   byte-identical** at 3,593, and it has to be: nothing in a worker calls
@@ -1873,8 +1876,9 @@ budgeted apart and a reader never pays both.
   Philoi's +0.014 / +0.077, Basis's +0.030 / +0.010, §31's Homonoia settle
   +0.041 / +0.066. **At DPR 1.5 it is −0.035 to +0.007** — nothing, because
   the frame is fill-bound there and the scenes are vertex work. Draw calls
-  **+2**, triangles +2,286. Directly measured at a settle: the four hundred
-  boxes 0.034ms, the fifty-one signals 0.023. Earlier figures below are
+  **+2**, triangles +2,286. Directly measured at a settle: the 182
+  boxes 0.034ms, the fifty-one signals 0.023. (Said as "four hundred" until
+  §44 — §34's own miscount, the same one that gave 441 and 356.) Earlier figures below are
   against 0.83 (§30, DPR 1). The geomorph took
   0.08 of it at the densest stop and nothing measurable at DPR 1.5 — five
   more floats a vertex is vertex-bound, and DPR 1.5 is fill-bound. Water

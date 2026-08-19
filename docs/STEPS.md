@@ -4549,7 +4549,8 @@ have been most of a step's budget. Four hunts, and the first three were wrong:
   it except the disc itself is a property of the instance; collapsed into one
   `varying` the layer costs **0.023 ms**. The same argument put `built.ts`'s
   `hot` — four `equal` selects and three dynamically indexed uniform-array
-  reads — into a varying, and the four hundred boxes cost **0.034**.
+  reads — into a varying, and the 182 boxes cost **0.034**. (Written as
+  "four hundred" until §44; §34 miscounted its own parts.)
 
 `stands.ts` is the one that was not a bug but a bad trade. A gated branch in
 a vertex shader still costs the branch, and it runs once per vertex of twenty
@@ -7201,7 +7202,7 @@ byte-identical again**, and it has to be: nothing in a worker calls `fog()`,
 `haze()` or `bands()` or reads the palette, so the whole of this step
 tree-shakes out of it — which is worth saying twice, because §42 is the first
 step to give `fog()` a parameter and `fog.ts` is imported by eight files.
-55.69 KiB of a 120 KiB budget; **221.87 KiB of 400**.
+55.69 KiB of a 120 KiB budget; **225.38 KiB of 400** (chunk + worker, as §38 counted it; the chunk alone is 221.87).
 
 ### 43. Re-measure everything
 The instruments exist — §38 built the pose solver, the glyph-mask contrast
@@ -7284,10 +7285,10 @@ the only thing that moves, as at §39:
 | | hex | OKLCH | luminance | on the page | worst over the day world |
 |---|---|---|---|---|---|
 | §39–§42 | `#7464B9` | L .558 C .1288 h 290.23° | 0.1633 | 4.54:1 | **4.39:1** |
-| §43 | **`#6F5FB4`** | L .541 C .1285 h 290.01° | **0.1492** | **4.87:1** | **4.71:1** |
+| §43 | **`#6F5FB4`** | L .541 C .1285 h 290.01° | **0.1486** | **4.87:1** | **4.71:1** |
 
 §40 predicted 0.1578 or under from a white-out world; the finished one wants
-0.1492, and the prediction was inside a hundredth of the exact-4.5 solve.
+0.1486, and the prediction was inside a hundredth of the exact-4.5 solve.
 
 ### The matrix
 
@@ -7408,4 +7409,4 @@ Against a §42 build in the same session at the same gzip level:
 | terrain worker | 8,005 / 3,593 gz | 8,005 / **3,593 gz** | **0** |
 
 The raw CSS is the same size because a hex is a hex; the two gzipped deltas
-are the compressor. 55.69 KiB of a 120 KiB budget; **221.87 KiB of 400**.
+are the compressor. 55.69 KiB of a 120 KiB budget; **225.38 KiB of 400** (chunk + worker, as §38 counted it; the chunk alone is 221.87).

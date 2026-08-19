@@ -14,7 +14,7 @@
    flat ground sits at `N·L` 0.24 and the whole range gentle terrain can
    reach is 0 to 0.56: *every* threshold is then within a few degrees of
    flat, and the ground comes back as two-tone camouflage that changes band
-   on the detail layer. At 32° flat ground is 0.52 and a slope has to tilt
+   on the detail layer. At 32° flat ground is 0.53 and a slope has to tilt
    14° to leave its band, which is more than anything under a ridge does.
 
    The trade is shadows 1.6× the height of what casts them rather than 4×,
