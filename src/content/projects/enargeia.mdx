@@ -8,7 +8,7 @@ role: "Sole engineer"
 period: "2026"
 stack: ["WGSL", "WebGPU", "TypeScript", "Qwen2.5-0.5B"]
 metrics:
-  - { value: "45.5", label: "tok/s decode" }
+  - { value: "43.1", label: "tok/s at 2048 ctx" }
   - { value: "334.9 MiB", label: "weights resident" }
   - { value: "5.63x", label: "compression" }
   - { value: "0", label: "server cost" }
@@ -28,4 +28,5 @@ runs at 45.5 tokens/second at 512 context and 43.1 at 2048, flat across context 
 Time to first token is 219 ms on a short prompt. Cold load over the CDN is 14.6
 seconds; warm is 1.4.
 
-Measured on an Apple M2 with a 10-core GPU.
+Measured on an Apple M2 with a 10-core GPU, headless and with nothing else on the GPU; a
+foreground tab shares it with the compositor and measures lower.
