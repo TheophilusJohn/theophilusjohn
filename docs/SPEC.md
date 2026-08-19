@@ -679,7 +679,26 @@ One scroll, top to bottom, and it is a flight.
 | ~15–40% | Travelling. The first station's ID and headline resolve as you close |
 | ~40% | **Settle.** The camera eases into a composition, the writeup arrives |
 | … | Climb away, travel, settle, four times |
-| 100% | The end of the route, and the offer of the stick |
+| 100% | The end of the route, the about column, and the offer of the stick |
+
+**The about column is §44's, and it exists because of the sentence under
+this table rather than a row in it.** §4.6 names three things on the page —
+hero, the four projects, about — and the world had two: `entryAt` resolved
+four project slugs and returned 0 for everything else, so `/about` round-
+tripped to the arrival, which is `/`. Deep links did not mean the same thing
+in both modes, which is the promise this section actually makes.
+
+It is the arrival's construction played backwards, cloned out of the
+document (§32's rule). **What shapes it is that the tail has no gap in it.**
+The arrival gets clean air — gone by 1,200, Enargeia's band does not begin
+until 1,610 — but Basis's ramp back out runs the whole climb away and only
+reaches zero at the last unit: 0.99 at 16,000, 0.43 at 16,600, 0.04 at
+17,000. Placed rather than handed over, the column reads straight through
+Basis's own writeup, which is §4.3's double exposure arriving by a door
+nobody was watching. So the closing's ramp in is *also* what takes the last
+station out, and that is the only construction that cannot leave both on
+screen. `#about` lands at the end of that ramp rather than its start, the
+same rule a station follows.
 
 **Position along the route is scroll position**, damped, evaluated on a
 curve. `route.ts` carries §18's discipline and is why that module was written
@@ -1276,6 +1295,20 @@ measured out: the ink is fine and the *fill's own boundary* against the page
 is 2.23:1, which is what identifies the state and is under SC 1.4.11's 3:1.
 High contrast makes it worse rather than better, because dark's high-contrast
 set lifts `--leader` to `#C4B8FF` and that is **1.66:1** on a pale page. So
+**§44 moved the resting edge and added a second channel.** `--rule` is
+1.28:1 against the page in both appearances and 2.07 in high contrast — a
+boundary that is present and unfindable, on the three controls a struggling
+reader reaches for first — so it is `--dim` now, the lowest token clearing
+3:1 in all four (5.07 / 7.42 / 5.10 / 7.43). That closes the gap the pressed
+state was relying on, and in light it *inverts* it: the resting border is
+5.10 and the pressed accent 4.87, a few degrees of hue apart. So pressed
+also carries an inset ring — two pixels of accent against one of `--dim`,
+weight as well as hue, `inset` so nothing moves when it lands. And the three
+marks are drawn rather than typed: ☀ U+2600, ◐ U+25D0 and ≋ U+224B were the
+only characters on the site outside the subsetted faces, and an emoji
+fallback carries its own palette, so the control that exists to show its own
+state would have been the one `color` could not reach.
+
 light's pressed state is `--leader-ink` at 4.87:1, mirroring dark's
 construction, and where the accent gets a full-strength home in the light
 document is an open decision (§8) rather than a thing quietly solved.
@@ -1592,6 +1625,16 @@ canvas (50), the station panel (60) and both corner controls (70), so a
 also taken away from the way out and the stick. None of the three states
 means anything there: `.project` is a document node behind an opaque canvas,
 so the ring never opens and every frame reads `default`.
+
+**Generalised later in §44**: the bands and the pins had the same defect and
+the same fix, so the question moved to `mode.ts` — a predicate and a
+subscription, one observer for the page, deliberately the shape `motion.ts`
+already has. The pins were not only wasted work: they add their own scroll
+distance to a document nobody can see, measured at 6,497px of `scrollHeight`
+that `scroll.ts` has no use for. And `onScreen` could never have caught the
+bands, because ScrollTrigger reports them active — the document is laid out
+exactly as always and merely hidden, and being invisible is not being off
+screen.
 
 `cursor.ts` reads `data-mode` — which the head script has already written
 before first paint — and **observes it**, because it has one transition and
