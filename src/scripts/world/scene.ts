@@ -36,6 +36,7 @@
    else, so nothing in this file may move the view. */
 
 import { Renderer, Scene, WebGPUBackend, BasicNodeLibrary } from 'three/webgpu';
+import type { Object3D } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { holdScroll } from '../motion';
 import { buildBlades } from './blades';
@@ -44,7 +45,7 @@ import { buildCamera } from './camera';
 import { stateAt } from './consensus';
 import { buildClouds } from './clouds';
 import { buildMotes } from './motes';
-import { buildPalette, token } from './palette';
+import { buildPalette, isDay, token } from './palette';
 import { buildRail } from './rail';
 import { poseAt, nearest } from './route';
 import { buildScroll } from './scroll';
@@ -154,7 +155,18 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
      `palette.ts`, along with the reason it is one object rather than a
      subset per layer. The clear colour is the one thing outside it: it is a
      renderer setting rather than a node. */
-  const palette = buildPalette(() => renderer.setClearColor(token('--void'), 1));
+  /* **The stars go at day — not dimmed, gone** (§4.9), and going is what
+     takes the draw call with them. Declared here rather than beside the
+     starfield because the palette's callback is what has to reach it, and
+     that callback fires once inside `buildPalette` before any layer exists:
+     a `const` below would still be in its dead zone. Everything else the
+     appearance changes is a uniform the shaders already read. */
+  let starfield: Object3D | undefined;
+
+  const palette = buildPalette((day) => {
+    renderer.setClearColor(token('--void'), 1);
+    if (starfield) starfield.visible = !day;
+  });
 
   /* Three layers and one horizon between them (§0.2). The sky carries the
      gradient and the cloud deck, the stars sit in its upper half, and the
@@ -165,6 +177,13 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   scene.add(sky.mesh);
 
   const stars = buildStars(palette, uTime);
+  /* Left in the scene in both appearances and switched off rather than added
+     and removed: it is one `Sprite` with no per-frame work of its own, and a
+     scene graph that changes shape on a toggle is a second thing to keep in
+     step with the palette. An invisible mesh costs no draw call, which is
+     where the day sky pays for its own extra arithmetic. */
+  starfield = stars.stars;
+  starfield.visible = !isDay();
   scene.add(stars.stars);
 
   const terrain = buildTerrain(palette);

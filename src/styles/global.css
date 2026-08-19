@@ -211,7 +211,11 @@ html[data-mode='world'] .curtain { display: grid; }
    turbine row and 4.00 over Houston. The token clears 4.94 at every one of
    the sixty-four poses in that sweep. */
 .escape a { text-shadow: var(--halo); }
-.escape a:hover, .escape a:focus-visible { color: var(--leader); }
+/* --leader-ink, not --leader, since §40 lifted the light token set into
+   world mode: the accent is 2.23:1 over a day sky and this is type. In dark
+   it is the same #A99BF5 by substitution, so the night appearance is
+   untouched — which is the property §39 built the split for. */
+.escape a:hover, .escape a:focus-visible { color: var(--leader-ink); }
 
 /* Opaque, and in the renderer's own clear colour — so the canvas coming
    up underneath it is not a reveal of a different surface, it is the same
@@ -259,7 +263,10 @@ html[data-mode='world'] .curtain { display: grid; }
 .curtain-bar > i {
   display: block;
   height: 100%;
-  background: var(--leader);
+  /* --leader-ink (§40): a progress fill has to be seen against its own
+     track, and #A99BF5 on a light --rule is 1.74:1 against SC 1.4.11's 3.
+     Unchanged in dark. */
+  background: var(--leader-ink);
   transform: scaleX(var(--at, 0));
   transform-origin: left;
 }
@@ -303,7 +310,8 @@ html[data-mode='world'] .curtain { display: grid; }
 
 .route .fill {
   position: absolute; inset: 0;
-  background: var(--leader);
+  /* --leader-ink, for the reason the curtain's bar is (§40). */
+  background: var(--leader-ink);
   transform: scaleY(var(--at, 0));
   transform-origin: top;
 }
@@ -320,7 +328,7 @@ html[data-mode='world'] .curtain { display: grid; }
 }
 .route .stop[data-live] {
   width: var(--s-4);
-  background: var(--leader);
+  background: var(--leader-ink);
 }
 
 /* ── The stick ───────────────────────────────────────────
@@ -407,7 +415,7 @@ html[data-mode='world'] .curtain { display: grid; }
    sample: it is --leader on --void three pixels to the
    right, and it scores as ink in any padded rect. */
 .stick button { text-shadow: var(--halo); }
-.stick button:hover, .stick button:focus-visible { color: var(--leader); }
+.stick button:hover, .stick button:focus-visible { color: var(--leader-ink); }
 
 /* ── Content at a station ────────────────────────────────
    §0.4 / §32. The column is built by station.ts out of the
@@ -490,13 +498,19 @@ html[data-mode='world'] .curtain { display: grid; }
   width: max-content; max-width: 100%;
 }
 
-/* --leader, and it is the one place on the arrival frame
+/* The accent, and it is the one place on the arrival frame
    that may be: the line is the claim the whole site is
    making, which is state in §2's sense the way a live link
-   is. It is also the hero's own colour in document mode. */
+   is. It is also the hero's own colour in document mode.
+   **--leader-ink since §40**, because at day this is a
+   sentence read against a pale sky: measured over the day
+   world at the arrival's own 0.5 rung, #A99BF5 is
+   **2.23:1** there — the same number it measures on the
+   light page, and for the same reason. It is #A99BF5 by
+   substitution in dark, so the night frame is unchanged. */
 .arrival .sub {
   margin: 0; max-width: 42ch;
-  font-size: var(--t-lg); color: var(--leader);
+  font-size: var(--t-lg); color: var(--leader-ink);
 }
 
 /* Its own fade, ahead of the rest: an instruction still on
@@ -653,7 +667,7 @@ html[data-mode='world'] .curtain { display: grid; }
      the custom cursor the !important rule above wins, as it should. */
   cursor: pointer;
 }
-.station .act:hover { color: var(--leader); }
+.station .act:hover { color: var(--leader-ink); }
 
 /* ── The cursor ──────────────────────────────────────────
    §4.5. cursor.ts builds the element and puts data-cursor

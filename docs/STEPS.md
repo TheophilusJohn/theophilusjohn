@@ -6362,6 +6362,289 @@ and the day sky has to be bright enough behind a station panel to read.
 **Report:** ms/frame per layer against §38's `base + slope × megapixels` fit,
 draw calls, and the scrim's rung re-solved against the day sky.
 
+*Done.* **A day sky that is a second construction rather than the night one
+lightened, one draw call fewer, and the light token set now reaches the
+world.** The step is `sky.ts`'s `gradient()` split in two behind a branch,
+`palette.ts` observing `data-theme`, one line in `scene.ts` and seven
+`--leader` → `--leader-ink` moves that §39 could not make because the world
+was scoped out of its palette. **The world chunk is +179 gzipped, the worker
+is byte-identical, `Base.css` is 15 bytes *smaller*, and document JS is
+unchanged to the byte.**
+
+**Say the state this leaves the site in, first.** §40 gives the light world a
+day *sky*. The ground, the water, the fog, the motes and the nineteen lamps
+are still solved against `--void` and are §41's and §42's, so a light-preferring
+reader now loads a day sky over a landscape that is a white-out. That is the
+plan's own sequencing — §39 was the step that ships alone — but it means the
+light world is **mid-surgery until §42** and the numbers below are the sky's,
+not the world's.
+
+### The gradient is upside down as well as inverted
+
+Night lifts from `--void` at the zenith **to** `--rule` at the horizon. Day
+deepens from `--rule` at the horizon **to** `--muted` at the zenith. The one
+token neither of them ever wears is `--void`, and that is the finding rather
+than the arrangement.
+
+`--muted` as the zenith is not a decision about violet. Against the light
+page it is 6.49:1, which is a relative luminance of **0.099**; a deep blue sky
+at altitude measures about 0.11. The token lands where a real zenith does and
+nothing had to be invented for it.
+
+**`--rule` as the horizon is §22's bug caught in a mirror.** The horizon was
+drafted as `--void` — the palest token in the light set, the obvious other end
+of the ramp — and built that way the bottom third of the frame had no horizon
+in it at all. `--void` is the clear colour and what `haze()` starts from, so a
+sky painted in it at the horizon is exactly the hole §22 found when the
+*zenith* was `--void` and the far ground faded into it. `--rule` is 0.705
+against `--void`'s 0.918: pale, and a value of its own.
+
+**What the ladder could not do is the bands.** The obvious construction is
+`band.ts`'s — quantise into four *tokens*. The light set will not carry it,
+because it is a text palette and has a hole in the middle: `--void` 0.918,
+`--void-lift` 0.845, `--rule` 0.705, then `--dim` 0.140 and `--muted` 0.099,
+with **nothing at all between 0.705 and 0.14**. Three pale tones and three ink tones
+is exactly what a page wants and exactly what a sky does not. So the bands are
+cut into the *ramp* between two tokens instead, which keeps every colour in the
+frame a token's own value or a mix of two — `interior()` has done the same
+since §30. The night sky never met the hole because it lives entirely at the
+dark end, `--void` to `--rule`, 0.0068 to 0.0225.
+
+Four bands, with `band.ts`'s own RAMP (0.30) and its one-pixel `fwidth` edge,
+so the sky is quantised on the same rule as everything else. The ramp is
+`sqrt(sin(elevation))`, which puts the edges at **3.6°, 14.5° and 34.2°** — three
+of them inside the ~30° of sky a route pose can see. The drafted `pow(·, 0.65)`
+put two there and cost two more instructions.
+
+**The glow is toward `--void` and it is the one place that token is still a
+colour something can be.** Toward `--leader` it would be a *dark* patch where
+the sun is: 2.23:1 on a pale ground. Same angular width as the night glow and
+sharing its `pow`, which is a correction — drafted at a power of 3 and 0.55 it
+washed a third of the sphere back to the page colour and took the bands with
+it. Not gated on the horizon band, unlike night's: a day sun stands at an
+elevation rather than sitting on the horizon.
+
+**The deck stays and the re-tint is one token.** The body is `--rule` in both
+appearances and needs no thought — inverted it is 0.705, darker than the sky
+above thirty degrees and lighter than it at the horizon, which is what a cloud
+looks like from where they are. The lit face cannot come with it: `--paper`
+inverted is the darkest ink in the set, so the night construction ported
+straight over paints the *sunward* face of every cloud near-black. It is
+`--void` at day.
+
+### The stars go, and they do not pay for what follows
+
+Draw calls, one forced pose into each appearance, six poses:
+
+| pose | night | day | triangles |
+|---|---|---|---|
+| arrival | 50 | **49** | 717,215 → 701,215 |
+| enargeia | 64 | **63** | 868,927 → 852,927 |
+| philoi | 52 | **51** | 727,199 → 711,199 |
+| basis | 56 | **55** | 747,167 → 731,167 |
+| homonoia | 57 | **56** | 752,159 → 736,159 |
+| cruise | 62 | **61** | 777,119 → 761,119 |
+
+Exactly one fewer at every pose and 16,000 triangles — the 8,000 star sprites.
+Well under the 100 the budget allows.
+
+**What that draw call is worth is 0.004 to 0.019ms**, measured by hiding the
+starfield at night, which is at the instrument's floor. §4.9 says the
+starfield's draw call "pays for some of what follows"; measured, it pays for
+about a fifth of the day gradient and nothing else. The honest version is that
+the stars were never expensive — 8,000 additive point sprites are vertex work
+on a frame that is fill-bound at DPR 1.5.
+
+### ms/frame, per layer, in both appearances
+
+§38's law re-fitted on §40's build — `ms = base + slope × megapixels`, five
+pixel scales (0.5, 0.75, 1, 1.25, 1.5) at 1512×804, least squares:
+
+| pose | night base / slope / @1.5 | day base / slope / @1.5 |
+|---|---|---|
+| arrival | 0.792 / 0.135 / 1.239 | 0.738 / 0.177 / 1.287 |
+| enargeia | 0.953 / 0.129 / 1.339 | 0.901 / 0.150 / 1.355 |
+| philoi | 0.798 / 0.175 / 1.360 | 0.750 / 0.199 / 1.371 |
+| basis | 0.836 / 0.149 / 1.308 | 0.796 / 0.172 / 1.333 |
+| homonoia | 0.817 / 0.152 / 1.311 | 0.780 / 0.172 / 1.321 |
+| cruise | 0.849 / 0.153 / 1.343 | 0.810 / 0.160 / 1.339 |
+
+**Day is a lower base and a steeper slope**, which is the shape it should be:
+the stars are vertex work that has gone, and the day gradient is per-pixel work
+that has arrived. Worst pose 1.371ms at DPR 1.5, against §38's 1.545 — so the
+60Hz headroom is **12.2× a slower GPU**, better than §38's 10.8 because §38's
+worst pose is not in this set.
+
+Per layer, DPR 1.5, hidden one at a time and differenced against the whole
+frame:
+
+| layer | night | day |
+|---|---|---|
+| **sky dome** | 0.239–0.407 | **0.263–0.463** |
+| stars | 0.004–0.019 | — (not drawn) |
+| terrain | 0.082–0.179 | 0.081–0.194 |
+| trees and stone | 0.150–0.184 | 0.136–0.213 |
+| cloud forms | −0.004–0.074 | 0.025–0.102 |
+| water | −0.019–0.042 | −0.007–0.028 |
+| ground cover | 0–0.032 | 0–0.045 |
+| everything built | −0.081–0.059 | −0.070–0.045 |
+| signals | −0.021–0.058 | −0.018–0.039 |
+| motes | 0–0.007 | 0–0.003 |
+
+The dome is the biggest layer in both and it is where the whole of the
+difference lives. Everything else is inside its own noise between the two
+appearances, which is what a step that only touches the sky should measure.
+
+### The branch is a measurement, not a preference
+
+`palette.day` is a uniform, so the obvious shape is one `mix` of both ends.
+Built that way it cost every **night** frame **+0.051 to +0.076ms** at DPR 1.5
+over the six poses, against whole frames of 1.22 to 1.34 — a fortieth of the
+frame paid by the appearance that does not use it, and paid on every pixel of
+sky, ground and water alike, since all three fog toward this. Sharing what the
+two ends have in common (one dot with the sun, one `pow` of it feeding both
+glows) did not move it at all.
+
+`If` needs a shader stack, and `gradient()` is called from `terrain.ts`'s and
+`water.ts`'s bare node graphs as well as from the dome's own `Fn` — so the
+whole of it went inside an `Fn`, one per call site, since the three call sites
+are three different materials and each compiles its own shader anyway.
+Branched it is **+0.022 to +0.045**: half of what the mix cost, and not
+nothing. The rest is the call and the branch themselves.
+
+**The derivative can live inside the branch**, which is the part that was not
+obvious. `fwidth` wants uniform control flow and a compiler that cannot prove
+the condition is uniform is a shader that fails at mount — which in world-first
+is a page that never leaves the curtain. The condition here is a uniform, the
+most coherent condition there is, and it compiles and runs. Hoisting it out
+made no measurable difference either way, so it is inside, where it belongs.
+
+### The scrim's rung is unchanged, and that is the answer
+
+The rung was swept at the frame it is for — a station's name resolved and
+nothing else — over all four stations, day, measuring the **darkest** backdrop
+under a covered glyph pixel, because at day the ink is dark and the failure
+direction inverts:
+
+| element | rung 0.45 | 0.6 | 0.75 | 0.9 | 1.0 |
+|---|---|---|---|---|---|
+| machine ID (`--leader-ink`) | **4.42:1** | 4.46 | 4.46 | 4.50 | 4.51 |
+| period (`--dim`) | 4.93 | 4.97 | 5.02 | 5.06 | 5.06 |
+| headline (`--paper`) | 15.40 | 15.53 | 15.53 | 15.53 | 15.54 |
+
+**Taking the scrim from 0.45 to fully opaque buys nine hundredths.** It is
+§38's finding in the other appearance and for the same reason: the covered
+pixels are looking at the **halo**, not at the scrim, so the rung is not the
+lever. It stays at 0.45, and the arrival's at 0.5.
+
+At the shipped rung, day:
+
+| frame | element | ink | darkest backdrop | worst |
+|---|---|---|---|---|
+| arrival | headline | `--paper` | 0.918 | 15.67:1 |
+| arrival | subline | `--leader-ink` | 0.918 | **4.54** |
+| arrival | hint | `--dim` | 0.910 | 5.06 |
+| four stations | machine ID | `--leader-ink` | 0.893–0.910 | **4.42–4.50** |
+| four stations | period | `--dim` | 0.885–0.893 | 4.93–4.97 |
+| four stations | headline | `--paper` | 0.902–0.910 | 15.40–15.53 |
+| every frame | the way out | `--dim` | 0.895–0.902 | 4.98–5.02 |
+
+### The machine ID is 4.42, and the cause is a token with no margin
+
+It is the one thing under 4.5 in the day world, and neither of the two levers
+reaches it:
+
+- **The rung cannot.** 0.45 → 1.0 is 4.42 → 4.51, and the ceiling at rung 1.0
+  is the `--scrim` token's own 92%.
+- **The halo can only reach 4.54**, which is `--leader-ink`'s own value against
+  a *pure* `--void`. Built and measured: taking §38's stack from four 1px rings
+  to twelve does close the gap exactly, 4.42 → **4.54** for the ID and 4.93 →
+  5.10 for the period. It was not taken, for two reasons. At twelve the pool is
+  visible as a light patch behind each glyph, which is the thing §38's own rule
+  forbids; and it would be a halo tuned against a ground that is a white-out
+  and that §41 replaces.
+
+So the cause is neither. **§39 solved `--leader-ink` as the lightest value that
+clears 4.5:1 against `--void`** — 4.54, three hundredths of margin, "the closest
+to the source the bar allows". The world never presents a pure `--void`: what a
+glyph sits on is `--void` seen through a halo over a scene, and any scene at all
+eats the margin. It is §39's own trap said a third time — an accent has one
+contrast per ground, and §40 has just added a third ground.
+
+**Left for §43**, deliberately, because the backdrop under every one of these
+measurements is about to change twice and a value solved against a white-out is
+solved against a world that will not exist. The target is written down: against
+the worst backdrop measured here, 0.885, `--leader-ink` wants a relative
+luminance at or under **0.1578** where it is now 0.1633 — a document ratio of
+about 4.66 rather than 4.54, solved in OKLCH on the source's own hue and chroma.
+
+**axe cannot see any of this**, and that is worth saying beside it: the backdrop
+is a canvas, so a checker reports clean. It did — zero violations in six world
+states (day arrival, day mid-flight, a day name frame, a day writeup, day +
+contrast, and a night name frame).
+
+### The seven `--leader` moves, and the dark appearance unchanged by measurement
+
+Lifting the scoping brought §39's split due in world mode, where seven uses of
+`--leader` were ink or a thin mark against the page. Measured before the move,
+day: the arrival's subline is **2.23:1**, the same number the accent measures on
+the light page and for the same reason. The curtain's progress bar and the route
+rail's fill are 1.74:1 on their own `--rule` tracks, against SC 1.4.11's 3.
+
+| | was | now |
+|---|---|---|
+| `.arrival .sub` | `--leader` | `--leader-ink` — 2.23 → **4.54** |
+| `.curtain-bar > i` | `--leader` | `--leader-ink` — 1.74 → **3.54** on its track |
+| `.route .fill` | `--leader` | `--leader-ink` |
+| `.route .stop[data-live]` | `--leader` | `--leader-ink` |
+| `.escape a:hover/:focus` | `--leader` | `--leader-ink` |
+| `.stick button:hover/:focus` | `--leader` | `--leader-ink` |
+| `.station .act:hover` | `--leader` | `--leader-ink` |
+
+There is no `var(--leader)` left in the DOM layer at all. It is undiluted in the
+render layer, which is where §39 said it was doing the most work.
+
+**And the night appearance is unchanged by measurement rather than by
+intention**, which is the property §39 built the split for: `--leader-ink` is
+`var(--leader)` in dark, so all seven resolve to the same `#A99BF5`. Twenty
+glyph-mask measurements over five frames, §39's build against §40's in the same
+session: **identical ink, identical backdrop, identical ratio at nineteen of
+twenty**, and the twentieth differs by 0.01 because the world's own clock had
+moved. Draw calls and triangles match exactly at all six poses.
+
+### No flash, in world mode too
+
+| load | `data-theme` | `--void` | `color-scheme` | curtain |
+|---|---|---|---|---|
+| `/?world`, OS light | `light` | `#F6F5FA` | light | — |
+| `/?world`, OS light, **every `.js` aborted** | `light` | `#F6F5FA` | light | **`rgb(246,245,250)`** |
+| `/?world`, OS dark | – | `#14121F` | dark | — |
+
+The middle row is the instrument, and it is §39's instrument pointed at the
+other mode: with the bundle blocked the curtain — the first opaque thing a
+world load paints — is already the light `--void`. The appearance is the head
+script's, not the module's.
+
+### Cost
+
+Against a §39 build in the same session at the same gzip level, neither
+carrying a measurement hook:
+
+| | §39 | §40 | Δ |
+|---|---|---|---|
+| `Base.css` | 12,352 / 3,338 gz | 12,334 / **3,323 gz** | **−15** |
+| `index.html` | 42,669 / 11,120 gz | 42,669 / **11,119 gz** | −1 |
+| document JS, three files | 150,425 / 57,027 gz | 150,425 / **57,027 gz** | **0** |
+| world chunk | 797,938 / 226,731 gz | 798,466 / **226,910 gz** | **+179** |
+| terrain worker | 8,005 / 3,593 gz | 8,005 / **3,593 gz** | **0** |
+
+The CSS got **smaller** while gaining a feature: two `:not([data-mode="world"])`
+came off the light selectors and seven `-ink` went on, and comments are
+stripped. Document JS is unchanged to the byte, which is what a step that ships
+no document JS should do. The worker is byte-identical — nothing in a worker
+calls `gradient()` or reads the palette. 55.69 KiB of a 120 KiB budget;
+**225.10 KiB of 400**.
+
 ### 41. The ground, at day
 **§23 done again with different numbers.** The sun's elevation and the band
 edges are re-solved from scratch rather than offset — a day sun is higher and

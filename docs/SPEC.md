@@ -1254,7 +1254,18 @@ non-text UI wants 3:1 and it "clears that on a pale ground". It does not —
 2.23:1 against the page and **1.74:1 against its own `--rule` track** — so
 everything that must be *seen* moved to `--leader-ink` too, and the rule is
 now the sharper one: **`--leader` may only be a fill with something dark on
-it, or in the world.**
+it, or in the world's own render layer.**
+
+**§40 sharpened it again, because "in the world" was written while the world
+was night in both appearances.** The DOM controls *over* the canvas are the
+page in every sense that matters here, and lifting the scoping brought seven
+of them due at once: measured over the day sky, the arrival's subline is
+**2.23:1** and the curtain's progress bar and the route rail's fill are
+**1.74:1** on their own `--rule` tracks. All seven are `--leader-ink` now and
+there is no `var(--leader)` left in the DOM layer at all. What the token still
+owns undiluted is the render layer — the terrain's rim, the top band, the
+water's spark, a lit cell on a mast — where it sits on geometry rather than on
+a page.
 
 **And in the light document there is nothing of the first kind left.** The one
 candidate was the pressed toggle as a lavender chip — `--paper` on `--leader`
@@ -1272,15 +1283,21 @@ invented beside it — same hue family (248–250°), same saturations, lightnes
 mirrored and then measured:
 
 ```css
---void:       #F7F5FA;  /* 1.083 off pure white — violet, warm, not clinical */
---void-lift:  #EEECF4;  /* 1.08 from the page, as --void-lift is in dark */
---rule:       #DCD9E8;  /* 1.28 */
---dim:        #695FA0;  /* 5.18 — the family hue at exactly 50% lightness */
---muted:      #5A528B;  /* 6.43 */
---paper:      #1C143D;  /* 15.94 */
+--void:       #F6F5FA;  /* 1.085 off pure white — violet, warm, not clinical */
+--void-lift:  #EDECF4;  /* 1.08 from the page, as --void-lift is in dark */
+--rule:       #DBD9E8;  /* 1.28 */
+--dim:        #6A60A0;  /* 5.10 — the family hue at exactly 50% lightness */
+--muted:      #5A518B;  /* 6.49 */
+--paper:      #1D1541;  /* 15.67 */
 --leader:     #A99BF5;  /* unchanged */
 --leader-ink: #7464B9;  /* 4.54 */
 ```
+
+(Corrected at §40 from a drafted set that was never shipped — the values above
+are `tokens.css`'s own, re-read and re-measured. Relative luminances, which
+§40's sky needed and nothing before it did: `--void` 0.918, `--void-lift`
+0.845, `--rule` 0.705, `--dim` 0.140, `--muted` 0.099, `--paper` 0.012,
+`--leader` 0.385, `--leader-ink` 0.163.)
 
 **`--leader-ink` is solved in OKLCH, and the first attempt was not.** Holding
 HSL saturation and dropping HSL lightness is not a perceptual operation: it
@@ -1302,9 +1319,20 @@ The high-contrast sibling is the same construction at a higher target —
 | `--leader-ink`, high contrast | `#402D7C` | L .367 C .1279 h 289.64° | **10.27** |
 
 `--scrim` and `--halo` are written as `--void` and invert for free. Both are
-world-only, so neither moves until §40–§42; the light token set is scoped
-away from `[data-mode="world"]` for exactly that reason, and that scoping is
-what makes §39 shippable on its own.
+world-only, so neither moved until §40; the light token set was scoped away
+from `[data-mode="world"]` for exactly that reason, and that scoping is what
+made §39 shippable on its own. **§40 lifted it**, and both inverted at no
+cost, as predicted — a light scrim behind a station's column and a light halo
+around the type on it.
+
+**What §40 also found is that `--leader-ink` has no margin for the world.** It
+was solved as the lightest value clearing 4.5:1 against `--void`, which is
+4.54 — and over the world a glyph never sits on a pure `--void`, it sits on
+`--void` seen through a halo over a scene. The machine ID measures **4.42–4.50**
+at a station's arrival, and neither lever reaches it: the scrim's rung buys
+0.09 across its whole range and the halo's ceiling *is* the 4.54. §43 re-solves
+it against the finished world; the target is a relative luminance at or under
+0.1578 against the worst backdrop measured, where it is now 0.1633.
 
 `--mint` is **not** in the light set. It has no document use at all — it is
 read by the world through `getComputedStyle` and nowhere else — so its light
@@ -2037,12 +2065,21 @@ the light version of this".
 
 Each of the following is a decision, not a translation. Steps 40–42.
 
-- **Sky.** A gradient from a deep blue zenith to a pale horizon, banded like
-  everything else. The dome already runs two fractal noises for the cloud
-  deck; the deck stays and re-tints.
+- **Sky.** *Decided at §40.* A gradient from `--rule` at the horizon up to
+  `--muted` at the zenith — the night construction upside down as well as
+  inverted, and `--void` is the one token neither appearance ever wears.
+  Four bands cut into the *ramp* rather than into tokens, because the light
+  set is a text palette with nothing between 0.705 and 0.14 in it. The glow
+  around the sun goes toward `--void`, the deck stays and its lit face moves
+  from `--paper` to `--void`, and the whole thing is a **branch** on a
+  `palette.day` uniform rather than a mix, which halves what the night frame
+  pays for it.
 - **Stars.** Gone. Not dimmed — a daylight sky with faint stars in it is a
   mistake, not a subtlety. The starfield's draw call goes away in light mode,
-  which pays for some of what follows.
+  ~~which pays for some of what follows~~ — measured at §40, that draw call is
+  worth **0.004 to 0.019ms**, which is the instrument's floor and about a fifth
+  of the day gradient. 8,000 additive point sprites were never expensive on a
+  frame that is fill-bound.
 - **The sun.** §23 solved the key light's elevation at 14° so the band edges
   sat either side of flat ground. A day sun is higher and **the same problem
   re-appears with different numbers**: the bands are re-solved from scratch,
@@ -2075,9 +2112,21 @@ Each of the following is a decision, not a translation. Steps 40–42.
 **The scrim is the constraint that crosses the two halves.** §17's gradient
 is `--void` at 0.92 and it inverts with the token set, so a light station
 panel wants a day sky bright enough behind it to read against — which is a
-requirement on §40, not on §39. Until then the light token set is scoped away
-from `[data-mode="world"]` entirely and the world is night in both
-appearances.
+requirement on §40, not on §39.
+
+**Measured at §40, and the rung did not move.** Swept from the shipped 0.45 to
+fully opaque at a station's name frame in all four stations, the binding
+element gains **nine hundredths** of a contrast ratio over the whole range. It
+is §38's finding in the other appearance: the pixels a glyph sits on are
+looking at the **halo**, not at the scrim, so the rung is not the lever and
+0.45 stands. What the day sky has to be is *bright enough that the halo is not
+doing all the work*, and at every route pose it is — the column sits over sky
+between 0° and about 30° of elevation, which is bands 0 to 2 and the pale half
+of the ramp.
+
+The direction of failure inverts with the appearance and that is the thing to
+carry into §43: at night the binding pixel under a glyph is the **brightest**
+one (a lit cloud), at day it is the **darkest**.
 
 ### Lenis ↔ ScrollTrigger wiring
 
@@ -2266,6 +2315,28 @@ calls rather than architectural ones. The architecture is decided.
   ground is not a place it can be itself. **Leaving it out is a real answer**
   — the light document is the same site in the reader's own appearance, not a
   second brand — and forcing it in has now cost two attempts.
+
+  **§40 closed the world half of the same question and it went the same way.**
+  Seven DOM controls over the canvas were still wearing `--leader`, because
+  §39 scoped the light set away from world mode; measured over the day sky the
+  subline is 2.23:1 and two progress fills are 1.74:1 on their own tracks. All
+  seven moved. The accent is now undiluted in the render layer and nowhere
+  else in either appearance, which is a cleaner statement of the rule than the
+  one §39 shipped.
+- **How much margin `--leader-ink` needs**, found at §40 and left for §43.
+  §39 solved it as *the lightest value that clears 4.5:1 against `--void`* —
+  4.54, three hundredths — on the reasoning that the closest to the source is
+  the best answer. Over the world a glyph does not sit on `--void`; it sits on
+  `--void` seen through a halo over a scene, and any scene at all eats the
+  three hundredths: the machine ID measures **4.42–4.50** at the four station
+  arrivals. Neither lever reaches it — the scrim's rung buys 0.09 across its
+  entire range, and the halo's ceiling *is* 4.54, since that is the token's own
+  value against a pure `--void`. So it is the token, and the open part is only
+  how much darker it should be: against §40's worst measured backdrop it wants
+  a relative luminance at or under 0.1578 where it is 0.1633, which is a
+  document ratio of about 4.66. **Not solved at §40 on purpose** — §41 and §42
+  replace the ground behind every one of those measurements, and a value
+  solved against a white-out is solved against a world that will not exist.
 - **Whether the world's rim light inverts at day.** §4.9's most likely
   failure, and the one question in the light-mode block that contrast
   arithmetic cannot answer — nothing out there is text. Decided by looking,

@@ -160,11 +160,16 @@
    through getComputedStyle and nothing else does — so its light value is
    §42's decision, with the lamps and the motes it is on.
 
-   Scoped away from world mode: --scrim and --halo are written as --void and
-   would invert with this set, and the world is night in both appearances
-   until §40 gives it a day. That scoping is what makes this step shippable
-   on its own. */
-html[data-theme="light"]:not([data-mode="world"]) {
+   **§40 lifted the scoping and this is now the world's set too.** It was
+   `:not([data-mode="world"])` for one step, so §39 could ship over a night
+   world if 40–43 stalled. What that scoping was holding back is two things
+   and both were free: --scrim and --halo are written as --void, so a light
+   station panel and a light halo are what they already said they were, and
+   `palette.ts` reads all eight of these into uniforms on any change of
+   --data-theme as well as --data-contrast. What is *not* free is the
+   world's shading, which was solved against --void from §23 to §38 — §40
+   does the sky and the stars, §41 the ground and §42 everything else. */
+html[data-theme="light"] {
   color-scheme: light;
 
   --void:       #F6F5FA;
@@ -187,7 +192,7 @@ html[data-theme="light"]:not([data-mode="world"]) {
    colour with more of it, not a second colour. The target is 10.25 rather
    than 4.5 so the light set holds dark's own ordering: the accent above
    --dim's 7.43 and below --muted's 11.69, which is where dark puts it too. */
-html[data-theme="light"][data-contrast="high"]:not([data-mode="world"]) {
+html[data-theme="light"][data-contrast="high"] {
   --paper:      #000000;
   --muted:      #342E51;
   --dim:        #514A79;

@@ -44,8 +44,39 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
-**Since §39 there are two appearances, and only the document has the second
-one yet.** `tokens.css` carries a light set under
+**Since §40 the world has a day, and it is the sky and the stars.** The light
+token set is no longer scoped away from `[data-mode="world"]`, so `--scrim`
+and `--halo` inverted for free exactly as §39 predicted and `palette.ts`
+observes `data-theme` beside `data-contrast`. `sky.ts`'s `gradient()` is now
+**two constructions behind a branch**: night lifts from `--void` at the zenith
+to `--rule` at the horizon, day deepens from `--rule` at the horizon to
+`--muted` at the zenith, and **the one token neither ever wears is `--void`** —
+drafting the day horizon as `--void` reproduced §22's bug in a mirror, since
+that is the clear colour and what `haze()` starts from. Four bands, `band.ts`'s
+own RAMP and one-pixel `fwidth` edge, cut into the **ramp** rather than into
+tokens, because the light set is a text palette with **nothing at all between
+0.705 and 0.14**. The glow goes toward `--void` and the deck's lit face moves
+`--paper` → `--void`; its body is `--rule` in both. **The stars are not drawn
+at day** — one draw call fewer at every pose (50→49, 64→63, …) and 16,000
+triangles, worth a measured **0.004–0.019ms**, which is a fifth of what the day
+gradient costs and not the payment §4.9 hoped for. The branch is a measurement:
+as one `mix` the day end cost the **night** frame +0.051–0.076ms at DPR 1.5,
+branched it is +0.022–0.045, and `fwidth` is legal inside it because the
+condition is a uniform. **Lifting the scoping brought §39's split due in world
+mode** — seven DOM controls still wore `--leader`, the arrival's subline at
+**2.23:1** over the day sky and two progress fills at **1.74:1** on their own
+tracks; all seven are `--leader-ink` now and there is no `var(--leader)` left
+in the DOM layer. The night appearance is unchanged **by measurement** — 20
+glyph-mask readings over five frames, identical at 19 and 0.01 apart at the
+twentieth. **The scrim's rung did not move**: swept 0.45 → 1.0 it buys nine
+hundredths, because the covered pixels are looking at the halo. What it left
+open is that `--leader-ink` has **no margin** (§8): the machine ID is
+4.42–4.50 over the world, the halo's ceiling is the token's own 4.54, and §43
+re-solves it against a ground §41 and §42 have not built yet. **The light world
+is mid-surgery until §42** — a day sky over a night-shaded white-out.
+
+**Since §39 there are two appearances, and only the document had the second
+one.** `tokens.css` carries a light set under
 `html[data-theme="light"]:not([data-mode="world"])` — the dark set's own
 *ratios* reproduced (every one meets or exceeds its twin: `--dim` 5.10 against
 5.07, `--muted` 6.49 / 6.43, `--paper` 15.67 / 15.64), the same 248–252° hue
@@ -410,7 +441,11 @@ These are not preferences. Violating one is a bug.
    the colour, not the ink**: anything that has to be *read against the page*
    — type, a focus ring, an underline, a progress fill — is `--leader-ink`,
    which is `var(--leader)` in dark and a darker sibling in light. `--leader`
-   itself may only be a fill with something dark on it, or in the world.
+   itself may only be a fill with something dark on it, or **in the world's
+   own render layer** — §40 sharpened that last clause, because it was written
+   while the world was night in both appearances and the DOM controls over the
+   canvas are the page in every sense that matters. There is no
+   `var(--leader)` anywhere in the DOM layer now.
 3. **Motion checks `[data-motion="off"]`**, not just the media query. The
    toggle overrides the OS in both directions.
 4. **Reduced motion means final state, not fast animation.** No shortened
@@ -1349,6 +1384,43 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   has. The instrument that proves it applies pre-paint is aborting every `.js`
   request and checking the page is still light — and the honest thing to say
   beside it is that with JS off there is no attribute at all.
+- **The palest token in a set is still the clear colour, and a sky painted in
+  it is still a hole.** §22 found it with `--void` at the *zenith* at night and
+  the far ground fading into the same value; §40 drafted the day horizon as
+  `--void` for the obvious reason — it is the palest thing in the light set —
+  and got the identical failure upside down, a frame whose bottom third had no
+  horizon in it at all. `--rule` at 0.705 against `--void`'s 0.918 is pale and
+  has a value of its own. The rule that comes out of both: **`--void` is what
+  everything fades toward and therefore the one token nothing may be**.
+- **A palette solved for text has a hole where a sky needs midtones.** The
+  light set is `--void` 0.918, `--void-lift` 0.845, `--rule` 0.705, then
+  `--dim` 0.140 and `--muted` 0.099 — three pale tones and three ink tones,
+  which is exactly right for a page and unusable as a gradient. Band the *ramp*
+  between two tokens instead of banding the tokens; every colour is still a
+  token's own value or a mix of two, which is what `interior()` has done since
+  §30. The dark set has the same hole and the night sky never met it, because
+  it lives entirely at the dark end (`--void` to `--rule` is 0.0068 to 0.0225).
+- **A uniform is the most coherent branch condition there is, and it is worth
+  branching on.** `palette.day` written as one `mix` of both appearances cost
+  the **night** frame +0.051 to +0.076ms at DPR 1.5 — paid on every pixel of
+  sky, ground and water alike, since all three fog toward `gradient()` — and
+  sharing every subexpression the two ends had in common did not move it.
+  Branched inside an `Fn` it is +0.022 to +0.045. And a derivative *can* live
+  inside such a branch: `fwidth` wants uniform control flow, a uniform-valued
+  condition is uniform, and hoisting it out measured no different.
+- **A token solved exactly to the bar has no room for a second ground.** §39
+  chose `--leader-ink` as the lightest value clearing 4.5:1 against `--void`
+  (4.54) because that is closest to the source. Over the world a glyph sits on
+  `--void` *seen through a halo over a scene*, and any scene at all eats three
+  hundredths: 4.42–4.50. Neither the scrim's rung (0.09 across its entire
+  range) nor the halo (whose ceiling is the token's own 4.54) can reach it.
+  The lever is the token, and the general form is §39's own trap said again —
+  an accent has one contrast per ground, and a new mode is a new ground.
+- **The direction of a contrast failure inverts with the appearance.** At
+  night the binding pixel under a glyph is the **brightest** one — §38's lit
+  cloud at 1.76:1. At day the ink is dark and it is the **darkest** one. A
+  harness that takes a max is measuring nothing in the second case and will
+  report a comfortable pass.
 - **CDP's CPU throttle does not slow a worker.** Chunk generation came back
   *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
   thread stops competing for cores. It bounds main-thread work and nothing
@@ -1366,7 +1438,13 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §39: **unchanged to the byte** on a §38 build in the
+  1024px). Measured at §40: **unchanged to the byte** on a §39 build in the
+  same session — 150,425 raw over the same three files, 57,027 gzipped —
+  because §40 ships no document JS at all. CSS **3,338 → 3,323** gzipped
+  (**−15**; raw 12,352 → 12,334): the light set lost two
+  `:not([data-mode="world"])` and gained seven `-ink`, and the step's CSS is
+  net *smaller* than the feature it adds. `index.html` 11,120 → **11,119**.
+  Earlier, measured at §39: **unchanged to the byte** on a §38 build in the
   same session — 150,425 raw over the same three files — because Astro inlines
   the toggle module into the page, so the third control's script lands in the
   HTML. CSS **3,189 → 3,338** gzipped (+149; raw 11,881 → 12,352) for the two
@@ -1395,7 +1473,13 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. Measured at §39:
+- World chunk, desktop: **under 400KB gzipped**. Measured at §40: **226,910
+  gzipped** (798,466 raw), up **179** on a §39 build in the same session at the
+  same gzip level — the day gradient, the branch and the appearance uniform.
+  **The worker is byte-identical** at 3,593: nothing in a worker calls
+  `gradient()` or reads the palette, so `sky.ts` and `palette.ts` are
+  tree-shaken out of it entirely, as `solid.ts` and `swell` already were.
+  225.10 KiB of 400. Earlier, at §39:
   **byte-identical to §38's** — same 226,731 gzipped, same
   `scene.DWsQXswP.js` hash, worker unchanged at 3,593 — because nothing in
   that step ships world code. Earlier, at §38:
@@ -1453,8 +1537,20 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise.** **§38 measured the frame as a law rather than as
-  a number**: `ms = base + slope × megapixels`, base 0.51–0.88 (submission
+- **8ms/frame at cruise.** **§40 re-fitted §38's law in both appearances**,
+  five pixel scales at 1512×804 over six poses. Night `base` 0.79–0.95 and
+  slope 0.129–0.175; day **0.74–0.90 and 0.150–0.199** — a lower base and a
+  steeper slope, which is the right shape, since the stars are vertex work that
+  has gone and the day gradient is per-pixel work that has arrived. At the
+  shipped DPR 1.5 cap that is 1.24–1.36 at night and **1.29–1.37 at day**,
+  against §38's worst pose of 1.545. **The sky dome is the biggest layer in
+  both and the whole of the difference lives in it**: 0.239–0.407 at night
+  against **0.263–0.463** at day, with terrain (0.08–0.19), trees and stone
+  (0.14–0.21), cloud forms, water, cover, everything built, signals and motes
+  all inside their own noise between the two. **The starfield is 0.004–0.019ms**
+  — the instrument's floor — so §4.9's "the draw call pays for some of what
+  follows" is true of about a fifth of it. Earlier: **§38 measured the frame as
+  a law rather than as a number**: `ms = base + slope × megapixels`, base 0.51–0.88 (submission
   and vertex work) and slope **0.099 to 0.405 ms/Mpx**, fitted over five
   pixel scales at nine poses. At the shipped DPR 1.5 cap that is **1.13 to
   1.55ms**; at DPR 3, 2.06 to 5.01. **The sky dome is nearly all of the
@@ -1538,7 +1634,10 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§38 adds none and cannot**: the world chunk is
+- Under 100 draw calls. **§40 takes one away at day**: 49 / 63 / 51 / 55 / 56 /
+  61 over six poses against night's 50 / 64 / 52 / 56 / 57 / 62, and 16,000
+  triangles, which is the 8,000 star sprites and nothing else. Identical at
+  night to §39's. Earlier, **§38 adds none and cannot**: the world chunk is
   byte-identical to §37's, so the 50–71 counted over nine poses are §37's own
   counts by construction. Earlier, **§37 adds none at all** — 47 to 71 over nine poses,
   identical between a §37 build and a §36 one, because everything built in the
@@ -1671,7 +1770,13 @@ budgeted apart and a reader never pays both.
   this machine is inside the budget at every scale measured. Both halves
   slowed at once — main thread 4× and four times the pixels — flies the
   world at a **16.9ms median** with 1.8% of frames over 25ms
-- Lighthouse accessibility **100**. **§39 adds a second appearance to every
+- Lighthouse accessibility **100**. **§40 measured axe clean in six world
+  states** — day arrival, day mid-flight, a day name frame, a day writeup,
+  day + contrast, and a night name frame — and the thing to say beside that is
+  that **axe cannot see any of it**: the backdrop is a canvas, so the machine
+  ID's measured 4.42:1 over the day sky is invisible to a checker and was found
+  with §38's glyph-mask harness instead. Nothing else in the day world is under
+  **4.93:1**. Earlier: **§39 adds a second appearance to every
   state, and axe measured clean in eight document ones**: light, light +
   contrast, a light deep link, light at 360, light with motion off, dark, dark
   + contrast, dark at 360. Nothing in the light document is under **4.54:1**,
