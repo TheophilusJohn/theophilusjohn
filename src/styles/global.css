@@ -285,6 +285,47 @@ html[data-mode='world'] .curtain { display: grid; }
    step sideways every time a digit is added. */
 .curtain-read > b { font-weight: 400; color: var(--muted); min-width: 4ch; }
 
+/* ── The closing (§44) ───────────────────────────────────
+   The about column at the end of the route, and it is the
+   arrival's construction played backwards: same left edge,
+   same measure, same ramp, `--in` driven by station.ts off
+   scroll position rather than by a transition.
+
+   Two things differ, and both follow from what it holds.
+   It is *prose* rather than a name, so it is set at the
+   body size the writeups use and aligned to the top of the
+   column rather than centred — three paragraphs centred in
+   the frame drift downward as they grow, and this one grows
+   with `index.astro`. And it takes the full scrim rather
+   than the arrival's half: the arrival is a frame whose
+   subject is the landscape and this is the one place on the
+   route meant to be read.
+
+   No halo. It is behind a scrim at 1.0, which is the rung
+   §44 measured every station's type against — the covered
+   pixels are looking at --void, and the writeup body is
+   already the one block that does without one for exactly
+   this reason. */
+.closing .col {
+  position: absolute; inset-block: 0; left: var(--s-16);
+  width: 54ch; max-width: calc(100% - 2 * var(--s-16));
+  padding-block: var(--s-16) var(--s-12);
+  display: grid; align-content: center; justify-items: start;
+  row-gap: var(--s-4);
+  opacity: var(--in, 0);
+  transform: translateY(calc((1 - var(--in, 0)) * var(--s-4)));
+}
+.closing[data-out] { visibility: hidden; }
+
+.closing .meta { color: var(--dim); }
+
+/* The document's own measure, not the 62ch it uses on a
+   page: this column is 54ch and the prose inside it should
+   not be wider than the box it is in. */
+.closing .prose { max-width: 45ch; color: var(--muted); }
+.closing .prose p { margin: 0 0 var(--s-4); }
+.closing .prose p:last-child { margin-bottom: 0; }
+
 /* ── The route rail ──────────────────────────────────────
    §0.3. What the scrollbar reported in document mode, in
    the visual language of §4.3's own rail: 1px, --rule

@@ -33,7 +33,7 @@
    a popstate resolves to a station and jumps the route to it, which is
    what a deep link does on load. */
 
-import { DWELL, STATIONS, bandAt, stops } from './route';
+import { DWELL, LENGTH, STATIONS, bandAt, stops } from './route';
 
 /* Where in a station's band each block resolves — three equal ramps of
    0.40, staggered by 0.25, so they overlap in pairs and the column arrives
@@ -139,6 +139,48 @@ const JUMP = 400;
    arithmetic is the same shape and the cap makes it smooth without damping
    (at 12 scroll units a frame it is 1.4% of an opacity). */
 const ARRIVE_OUT = [350, 1200];
+
+/* ── The closing (§44) ──────────────────────────────────────────────────
+   §4.6 says the site is one document and names three things in it — hero,
+   the four projects, about — and until §44 the world had two of them.
+   §0.3's promise is not a route-table row but the sentence under it: *deep
+   links work in both modes and mean the same thing*. `/about` was one that
+   document mode honoured and the world silently dropped, because `entryAt`
+   resolved four project slugs and returned 0 for everything else — so the
+   address round-tripped to the arrival and a reader who followed it landed
+   somewhere that is `/`.
+
+   Resolving it without giving it anything to point at would have been the
+   worse half of the fix, so the end of the route carries the about column.
+   It is the arrival's own construction played backwards — one section, one
+   ramp, cloned out of the document rather than retyped (§32's rule) — and
+   it lands where the document puts it: after the fourth project. It shares
+   its band with the stick's offer, which is the other thing the end of the
+   route is for, and the two do not contend: the column is at the left edge
+   and the offer is in the opposite corner. */
+const ABOUT_AT = stops[stops.length - 1]!.y + DWELL;
+
+/* **The tail has no gap in it, and that is what shapes this.** The arrival
+   gets clean air — it is gone by 1,200 and Enargeia's band does not begin
+   until 1,610 — but Basis's ramp back out runs the whole climb away and
+   only reaches zero at the route's last unit: 0.99 at 16,000, 0.43 at
+   16,600, 0.04 at 17,000. So there is nowhere after it to stand, and the
+   first build put the about column straight through Basis's own writeup —
+   two different texts in one 54ch measure, which is the double exposure
+   §4.3 forbids, arriving by a door nobody was watching.
+
+   So it is a hand-over rather than a placement: the closing's ramp in is
+   also what takes the last station out (see `target` below), which is the
+   one construction that cannot leave both on screen. The reader reads
+   Basis, climbs away from it, and the about column is what the climb
+   arrives at. */
+const CLOSING_IN = [ABOUT_AT + 450, LENGTH];
+/** Where `#about` lands, and it is the *end* of the ramp rather than its
+    start — the same rule a station follows, where the entry is the settle
+    keyframe and the panel is already at weight 1 when the reader arrives.
+    Landing at the start would drop them where the column is still at zero,
+    which is an address pointing at the frame before the one it names. */
+const ABOUT_ENTRY = CLOSING_IN[1]!;
 /** The hint goes first. It is an instruction, and an instruction that is
     still on screen once the reader has obeyed it is noise. */
 const HINT_OUT = [200, 800];
@@ -259,9 +301,17 @@ const slugOf = ({ hash, path }: Where): string | null => {
   return slug && stops.some((s) => s.slug === slug) ? slug : null;
 };
 
+/** Both spellings, because both exist: the document writes `/about` into
+    the address bar from its own `data-path`, and every link on the site
+    points at `/#about`. `/about` is also an Astro redirect, so it only
+    reaches here when something rewrote the path rather than navigated. */
+const isAbout = ({ hash, path }: Where): boolean =>
+  hash.replace(/^#/, '') === 'about' || /^\/about\/?$/.test(path);
+
 /** Where on the route a URL points, or 0 for the arrival. Both the load and
     the back button resolve through this. */
 export function entryAt(where: Where = { hash: location.hash, path: location.pathname }): number {
+  if (isAbout(where)) return ABOUT_ENTRY;
   const slug = slugOf(where);
   return slug ? stops.find((s) => s.slug === slug)!.y : 0;
 }
@@ -309,6 +359,41 @@ export function buildStation(
     col.append(name, sub, hint);
     arrival.append(col);
     root.append(arrival);
+  }
+
+  /* The about column at the end of the route (§44). A landmark of its own
+     for the same reason every other panel is one — `<main>` is behind an
+     opaque canvas — and an `<h2>`, because the arrival's name is the page's
+     `<h1>` in world mode and this sits under it.
+
+     Cloned, never retyped: the heading and the prose are the document's own
+     nodes, so the three paragraphs and the row of links at the end cannot
+     drift from `index.astro`. If the section is missing the panel is not
+     built at all, which is the same failure a station has — no content is a
+     reason to show nothing, not a reason to invent copy. */
+  const closing = document.createElement('section');
+  closing.className = 'closing';
+  /* Tracked rather than asked. `closing.isConnected` is false here however
+     well the panel was built: `root` is not attached to the document until
+     `scene.ts` mounts it, so the question the DOM answers is about the wrong
+     tree. It reads as a panel that exists and is never driven. */
+  let hasClosing = false;
+  {
+    const about = document.getElementById('about');
+    const prose = about && lift(about, '.prose');
+    if (about && prose) {
+      closing.setAttribute('aria-labelledby', 'world-about-h');
+      const col = document.createElement('div');
+      col.className = 'col';
+      const head = document.createElement('h2');
+      head.id = 'world-about-h';
+      head.className = 'meta';
+      head.textContent = about.querySelector('#about-h')?.textContent?.trim() ?? 'About';
+      col.append(head, prose);
+      closing.append(col);
+      root.append(closing);
+      hasClosing = true;
+    }
   }
 
   const panels: Panel[] = [];
@@ -472,10 +557,24 @@ export function buildStation(
     put(arrival, '--hint', y === null ? 0 : 1 - ramp(y, HINT_OUT));
     hide(arrival, opening < 0.004);
 
-    let lit = Math.max(0, opening * 0.5);
+    /* The other end of the route, and the same two lines. It is prose
+       rather than a name, so it takes a full scrim rather than the
+       arrival's half — this is the one frame on the route that is meant to
+       be read rather than looked past. */
+    const ending = !hasClosing || y === null ? 0 : ramp(y, CLOSING_IN);
+    if (hasClosing) {
+      put(closing, '--in', ending);
+      hide(closing, ending < 0.004);
+    }
+
+    let lit = Math.max(0, opening * 0.5, ending);
     for (let i = 0; i < panels.length; i++) {
       const panel = panels[i]!;
-      const target = i === live ? band.weight : 0;
+      /* Scaled by what the closing has taken, which is the whole of how the
+         two share a tail with no gap in it. At the end of the route the
+         about column is at 1 and every station is at 0 by construction,
+         whatever its own band still says. */
+      const target = i === live ? band.weight * (1 - ending) : 0;
 
       if (target > 0 && !panel.on) {
         panel.on = true;
@@ -550,7 +649,17 @@ export function buildStation(
     put(scrim, 'opacity', lit);
     // Off the damped weight too, so the address bar follows the frame
     // rather than leading it by a fifth of a second.
-    setPath(live >= 0 && panels[live]!.fade >= PATH_AT ? `/projects/${panels[live]!.slug}` : '/');
+    /* The closing wins when it is up: it is the last thing on the route, so
+       nothing else can be live at the same time, and reading it is what the
+       reader is doing there. Same threshold as a station, so the address
+       changes at the same point in a fade either way. */
+    setPath(
+      ending >= PATH_AT
+        ? '/about'
+        : live >= 0 && panels[live]!.fade >= PATH_AT
+          ? `/projects/${panels[live]!.slug}`
+          : '/',
+    );
   }
 
   addEventListener('resize', () => {
