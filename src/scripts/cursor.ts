@@ -3,13 +3,24 @@
    A dot that stands in for the pointer, a ring that opens over a project,
    and the accent over a link. Three states and nothing else.
 
-   Two gates, and both are absolute: `(pointer: fine)` and motion. On a
-   touch device this module builds nothing and touches no DOM — the element
-   is created here rather than shipped in the markup for that reason, so a
-   phone never carries an inert node or a rule that hides its cursor. Under
-   motion off it is not initialised either: a dot that eases toward the
-   pointer is motion the reader did not ask for, and the native cursor is
-   already the accessible answer.
+   Three gates, and all of them are absolute: `(pointer: fine)`, motion,
+   and the mode. On a touch device this module builds nothing and touches
+   no DOM — the element is created here rather than shipped in the markup
+   for that reason, so a phone never carries an inert node or a rule that
+   hides its cursor. Under motion off it is not initialised either: a dot
+   that eases toward the pointer is motion the reader did not ask for, and
+   the native cursor is already the accessible answer.
+
+   **And not in world mode.** This is §4.5's dot for §4.3's document, and
+   the world is neither: the dot sits at z-index 100, which is over the
+   canvas, over the station panel and over the two controls in the corners,
+   so what it actually did there was put a `--paper` point on the landscape
+   with nothing under it to point at. The rule that hides the native
+   cursor is `html[data-cursor] *` and is not scoped by mode either, so it
+   also took the arrow away from the way out and the stick. Nothing about
+   the ring's three states means anything over a landscape — `.project` is
+   a document node behind an opaque canvas — so the honest answer is not to
+   build it, which is the same answer touch and reduced motion already get.
 
    Hiding the native cursor is the part that breaks sites, so it happens as
    late as possible and never over a text field. The root attribute that
@@ -85,8 +96,13 @@ function hide() {
   if (el) delete el.dataset.shown;
 }
 
+/* The head script writes this before first paint (§33), so it is already
+   answered when this module runs. It is read live rather than captured
+   because it has exactly one transition — see the observer below. */
+const inWorld = () => root.dataset.mode === 'world';
+
 function init() {
-  if (el || motionOff() || !FINE.matches) return;
+  if (el || motionOff() || !FINE.matches || inWorld()) return;
 
   el = document.createElement('div');
   el.className = 'cursor';
@@ -130,5 +146,17 @@ onMotionChange((off) => (off ? destroy() : init()));
 /* A mouse plugged into a tablet, or a laptop lid closed onto a dock, moves
    this query after load. */
 FINE.addEventListener('change', () => (FINE.matches ? init() : destroy()));
+
+/* **The mode moves exactly once and only in one direction**, and missing it
+   is the whole reason this is an observer rather than a read at import:
+   `world.ts` deletes `data-mode` when the adapter request comes back empty,
+   and that load is document mode reached late (§0.1's bottom tier) — a real
+   document, un-inerted, scrolling, and entitled to a cursor. A one-shot
+   check at import would leave that reader with no dot at all and no way to
+   get one. The other direction cannot happen from here — entering the world
+   is a navigation, not an attribute — but it costs nothing to be symmetric
+   and it keeps the gate true rather than merely true so far. */
+new MutationObserver(() => (inWorld() ? destroy() : init()))
+  .observe(root, { attributeFilter: ['data-mode'] });
 
 init();
