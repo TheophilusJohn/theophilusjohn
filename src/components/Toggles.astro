@@ -6,17 +6,50 @@
 // contrast and motion are what a struggling reader reaches for and this is
 // the third control on a strip §5 says cannot hold a fourth.
 ---
+{/* **Drawn, not typed (§44).** These were ☀ U+2600, ◐ U+25D0 and ≋ U+224B,
+    and they were the only three characters on the entire site outside the
+    subsetted woff2s — so they fell back to whatever face the OS offered.
+    U+2600 is one of the codepoints a platform may serve from a colour emoji
+    font, which would put a coloured sun in a monochrome control strip and
+    ignore `color` outright: an emoji glyph carries its own palette, so
+    neither `--dim` nor the pressed `--leader-ink` would reach it, and the
+    one control whose whole job is to show its own state would be the one
+    that could not.
+
+    Inline rather than <img>, because that is what lets them be
+    `currentColor` — the strip's colour, its hover and its pressed state are
+    one declaration on the button and the marks follow. Sized in `em`, so
+    the buttons keep the geometry §38 measured and §39 held to the pixel. */}
 <div class="toggles">
   <button id="t-theme" type="button" aria-pressed="false" title="Toggle light appearance">
-    <span aria-hidden="true">☀</span>
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="3.3"/>
+      <path d="M13.30 8.00L14.70 8.00"/>
+      <path d="M11.75 11.75L12.74 12.74"/>
+      <path d="M8.00 13.30L8.00 14.70"/>
+      <path d="M4.25 11.75L3.26 12.74"/>
+      <path d="M2.70 8.00L1.30 8.00"/>
+      <path d="M4.25 4.25L3.26 3.26"/>
+      <path d="M8.00 2.70L8.00 1.30"/>
+      <path d="M11.75 4.25L12.74 3.26"/>
+    </svg>
     <span class="sr-only">Light appearance</span>
   </button>
   <button id="t-contrast" type="button" aria-pressed="false" title="Toggle high contrast">
-    <span aria-hidden="true">◐</span>
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6"/>
+      {/* The filled half is the mark: a ring alone is a circle, and what
+          this control means is one side dark against the other. */}
+      <path d="M8 2A6 6 0 0 0 8 14Z" fill="currentColor" stroke="none"/>
+    </svg>
     <span class="sr-only">High contrast</span>
   </button>
   <button id="t-motion" type="button" aria-pressed="false" title="Toggle reduced motion">
-    <span aria-hidden="true">≋</span>
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2 4.6q1.5-1.8 3 0t3 0 3 0 3 0"/>
+      <path d="M2 8q1.5-1.8 3 0t3 0 3 0 3 0"/>
+      <path d="M2 11.4q1.5-1.8 3 0t3 0 3 0 3 0"/>
+    </svg>
     <span class="sr-only">Reduce motion</span>
   </button>
 </div>
@@ -33,6 +66,20 @@
     line-height: 1;
     padding: var(--s-1) var(--s-2);
     cursor: pointer;
+  }
+
+  /* 1em square, so the box is the one the glyphs occupied and §38's header
+     geometry is untouched. `currentColor` on both, which is the whole
+     reason these are inline: the button owns the colour and all three
+     states — rest, hover, pressed — reach the mark through it. */
+  svg {
+    display: block;
+    width: 1em; height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   button:hover { color: var(--leader-ink); border-color: var(--leader-ink); }
 
