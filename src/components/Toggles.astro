@@ -56,9 +56,18 @@
 
 <style>
   .toggles { display: flex; gap: var(--s-2); }
+  /* **--dim rather than --rule (§44).** These are the accessibility
+     controls, and `--rule` is 1.28:1 against the page in both appearances
+     (2.07 in high contrast) — a boundary that is technically present and
+     practically unfindable, on the three buttons a struggling reader is
+     looking for first. `--dim` is the lowest token that clears SC 1.4.11's
+     3:1 in all four appearances: 5.07 dark, 7.42 dark+contrast, 5.10 light,
+     7.43 light+contrast. It is also the colour of the mark inside it and of
+     the nav beside it, so the strip reads at the weight of the row it is
+     in rather than as three ghosts at the end of it. */
   button {
     background: none;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--dim);
     border-radius: 4px;
     color: var(--dim);
     font-family: var(--font-mono);
@@ -92,6 +101,17 @@
   :global(html[data-theme="light"]) #t-theme {
     color: var(--leader-ink);
     border-color: var(--leader-ink);
+    /* **The second channel, and §44 needs one.** While the resting border
+       was `--rule` the pressed state was carried by contrast alone — 1.28
+       against 7.65 in dark, which no reader could miss. Lifting the resting
+       edge to `--dim` closes that gap, and in *light* it closes it almost
+       completely: `--dim` is 5.10 against the page and `--leader-ink` 4.87,
+       and the two hues are a few degrees apart, so a colour-only pressed
+       state would read as no state at all. An inset ring makes the pressed
+       edge two pixels of accent against one of `--dim` — weight as well as
+       hue, in every appearance, and `inset` rather than a border width so
+       nothing moves by a pixel when it lands. */
+    box-shadow: inset 0 0 0 1px var(--leader-ink);
   }
 
   /* No chip. The pressed state was built as a --leader fill with --paper on
