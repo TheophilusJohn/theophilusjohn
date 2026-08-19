@@ -146,12 +146,20 @@ const lines =
      layered, not stacked: that is where the room for the world comes
      from. Opacity is the resting state the timeline writes over. */
   @media (min-width: 900px) {
+    /* **The frame steps down one rung, and that is where the laptop's
+       57px came from.** The stage needs to fit the viewport whole (§13's
+       rule) and at 1512 wide the binding section wanted 861 against a
+       804px MacBook. The gap between the machine ID and the beats was
+       --s-12 while the stage's own rows sat at --s-8, which is two
+       spacing steps doing one job in one frame: --s-8 out here and --s-6
+       inside keeps the hierarchy — the outer gap is still the larger —
+       and costs 24 of the 57. */
     .project[data-beats] {
       position: relative;
       display: grid;
       grid-template-rows: auto auto;
       align-content: center;
-      row-gap: var(--s-12);
+      row-gap: var(--s-8);
       min-height: 100svh;
       padding-block: var(--s-8);
     }
@@ -163,7 +171,7 @@ const lines =
        untouched. `visible` degrades to `auto` beside `hidden` or `scroll`
        but not beside `clip`, which is the whole reason this pair works. */
     .project[data-beats] .stage {
-      position: relative; display: grid; row-gap: var(--s-8);
+      position: relative; display: grid; row-gap: var(--s-6);
       overflow: visible clip;
     }
 
@@ -188,7 +196,15 @@ const lines =
     }
 
     .project[data-beats] .b2 { padding-bottom: 0; border-bottom: 0; }
-    .project[data-beats] .b3 { max-width: 45ch; }
+    /* **Leading pairs with measure**, and this is the one place on the
+       site where the same prose is set at two of them: 62ch stacked,
+       45ch here. 1.6 is right for the wider column and slack at the
+       narrower one — a short line needs less vertical room to find its
+       way back to the left edge — so the writeup is set at 1.5 inside the
+       stage. It is the last 39px of the 57, and it is a better read
+       rather than a smaller one. Not below 1.5: that is the line height
+       WCAG 1.4.12 names, and this is body prose. */
+    .project[data-beats] .b3 { max-width: 45ch; line-height: 1.5; }
     .project[data-beats] .prose { max-width: none; padding-block: 0; }
 
 

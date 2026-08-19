@@ -5984,3 +5984,54 @@ script has removed the attribute because there is an adapter. It is
 pre-existing (the tap-target rule and §33's reveal were written in different
 steps), it is one selector to fix, and it changes what is on screen at phone
 width — so it is a decision rather than a cleanup, and it is recorded here.
+
+### The 57px, found outside the writeup
+
+The sentence stays: hard rule 6 is the guarantee and the pinned stage is an
+animation. What came out instead is two spacing steps and a leading, and
+both have an argument that is not "we needed the pixels":
+
+- **The frame stepped down one rung.** The gap between the machine ID and
+  the beats was `--s-12` while the stage's own rows sat at `--s-8` — two
+  spacing steps doing one job in one frame. `--s-8` outside and `--s-6`
+  inside keeps the hierarchy (the outer gap is still the larger one) and
+  costs **24px**.
+- **Leading pairs with measure.** This is the only place on the site where
+  the same prose is set at two measures: 62ch stacked and 45ch in the
+  stage. 1.6 is right for the wider column and slack at the narrower one,
+  so the writeup is set at **1.5** inside the stage — **39px**, and a better
+  read rather than a smaller one. Not below 1.5, which is the figure WCAG
+  1.4.12 names for body text.
+
+Everything else measured was rejected: the section padding (16px, but it is
+the frame's own breathing room at the top of a pinned screen), the
+paragraph gap (16px, already under one line), widening the measure to 50ch
+(52px, and §13 chose 45 on purpose), and any trim of the copy.
+
+**All four sections after, at 1512 wide** — the writeup column is `45ch` of
+fixed-size type, so these numbers hold at every desktop width:
+
+| section | before | after |
+|---|---|---|
+| enargeia | 665 | 614 |
+| **homonoia** | **861** | **798** |
+| philoi | 681 | 630 |
+| basis | 640 | 590 |
+
+| height | fresh load | resize into it |
+|---|---|---|
+| 720 | 0 pinned | 0 pinned |
+| **804** | **4 pinned** | **4 pinned** |
+| 850 | 4 pinned | 4 pinned |
+| 900 | 4 pinned | 4 pinned |
+| 1080 | 4 pinned | 4 pinned |
+
+**The laptop has the stage back**, with 6px to spare at 804 — and at beat 3
+the whole writeup sits in the frame with 34px clear above the machine ID
+and 35 below the last line, which is where it was at 900 before this.
+
+The leading is scoped to `.project[data-beats] .b3`, so it reaches nothing
+else: the stacked layout is still 1.6 at 62ch, and so is the world's
+station panel, which clones the same nodes from outside the stage.
+Measured: 24px in the stage, 25.6 in both of the others. axe clean in ten
+states.
