@@ -324,7 +324,7 @@ export function buildBlades(palette: Palette, time: UniformNode<'float', number>
      terminator and the two cannot drift apart. */
   const body = mix(bands(lum, palette, 0), bands(lum, palette, 1), TINT);
 
-  const depth = fog(positionWorld);
+  const depth = fog(positionWorld, palette);
   material.colorNode = mix(haze(toEye, palette), body, depth);
 
   const mesh = new Mesh(geometry, material);

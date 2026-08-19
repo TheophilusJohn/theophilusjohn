@@ -32,7 +32,16 @@ export type Palette = {
   muted: Token;
   paper: Token;
   lead: Token;
-  /** §30's motes, and the only thing in the world wearing it. */
+  /** **The accent when it has to be read against the world (§42).** In dark
+      it is `var(--leader)`, so anything moved onto it is unchanged by
+      substitution rather than by intention — §39's own device, used here for
+      §34's travelling signals, which at day are a mark on a pale ground
+      rather than a light in the dark. Hard rule 2 permits `--leader` in the
+      world's render layer and the rim and the elected mast still wear it;
+      what moves is the small marks whose whole job is to be seen. */
+  leadInk: Token;
+  /** §30's motes and §37's nineteen lamps. Pale and additive at night; at
+      day the token is dark and the layer is not additive at all (§42). */
   mint: Token;
   /* **Which appearance, as a uniform (§40).** 1 at day, 0 at night, and it
      is in the palette rather than beside it because it is the same fact the
@@ -56,6 +65,7 @@ const NAMES = {
   muted: '--muted',
   paper: '--paper',
   lead: '--leader',
+  leadInk: '--leader-ink',
   mint: '--mint',
 } as const;
 

@@ -1334,9 +1334,19 @@ at a station's arrival, and neither lever reaches it: the scrim's rung buys
 it against the finished world; the target is a relative luminance at or under
 0.1578 against the worst backdrop measured, where it is now 0.1633.
 
-`--mint` is **not** in the light set. It has no document use at all — it is
-read by the world through `getComputedStyle` and nowhere else — so its light
-value is §42's decision and not §39's.
+`--mint` is in the light set as of **§42**, and it is solved exactly the way
+`--leader-ink` was: the source's own OKLCH hue and chroma (h 156.52°,
+C 0.0481) with lightness the only thing that moves, to the lightest value
+clearing 4.5:1 on `--void`. That is L 0.543 → **`#597864`**, relative
+luminance **0.165** — the same value `--leader-ink` lands on, because it is
+the same bar on the same page, so the world's two kinds of mark weigh the
+same at day. It still has no document use; what it is for is §30's motes and
+§37's nineteen lamps, which at day are dark specks rather than lights (§4.9).
+
+| | hex | OKLCH | ratio on the light page |
+|---|---|---|---|
+| `--mint`, the source | `#C6E9D2` | L .903 C .0481 h 156.52° | — (0.749, a light) |
+| `--mint`, light | `#597864` | L .543 C .0481 h 156.52° | **4.50** |
 
 ### Type
 
@@ -2063,7 +2073,9 @@ the shading solved from the other end. That framing is what makes the work
 tractable: every question becomes "what is this at noon" rather than "what is
 the light version of this".
 
-Each of the following is a decision, not a translation. Steps 40–42.
+Each of the following is a decision, not a translation. Steps 40–42, and
+after §42 the only one left open is what the type on top of it is worth — see
+the last paragraph of this section, and §43.
 
 - **Sky.** *Decided at §40.* A gradient from `--rule` at the horizon up to
   `--muted` at the zenith — the night construction upside down as well as
@@ -2116,25 +2128,63 @@ Each of the following is a decision, not a translation. Steps 40–42.
   at night the rim is 0.236–0.271 against a sky of 0.009–0.019, the brightest
   thing on the ridgeline; at day it is 0.262–0.347 against a sky of
   0.705–0.754, the darkest. Same width, opposite sign.
-- **Fog.** Target becomes the sky, not `--void`. Same construction, opposite
-  end. Aerial perspective is stronger at day, so the density probably rises.
-  **§41 measured what this has to move**: `mix(--void, the sky, 0.75)` is
-  0.758 at day, which sits *above* the ground's whole banded range instead of
-  below it, so the fog compresses where at night it expands — the arrival's
-  ground spans 0.27–0.63 in the material and 0.56–0.68 on screen, a 2.3× range
-  arriving as 1.2×. It is why the day world reads at a station and is still
-  pale from 190 units up.
-- **Water.** It mirrors the sky gradient, so it inverts for free — but §26's
-  one quantised specular band was solved against a dark surround and needs
-  re-measuring.
-- **Motes.** Additive, `--mint`, and explicitly allowed to be brighter than
-  the ground. At day there is no headroom above the ground. Either they
-  become dark motes or they are a night-only layer; **decide by looking, and
-  cutting them in light is acceptable.**
-- **Landmark lamps.** Nineteen additive lights in `--mint` (§37). The same
-  problem and the same two answers, except that a lighthouse with no light is
-  not a lighthouse — likely they stay and get a dark surround instead of a
-  glow.
+- **Fog.** *Decided at §42, and it is one token and one constant.* The target
+  is `mix(X, the sky, 0.75)` and **X is the darkest token in the set** —
+  `--void` at night and `--paper` at day, which are 0.0068 and 0.0118, the
+  same value in the two sets. §41's white-out was `--void` used at day, where
+  it is the *palest* token: the target came out at **0.758 against a horizon
+  sky of 0.705**, above the sky as well as above the ground's whole banded
+  range, so the far ground was brighter than the sky behind it and a 2.3×
+  range arrived on screen as 1.2×. At `--paper` the target is **0.532** —
+  above the commonest ground (0.296, so distance still lightens, which is what
+  aerial perspective is) and below the sky (so the horizon is still a soft dark
+  line under a lit band). **The density falls rather than rises**, which is the
+  opposite of what this bullet guessed: at night the target is under
+  everything, so density costs no contrast; at day it is in the middle of the
+  range and every unit of it is contrast spent from both ends. 0.70 of the
+  night density, which is what the world's own edge allows — the last chunk at
+  1,536 keeps 4.5% of its own value there against night's 0.8%, and 0.55 was
+  measured with the edge of the world visible in the frame. Measured over the
+  arrival's ground: p2..p98 **0.368–0.869 → 0.225–0.744**, a 2.36× span
+  becoming 3.30×.
+- **Water.** *Decided at §42, and both ends of it moved.* The mirror inverts
+  for free, but the **dark end did not**: `--void-lift` ported straight over is
+  0.845 at day, so every lake was the palest thing in the frame — measured at
+  the arrival, a lake read 0.863 against ground of 0.43. What §26's sentence
+  actually names is *one rung above whatever the fog takes everything to*, and
+  `band.ts`'s −1 ladder is where both ends are written down: rung 0 is the
+  fog's floor and rung 1 is this, which is `--void-lift` at night and
+  **`--muted`** at day. And §26's specular band takes the sky's own glow token
+  rather than a decision of its own — `--leader` at night, **`--void`** at day
+  — because the glance *is* `sky.ts`'s glow seen one reflection later, and the
+  accent is a mid tone in both appearances, so on water it would be a dark
+  patch where the sun is. Measured on one lake, aimed at the sun: the glance is
+  0.3226 on water at 0.0110 (**6.11:1**) at night and 0.885 on 0.128
+  (**5.25:1**) at day. Same shape, opposite sign — §41's rim again.
+- **Motes.** *Decided at §42: they stay, and they are not additive.* Additive
+  blending has no ceiling and no floor, and over a ground at 0.30–0.85 there
+  is no headroom left to be brighter in — but that is an argument about the
+  *blend*, not about the layer. `NormalBlending` and a dark `--mint` is the
+  same layer with one property changed: same phase, same rise with pauses in
+  it, same two rings, same instance buffer, same draw call, same count.
+  Measured at Enargeia's settle, the brightest mote is **+0.371** of relative
+  luminance at night and the darkest is **−0.357** at day.
+- **Landmark lamps.** *Decided at §42: the same one property, and then a gain
+  that is a measurement.* The nineteen lamps and §34's fifty-one travelling
+  signals are one mesh and one material, so they take the motes' change
+  together — and the accent among them moves from `--leader` to
+  `--leader-ink`, which is `var(--leader)` in dark, so the night appearance is
+  unchanged by substitution rather than by intention (§39's own device).
+  **What is not free is the gain.** Additive over `--void` at 0.007 *is* the
+  token times the gain, so a fifth of a gain still puts the full weight of
+  `--mint` on screen; alpha-blended, a fifth of a gain is a fifth of the way
+  there. Measured at §37's lighthouse over a whole turn of the beacon, the
+  layer's own peak gain is 0.198 — a lamp at **3.24:1** at night and
+  **1.16:1** at day, which is not a light. At day the gain is a *coverage* and
+  has to reach 1 where the night mark reaches its token: ×5.0 for the signals
+  and ×2.0 for the motes, both of them 1/(the measured peak) and nothing else,
+  and every fade in either layer still does exactly what it did. The lamp is
+  **2.93:1** now.
 - **The election.** Unaffected. The swell is geometry.
 
 **The scrim is the constraint that crosses the two halves.** §17's gradient
@@ -2155,6 +2205,29 @@ of the ramp.
 The direction of failure inverts with the appearance and that is the thing to
 carry into §43: at night the binding pixel under a glyph is the **brightest**
 one (a lit cloud), at day it is the **darkest**.
+
+**§42 made that concrete and it is the one thing the step leaves open.** A
+day ground that reads is a day ground that is *darker*, and the type on it is
+dark too, so the halo's leak — which helps at night, where a dark leak under
+pale ink only widens the gap — hurts at day. Measured on the arrival column
+with §38's glyph-mask harness against the same build one step earlier:
+
+| | §41 | §42 | ceiling on pure `--void` |
+|---|---|---|---|
+| headline, `--paper` | 14.73:1 | 7.87:1 | 78.4 |
+| subline, `--leader-ink` | 4.33:1 | **4.02:1** | **4.54** |
+| hint, `--dim` | 4.72:1 | **4.18:1** | 5.10 |
+
+Night is byte-for-byte the same measurement it was (13.66 / 6.84 / 4.79).
+**The halo is not the lever and that is measured rather than assumed**: two
+more 1px rings on §38's stack buy **0.01**, because at day the leak is the
+outer pool rather than the antialiased edge — the exact reverse of §38's
+finding, for the same reason the failure direction reverses. And
+`--leader-ink` cannot be fixed by any halo at all: it needs a backdrop of
+0.910 to clear 4.5:1 and pure `--void` is 0.918, so it passes only on a halo
+that is opaque over a whole 7px window. **The lever is the token**, which is
+what §40 said and what §43 is for; the ground it has to be re-solved against
+is the one §42 has now built.
 
 ### Lenis ↔ ScrollTrigger wiring
 

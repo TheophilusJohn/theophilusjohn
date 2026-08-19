@@ -28,10 +28,29 @@
    is that `--leader` means *elected*, and a mote means nothing at all except
    that the air is not empty. Additive and fogged, so §0.2's last clause is
    literal: this is the only layer allowed to be brighter than the ground it
-   is over, and the fog is what stops it being brighter than the sky. */
+   is over, and the fog is what stops it being brighter than the sky.
+
+   ── And at day it is not additive at all (§42) ─────────────────────────
+   §0.2's clause is a clause about *night*: additive blending has no ceiling
+   and no floor, and over a ground that runs 0.30 to 0.85 there is no
+   headroom left to be brighter in. SPEC §4.9 offers two answers — dark
+   motes, or a night-only layer — and says cutting them is acceptable.
+   Neither is needed, because the two are the same layer with one property
+   changed: **`AdditiveBlending` → `NormalBlending`, and `--mint` is a dark
+   token in the light set.** Everything else is untouched — the same phase,
+   the same rise with pauses in it, the same two rings, the same disc, the
+   same fade, the same instance buffer, the same draw call and the same
+   count. A speck of dust over a meadow at noon is dark against the ground
+   and dark against the sky, which is what this now is, and §0.2's sentence
+   reads the same way with one word in it inverted.
+
+   The blend is a material property rather than a node, so it cannot be a
+   uniform: `setDay` is what the palette's repaint calls, and it is the only
+   thing in this file that knows which appearance it is. */
 
 import {
   AdditiveBlending,
+  NormalBlending,
   BufferAttribute,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
@@ -174,6 +193,18 @@ const SIZE_LOW = 0.24;
 const SIZE_RANGE = 0.16;
 const ALPHA = 0.52;
 
+/* The same measurement `built.ts` makes, one layer over (§42). Additive over
+   `--void` puts the whole of `--mint` on screen at ALPHA; alpha-blended it
+   puts ALPHA of the way there. Measured at Enargeia's settle, the brightest
+   mote is **+0.371** of relative luminance at night and the darkest is
+   **−0.172** at day, which is a peak gain of 0.495 read two ways. 2.0 takes
+   the day peak to 1 — a solid speck with the same two rings around it —
+   and leaves the near fade, the far fade, the envelope, the flicker and the
+   fog where they are. It cannot reach night's ratio and nothing can: a dark
+   speck on ground at 0.45 is 2.3:1 where a lit one on 0.016 is 9:1, and
+   that is the palette rather than the layer. */
+const DAY_GAIN = 2;
+
 /* Two hard rings rather than a gaussian: a soft blob is the one shape this
    world does not contain, and a core with a step down to a halo is the same
    decision the bands are. */
@@ -238,6 +269,16 @@ export function buildMotes(palette: Palette, time: UniformNode<'float', number>)
     fog: false,
   });
 
+  /* Called by the palette's repaint, before the first frame and on every
+     change of `data-theme`. `needsUpdate` is what rebuilds the pipeline; it
+     is one hitch on a toggle and nothing at all in a flight. */
+  const setDay = (day: boolean) => {
+    const want = day ? NormalBlending : AdditiveBlending;
+    if (material.blending === want) return;
+    material.blending = want;
+    material.needsUpdate = true;
+  };
+
   const pos = attribute<'vec3'>('iPos', 'vec3');
   const aim = attribute<'vec4'>('iAim', 'vec4');
   const corner = attribute<'vec2'>('qOff', 'vec2');
@@ -288,8 +329,10 @@ export function buildMotes(palette: Palette, time: UniformNode<'float', number>)
     .mul(flicker)
     .mul(shrink)
     .mul(smoothstep(NEAR_OUT, NEAR, range))
-    .mul(fog(positionWorld))
-    .mul(ALPHA);
+    .mul(fog(positionWorld, palette))
+    .mul(ALPHA)
+    .mul(mix(float(1), float(DAY_GAIN), palette.day))
+    .clamp(0, 1);
 
   const mesh = new Mesh(geometry, material);
   // Instance positions are world coordinates and the geometry is one quad at
@@ -423,6 +466,7 @@ export function buildMotes(palette: Palette, time: UniformNode<'float', number>)
 
   return {
     mesh,
+    setDay,
     settle: (camera: Camera) => update(camera, true),
     update,
     stats,

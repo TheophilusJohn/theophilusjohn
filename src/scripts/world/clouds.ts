@@ -267,7 +267,16 @@ export function buildClouds(palette: Palette, time: UniformNode<'float', number>
     corner.x.sub(sunFace.x.mul(LIFT * 0.5)),
     corner.y.sub(sunFace.y.mul(LIFT * 0.5)),
   )).mul(LIT_STEPS).round().div(LIT_STEPS).clamp(0, 1);
-  const body = mix(palette.rule, palette.paper, lit.mul(1 - LIT_FLOOR).add(LIT_FLOOR));
+  /* **The lit face is `--paper` at night and `--void` at day, which is the
+     sky deck's own pair (§40, §42).** `--paper` inverted is the *darkest*
+     ink in the light set, so the night construction ported straight over
+     paints the sunward face of every near-field puff near-black — the same
+     failure §40 found on the deck, in the layer §40 did not touch. The body
+     stays `--rule` in both for the deck's reason: inverted it is a mid tone
+     at 0.705, darker than the sky above thirty degrees and lighter than it
+     at the horizon, which is what a cloud looks like from where they are. */
+  const face = mix(palette.paper, palette.void, palette.day);
+  const body = mix(palette.rule, face, lit.mul(1 - LIT_FLOOR).add(LIT_FLOOR));
 
   /* Distance does three things to a puff and they are all the same fade in
      different places: near, it hands over to the murk; far, the fog takes
@@ -276,7 +285,7 @@ export function buildClouds(palette: Palette, time: UniformNode<'float', number>
   const dist = centre.sub(cameraPosition).length();
   const near = smoothstep(radius.mul(NEAR_IN), radius.mul(NEAR_OUT), dist)
     .mul(smoothstep(FAR, FAR_IN, dist));
-  const depth = fog(positionWorld);
+  const depth = fog(positionWorld, palette);
 
   const toEye = cameraPosition.sub(positionWorld).normalize();
   material.colorNode = mix(haze(toEye, palette), body, depth);

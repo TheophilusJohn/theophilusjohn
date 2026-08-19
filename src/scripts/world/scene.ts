@@ -162,10 +162,16 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
      a `const` below would still be in its dead zone. Everything else the
      appearance changes is a uniform the shaders already read. */
   let starfield: Object3D | undefined;
+  /* And the same dead-zone dodge for §42's two additive layers. A blend mode
+     is a material property rather than a node, so it is the one thing about
+     the appearance that cannot be a uniform — at day neither layer is
+     additive, because additive has no headroom over a pale ground. */
+  const hour: ((day: boolean) => void)[] = [];
 
   const palette = buildPalette((day) => {
     renderer.setClearColor(token('--void'), 1);
     if (starfield) starfield.visible = !day;
+    for (const set of hour) set(day);
   });
 
   /* Three layers and one horizon between them (§0.2). The sky carries the
@@ -229,6 +235,8 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
   scene.add(clouds.mesh);
 
   const motes = buildMotes(palette, uTime);
+  hour.push(motes.setDay);
+  motes.setDay(isDay());
   scene.add(motes.mesh);
 
   /* ── What is built (§34) ─────────────────────────────────────────────
@@ -244,6 +252,8 @@ export async function mount(arrived?: Where, report: Progress = () => {}) {
      depth-written — sit at renderOrder 2 with the cloud forms and in front
      of the ground they cross. */
   const built = buildBuilt(palette, uTime);
+  hour.push(built.setDay);
+  built.setDay(isDay());
   scene.add(built.mesh);
   scene.add(built.signals);
 

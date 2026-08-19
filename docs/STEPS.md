@@ -6902,6 +6902,307 @@ because it has no document use and §39 left it out for that reason.
 **Report:** per-layer frame cost in both appearances, and what the motes and
 the lamps became.
 
+*Done.* **Five things, and four of them are one token read off the ladder
+`band.ts` already keeps.** The fog's floor, the water's dark end, the cloud
+forms' lit face and the two additive layers' tint are all "which rung is
+this", and §41's ladder answers all four without a new number: the token that
+means *the darkest a thing can be* is `--void` at night and `--paper` at day,
+and those are **0.0068 and 0.0118 — the same value in the two sets**. What is
+not free is the two things that are not colours: the fog's **density**, which
+falls where §4.9 guessed it would rise, and the additive layers' **gain**,
+which has to be a coverage at day. Draw calls and triangles are identical at
+all six poses in both appearances, the frame is unchanged (−0.006 to +0.010ms
+at DPR 1.5), night is pixel-identical at four of six poses and 1/255 at the
+other two, the worker is byte-identical, and the world chunk is **+216
+gzipped**.
+
+**Say what it leaves open, first.** A day ground that reads is a darker day
+ground, and the dark type on top of it loses contrast: the arrival's subline
+goes 4.33 → **4.02:1** and its hint 4.72 → **4.18:1**. Both are under the
+bar, both are §43's by the plan §40 wrote, and §42 measured why neither the
+halo nor the scrim can reach them. See the last section.
+
+### The fog's floor is one token, and it is the whole white-out
+
+`haze()` has been `mix(--void, the sky, HAZE)` since §26. `--void` is the
+darkest token in the dark set *and* the clear colour, and for three steps
+those were one fact. In the light set they come apart — `--void` is the
+**palest** token — so at day the target was:
+
+| | the target | the horizon sky | the commonest ground |
+|---|---|---|---|
+| night | 0.0186 | 0.0225 | 0.082 |
+| §41, day | **0.758** | 0.705 | 0.296 |
+| §42, day | **0.532** | 0.705 | 0.296 |
+
+At 0.758 the fog target is above the sky as well as above the ground, so the
+far ground arrives *brighter* than the sky behind it — the horizon drawn in
+reverse — and everything converges on one pale tone. The fix is the rung and
+not the number: HAZE stays 0.75 and the other end becomes the darkest token
+in the set, which is `--paper` at day and lands at 0.532, above the commonest
+ground (distance still lightens, which is what aerial perspective is) and
+below the sky (the horizon is a soft dark line under a lit band, which is
+§22's and §26's rule).
+
+**And then the density, which is the one number in this step that is not a
+token.** §4.9 expected it to rise. Measured, it has to fall, and the reason
+is where the target sits rather than anything about air: at night the target
+is *under* every value the ground can take, so a fogged pixel and an unfogged
+one are both dark and the ratio between them survives; at day it is in the
+middle of the range and every unit of density is contrast spent from both
+ends at once. Relative-luminance percentiles over the arrival's lower frame,
+which is ground and water:
+
+| | p2 | p10 | p25 | p50 | p75 | p90 | p98 | span |
+|---|---|---|---|---|---|---|---|---|
+| night | 0.008 | 0.008 | 0.019 | 0.035 | 0.061 | 0.122 | 0.197 | 25.0× |
+| §41, day | 0.368 | 0.440 | 0.546 | 0.665 | 0.771 | 0.829 | 0.869 | 2.36× |
+| §42 floor only | 0.286 | 0.368 | 0.437 | 0.558 | 0.623 | 0.673 | 0.723 | 2.53× |
+| §42, day | **0.225** | 0.336 | 0.392 | 0.530 | 0.608 | 0.669 | **0.744** | **3.30×** |
+
+0.70 of the night density is what the world's own edge allows rather than
+what the frame would like: §23's argument still binds, the far ground is the
+only thing hiding the last chunk at 1,536, and at this scale it keeps 4.5% of
+its own value there against night's 0.8%. 0.55 was measured with the edge of
+the world in the frame. Night is untouched by construction — `mix(1, DAY,
+palette.day)` — and the percentiles above say so to three decimals.
+
+**The instrument is worth naming.** A ratio span flatters night badly: crushing
+toward a target of 0.019 preserves ratios and crushing toward 0.532 destroys
+them. In CIE L\* the same three rows are 44, 27.5 and 34.5 units of spread, so
+the day frame is genuinely lower-contrast than the night one and always will
+be — that is what daylight is — and the step buys 7 of the 16.5 units between
+them.
+
+### The water: both ends moved, and one of them was every lake in the frame
+
+The white shapes in §41's day arrival were **not the fog**. They were the
+lakes: §26's dark end is `--void-lift`, which inverted is 0.845, so the water
+was the palest thing in a frame full of pale things — measured, a lake at
+**0.863** against ground at 0.43 and a sky at 0.648.
+
+What §26's sentence names is *one rung above whatever the fog takes
+everything to*, and `band.ts`'s −1 ladder has both ends of that written down
+already:
+
+| | rung 0 — the fog's floor | rung 1 — the water's dark end |
+|---|---|---|
+| night | `--void` 0.0068 | `--void-lift` 0.0116 |
+| day | `--paper` 0.0118 | `--muted` **0.0992** |
+
+So the water is the darkest thing in the frame in both appearances, which is
+§26's own sentence unchanged, and at day it mirrors the deep zenith at the
+steep end where the night one mirrors `--void`. Measured on one lake, 0.128
+on screen against ground at 0.126 and sky at 0.73.
+
+**§26's specular band takes the sky's token rather than one of its own.** The
+glance *is* `sky.ts`'s glow seen one reflection later, so it wears whatever
+the glow wears — `--leader` at night, `--void` at day — and §40's argument
+carries over with nothing added: the accent is 0.385 in both appearances, and
+on water that runs 0.099 at the steep end to 0.705 at the grazing one, a
+glance in it is a *dark patch where the sun is*.
+
+It is in **none of the six route poses**, and that is a finding rather than a
+gap: §22 sited the opening pose downsun, so the sun's reflection is behind
+the camera at every keyframe. Measured by standing over a lake and aiming at
+the sun's own azimuth with 32° of view depression in the frame, which is
+where a reflection off a horizontal surface reaches a light 32° up:
+
+| | the glance | the water around it | ratio |
+|---|---|---|---|
+| night | 0.3226 (`--leader`, unfogged) | 0.0110 | **6.11:1** |
+| day | 0.885 (`--void`, fogged) | 0.128 | **5.25:1** |
+
+Same shape, same bitten edges, opposite sign. `glance-light.png` and
+`glance-dark.png`.
+
+### The cloud forms, which §40 did not touch and §42 had to
+
+`sky.ts`'s deck got its day face at §40 (`--paper` → `--void`); `clouds.ts`'s
+near-field forms are a different file and still had `mix(--rule, --paper,
+lit)`. `--paper` inverted is the *darkest ink* in the light set, so the
+sunward face of every puff was near-black — §40's failure exactly, in the
+layer §40 did not open. One token, the deck's own pair, and the body stays
+`--rule` in both for the deck's reason.
+
+### §27's ground tint is unchanged, and the arithmetic is why
+
+TINT 0.25 was set at §27 against the *night* ladder's largest step. At day the
+ladder's steps are different sizes, so the question is whether one number can
+serve both. Computed off `band.ts`'s own construction at the two surfaces that
+matter — flat ground, which is 88.9% of the world, and a slope inside the mid
+band:
+
+| | ground | + full cover | Δ luminance | Δ L\* |
+|---|---|---|---|---|
+| night, flat | 0.0820 | 0.1263 | +0.044 | **+7.8** |
+| night, mid-band slope | 0.3073 | 0.3244 | +0.017 | +1.4 |
+| day, flat | 0.2958 | 0.2495 | −0.046 | **−4.2** |
+| day, mid-band slope | 0.7213 | 0.5963 | −0.125 | −6.3 |
+
+The absolute step on flat ground is the same size in the two appearances
+(0.044 against 0.046) and the day tint is the *more even* of the two — night
+reads almost entirely on flat ground and barely at all on a lit slope, where
+day reads on both. So 0.25 stands, and what would have justified moving it —
+cover coming back as blotches on lit slopes — is a 6.3 L\* step, which is
+less than the night tint puts on open country.
+
+### The motes and the lamps: one property, and then a gain
+
+Both are the same problem and they got the same answer, which SPEC §4.9
+offered as two: **additive blending is a night construction.** Over `--void`
+at 0.007 an additive mark has unlimited headroom; over a day ground at
+0.30–0.85 it adds a percent and disappears. `NormalBlending` and a dark
+`--mint` is the same layer with one property changed — same phase, same rise
+with pauses in it, same two rings, same instance buffer, same draw call, same
+count — and a dark speck over a meadow at noon is what §0.2 asks for with one
+word inverted. Nothing is cut.
+
+A blend mode is a material property rather than a node, so it is the one
+thing about the appearance that cannot be a uniform: `setDay` is called from
+the palette's own repaint, beside the starfield §40 put there for the same
+reason. Measured both ways round, because that is §15's bug class — a page
+*loaded* in an appearance and one *toggled* into it agree on all five of
+blending, blending, the starfield, `palette.day` and `--mint`.
+
+**Then the gain, which is a measurement and not a taste.** The two blends read
+the same `gain` as different quantities, and nothing about the tokens fixes
+it:
+
+| | peak gain | night | day, before | day, after |
+|---|---|---|---|---|
+| §37's lighthouse beacon, from 120 units | 0.198 | 0.164 on 0.016 = **3.24:1** | 0.532 on 0.622 = **1.16:1** | 0.180 on 0.622 = **2.93:1** |
+| a mote at Enargeia's settle | 0.495 | **+0.371** of luminance | −0.172 | **−0.357** |
+
+So at day the gain is a *coverage* and has to reach 1 where the night mark
+reaches its token: ×5.0 for the signals and ×2.0 for the motes, each of them
+1/(that layer's own measured peak) and nothing else. It multiplies the
+product rather than replacing a term in it, so the far fade, the envelope,
+the fog, the flicker and whose leg it is all still do exactly what they did —
+a signal a tenth of the way through its life is still a tenth.
+
+**The accent among them is `--leader-ink`.** In dark the two tokens are one
+value, so the night appearance is unchanged by substitution rather than by
+intention — §39's device, and the A/B above is the proof. What it buys is
+day: `#A99BF5` is 0.385, and over open country at 0.296 that is a mark you
+cannot see. Hard rule 2 is not bent by it; the rim, the top band and the mast
+that holds the term still wear `--leader` undiluted, because those are a
+surface being shaded rather than a mark being read.
+
+**`--mint`'s light value** is §39's method at §39's bar: the source's own
+OKLCH hue and chroma (h 156.52°, C 0.0481), lightness the only thing that
+moves, to the lightest value clearing 4.5:1 on `--void`. L 0.543 →
+**`#597864`**, relative luminance 0.165 — which is `--leader-ink`'s own
+number, because it is the same bar on the same page, so the world's two kinds
+of mark weigh the same at day. The harness reproduces `--leader-ink` from
+`#A99BF5` as `#7465BA` against the shipped `#7464B9`, one code step, which is
+what says it is §39's solve and not a new one.
+
+### Cost
+
+Draw calls and triangles are **identical at all six poses in both
+appearances** against a §41 build in the same session: 50 / 46 / 52 / 45 / 48
+/ 40 at night and 49 / 45 / 51 / 44 / 47 / 39 at day, which is §40's starfield
+and nothing this step did.
+
+**The night appearance is unchanged by measurement.** Pixel-identical at four
+of six poses; at Basis 694 pixels and at cruise 234 differ by **1/255**, which
+is the world's own clock and the quadtree. Day differs at 36–44% of the frame,
+worst 123–135/255, which is the step.
+
+ms/frame, one forced pose into both builds, the loop stopped, a warm-up batch
+and then 120 renders between two `onSubmittedWorkDone`, best of three:
+
+| pose | night §41 → §42 @1.5 | day §41 → §42 @1.5 |
+|---|---|---|
+| arrival | 1.215 → 1.221 | 1.249 → 1.248 |
+| enargeia | 1.248 → 1.252 | 1.262 → 1.264 |
+| philoi | 1.346 → 1.340 | 1.359 → 1.363 |
+| basis | 1.369 → 1.372 | 1.388 → 1.396 |
+| homonoia | 1.334 → 1.340 | 1.338 → 1.333 |
+| cruise | 1.204 → 1.207 | 1.227 → 1.237 |
+
+−0.006 to +0.010 at DPR 1.5 and −0.002 to +0.003 at DPR 1: inside the noise in
+both, which it should be — a `mix` of two constants in the fog, one in the
+haze, one in the water and one gain are all uniform-driven arithmetic inside
+functions that already ran.
+
+Per layer at DPR 1.5, both appearances, each layer hidden and the frame
+re-timed (0 means the layer is not drawn at that pose):
+
+| layer | arrival | enargeia | philoi | basis | homonoia | cruise |
+|---|---|---|---|---|---|---|
+| whole frame, night | 1.223 | 1.311 | 1.361 | 1.284 | 1.303 | 1.304 |
+| whole frame, day | 1.250 | 1.333 | 1.372 | 1.315 | 1.306 | 1.332 |
+| sky, night | 0.255 | 0.277 | 0.416 | 0.281 | 0.273 | 0.253 |
+| **sky, day** | **0.310** | **0.328** | **0.464** | **0.333** | **0.307** | **0.306** |
+| terrain, night / day | 0.137 / 0.144 | 0.079 / 0.079 | 0.145 / 0.145 | 0.145 / 0.155 | 0.173 / 0.159 | 0.140 / 0.144 |
+| trees and stone, n / d | 0.157 / 0.176 | 0.184 / 0.194 | 0.197 / 0.203 | 0.170 / 0.182 | 0.153 / 0.163 | 0.154 / 0.165 |
+| cloud forms, n / d | 0.047 / 0.050 | 0.025 / 0.029 | 0.018 / 0.019 | 0.050 / 0.050 | 0.029 / 0.037 | 0.074 / 0.074 |
+| water, n / d | 0.017 / 0.015 | −0.005 / −0.001 | 0.003 / 0.000 | −0.019 / −0.009 | 0.029 / 0.018 | −0.009 / 0.009 |
+| everything built, n / d | 0.033 / 0.043 | −0.087 / −0.069 | −0.006 / −0.003 | 0.001 / 0.011 | −0.049 / 0.015 | −0.007 / 0.002 |
+| signals, n / d | 0.032 / 0.037 | −0.006 / 0.001 | −0.003 / 0.002 | −0.004 / 0.000 | −0.057 / 0.017 | 0.006 / 0.021 |
+| ground cover, n / d | 0 / 0 | 0.022 / 0.045 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| motes, n / d | 0 / 0 | −0.003 / 0.006 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| stars | 0.002…0.028 | | | | | 0 at day |
+
+**The sky dome is still the whole of the difference between the two
+appearances** — +0.05 at every pose, which is §40's day gradient and not this
+step — and every other layer is inside its own noise between them. The blend
+flip costs nothing measurable: the signals are 0.037 at their worst at day
+against 0.032 at night.
+
+### The type on top of it, which is the one thing this leaves open
+
+A day ground that reads is a *darker* day ground, and the type over it is dark
+too. §38's glyph-mask harness on the arrival column — mask from a
+canvas-hidden shot, backdrop from a `color: transparent` shot so the halo is
+still painted, 7px blocks, darkest block since at day the failure inverts —
+against a §41 build in the same session:
+
+| | §41 day | §42 day | ceiling on pure `--void` | night, §41 = §42 |
+|---|---|---|---|---|
+| headline, `--paper` | 14.73:1 | 7.87:1 | 78.4 | 13.66:1 |
+| subline, `--leader-ink` | 4.33:1 | **4.02:1** | **4.54** | 6.84:1 |
+| hint, `--dim` | 4.72:1 | **4.18:1** | 5.10 | 4.79:1 |
+
+Night is identical to three figures at all four targets, which is the same
+statement the pixel diff makes. (This harness reads about three tenths below
+§38's own numbers and it still cannot read the way out at all —
+`text-decoration-color` does not follow `color: transparent`, so a link's
+underline stays painted into the backdrop shot.)
+
+**Two levers were measured and neither reaches it.** Two more 1px rings on
+§38's halo stack buy **0.01** — because at day the leak is the *outer pool*
+and not the antialiased edge, which is §38's finding in reverse for the same
+reason the failure direction reverses: a dark leak under pale ink widens the
+gap and the same leak under dark ink closes it. And `--leader-ink` cannot be
+fixed by any halo at all — it needs a backdrop of 0.910 to clear 4.5:1 and
+pure `--void` is 0.918, so it passes only where the halo is opaque across a
+whole 7px window. §40 said the lever is the token and §43 is where it moves;
+what §42 adds is the ground it has to be solved against, and the two numbers
+it has to clear.
+
+### Sizes
+
+Against a §41 worktree built in the same session at the same gzip level,
+neither carrying a measurement hook:
+
+| | §41 | §42 | Δ |
+|---|---|---|---|
+| `Base.css` | 12,334 / 3,323 gz | 12,349 / **3,330 gz** | **+7** |
+| `index.html` | 42,669 / 11,119 gz | 42,669 / **11,123 gz** | +4 |
+| document JS, three files | 150,425 / 57,027 gz | 150,425 / **57,026 gz** | **−1** |
+| world chunk | 798,703 / 226,982 gz | 799,236 / **227,198 gz** | **+216** |
+| terrain worker | 8,005 / 3,593 gz | 8,005 / **3,593 gz** | **0** |
+
+The CSS is the `--mint` light value and nothing else. **The worker is
+byte-identical again**, and it has to be: nothing in a worker calls `fog()`,
+`haze()` or `bands()` or reads the palette, so the whole of this step
+tree-shakes out of it — which is worth saying twice, because §42 is the first
+step to give `fog()` a parameter and `fog.ts` is imported by eight files.
+55.69 KiB of a 120 KiB budget; **221.87 KiB of 400**.
+
 ### 43. Re-measure everything
 The instruments exist — §38 built the pose solver, the glyph-mask contrast
 harness and the state sweep — so this is running them again against a

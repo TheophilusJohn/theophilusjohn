@@ -123,7 +123,22 @@ const WAVES = [
    mirror gives it none either. One step up is still darker than any band the
    ground has and still darker than the sky over it — the water is the
    darkest thing in the frame either way, and at --void-lift it is a thing
-   rather than an absence. */
+   rather than an absence.
+
+   **At day it is `--muted`, and that is the same rung rather than a second
+   decision (§42).** What the sentence above names is *one step up from
+   whatever the fog takes everything to*, and `band.ts`'s −1 ladder is where
+   both ends of that are written down: night runs `--void-lift`, `--rule`,
+   `--dim`, `--paper` and day runs `--paper`, `--muted`, `--rule`,
+   `--void-lift`, so rung 0 is the fog's floor (`--void` / `--paper`,
+   0.0068 and 0.0118 — the same value in the two sets) and rung 1 is this.
+   Ported straight over, `--void-lift` at day is **0.845**, which made every
+   lake the palest thing in the frame: measured at the arrival, a lake read
+   0.863 against ground of 0.43 and a sky of 0.648, and the white shapes in
+   the bottom of that frame were the water rather than the fog. At `--muted`
+   it is 0.099 against ground of 0.37 — dark, which is what a lake at noon
+   is, and it mirrors the day zenith at the steep end where the night one
+   mirrors --void. Same sentence, same rung, opposite value. */
 const MIRROR_LO = 0.30;
 const MIRROR_HI = 0.92;
 const MIRROR_MID = 0.34;
@@ -148,7 +163,17 @@ const EDGE = 0.8;
    so it draws as one slab with bites out of its edges; at 0.999 it breaks
    there and is reduced to two specks of a few pixels at the cruise pose,
    which is the view the world is actually flown from. A band that reads at
-   190 units up and is a solid patch at 50 is the better trade. */
+   190 units up and is a solid patch at 50 is the better trade.
+
+   **At day it is `--void`, and it takes that from the sky rather than
+   deciding it (§42).** This band *is* `sky.ts`'s glow seen in the water —
+   the same light, one reflection later — so it wears whatever the glow
+   wears: `--leader` at night, `--void` at day. §40's argument carries over
+   unchanged: the accent is a mid tone in both appearances (0.385), so on
+   water that runs 0.099 at the steep end to 0.705 at the grazing one it is
+   a *dark* patch where the sun is, which is the one thing a glance may not
+   be. `--void` is the palest the palette has and the same direction the
+   night pair runs in — brighter than the surface under it either way. */
 const GLANCE = 0.995;
 const GLANCE_EDGE = 1.6;
 
@@ -190,7 +215,8 @@ export function buildWater(palette: Palette, time: UniformNode<'float', number>)
   const cut = (at: number) => smoothstep(float(at).sub(edge), float(at).add(edge), t);
   const mirror = cut(MIRROR_MID).add(cut(MIRROR_TOP)).mul(0.5);
 
-  const surface = mix(palette.lift, gradient(bounce, palette), mirror);
+  const dark = mix(palette.lift, palette.muted, palette.day);
+  const surface = mix(dark, gradient(bounce, palette), mirror);
 
   const glance = bounce.dot(vec3(SUN.x, SUN.y, SUN.z));
   const lit = fwidth(glance).mul(GLANCE_EDGE).max(0.0002);
@@ -199,8 +225,9 @@ export function buildWater(palette: Palette, time: UniformNode<'float', number>)
   /* Same fog and the same thing to fade into as the ground (§23). A lake at
      900 units that arrived at --void while the ridge behind it arrived at
      the sky would draw its own outline on the horizon. */
-  const depth = fog(positionWorld);
-  material.colorNode = mix(haze(toEye, palette), mix(surface, palette.lead, spark), depth);
+  const depth = fog(positionWorld, palette);
+  const flare = mix(palette.lead, palette.void, palette.day);
+  material.colorNode = mix(haze(toEye, palette), mix(surface, flare, spark), depth);
 
   const mesh = new Mesh(disc(), material);
   // Centred on the camera in the shader, so its own bounds say nothing.

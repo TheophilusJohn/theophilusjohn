@@ -275,7 +275,7 @@ export function buildStands(palette: Palette, time: UniformNode<'float', number>
     const lum = mix(float(dark), float(light), normal.dot(sun).max(0)).mul(
       mix(float(1 - CAST), 1, lit),
     );
-    const depth = fog(positionWorld);
+    const depth = fog(positionWorld, palette);
     material.colorNode = mix(haze(toEye, palette), bands(lum, palette, step), depth);
   };
 

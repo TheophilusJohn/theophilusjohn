@@ -336,7 +336,7 @@ export function buildTerrain(palette: Palette) {
      out of. Same direction the sky dome shades by, so the two agree at
      every pixel of the join — and since §26 it is `sky.ts` that owns the
      mix, so the water agrees with both. */
-  const depth = fog(positionWorld);
+  const depth = fog(positionWorld, palette);
   const lit = mix(haze(toEye, palette), surface, depth);
   /* RIM_FLOOR is what keeps a far ridgeline drawn through the haze, and
      inside a cloud (§30) it is the one thing that would still be: a violet

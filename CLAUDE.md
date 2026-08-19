@@ -44,6 +44,42 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §42 the rest of the world has a day, and four of the five decisions
+were one token read off §41's own ladder.** The fog's floor, the water's dark
+end, the cloud forms' lit face and the additive layers' tint are all "which
+rung is this" — and the rung that means *the darkest a thing can be* is
+`--void` at night and `--paper` at day, **0.0068 and 0.0118, the same value in
+the two sets**. §41's white-out was `--void` used at day, where it is the
+*palest* token: `haze()` came out at 0.758 against a horizon sky of 0.705, so
+the far ground was brighter than the sky behind it. At `--paper` it is 0.532 —
+above the commonest ground and below the sky, which is §26's construction in
+both appearances. §26's dark end goes the same way (`--void-lift` → `--muted`,
+rung 1 of the −1 ladder): ported straight over it was 0.845 and **every lake
+was the palest thing in the frame**. **What is not free is the two things that
+are not colours.** The fog's **density falls** where §4.9 guessed it would
+rise — at night the target is under everything so density costs no contrast,
+at day it is in the middle of the range and every unit of it is spent from
+both ends — and 0.70 is what the world's edge allows, not what the frame would
+like. And **additive blending is a night construction**: over `--void` a mark
+has unlimited headroom, over a day ground it adds a percent and vanishes. The
+motes and §37's nineteen lamps become `NormalBlending` with a dark `--mint`
+(`#597864`, solved §39's way, luminance 0.165 — `--leader-ink`'s own number),
+which is the same layer with one property changed and **nothing cut**; and
+then a **gain**, because the two blends read the same number as brightness and
+as coverage. Measured at the lighthouse over a whole turn of the beacon, the
+peak gain is 0.198: a lamp at 3.24:1 at night, **1.16:1** at day before and
+**2.93:1** after ×5. §26's glance takes the sky's own glow token (`--leader` /
+`--void`) and is in **none of the six route poses**, because §22 sited the
+opening pose downsun. §27's tint is **unchanged and measured**: the absolute
+step on flat ground is 0.044 at night against 0.046 at day. Draw calls,
+triangles and frame cost are unchanged (−0.006 to +0.010ms at DPR 1.5), night
+is pixel-identical at four of six poses and 1/255 at the other two, the worker
+is byte-identical, and the chunk is **+216 gzipped**. **What is left is the
+type**: a day ground that reads is a darker one, so the arrival's subline goes
+4.33 → **4.02:1** and its hint 4.72 → **4.18:1**, the halo buys 0.01 and
+`--leader-ink` needs a backdrop of 0.910 where pure `--void` is 0.918. The
+lever is the token and §43 owns it.
+
 **Since §41 the ground has a day too, and §23 came back with the same
 numbers.** The sun stays at **32°**, the band edges stay at **0.64 and 0.90**,
 the ramp stays at 0.30 and §28's three compressions are untouched — `band.ts`
@@ -480,7 +516,13 @@ These are not preferences. Violating one is a bug.
    own render layer** — §40 sharpened that last clause, because it was written
    while the world was night in both appearances and the DOM controls over the
    canvas are the page in every sense that matters. There is no
-   `var(--leader)` anywhere in the DOM layer now.
+   `var(--leader)` anywhere in the DOM layer now. **§42 sharpened it once
+   more, inside the render layer**: the accent shades *surfaces* there — the
+   rim, the top band, a lit cell on a mast — and §34's travelling signals are
+   `--leader-ink`, because a small mark whose whole job is to be seen is
+   read against a ground rather than lit by the key light, and 0.385 over
+   open country at 0.296 is not a mark. In dark the two tokens are one value,
+   so that move is provably free.
 3. **Motion checks `[data-motion="off"]`**, not just the media query. The
    toggle overrides the OS in both directions.
 4. **Reduced motion means final state, not fast animation.** No shortened
@@ -1494,6 +1536,64 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   level-0 chunk) and a second pair of attributes (+20.3KB a chunk, +14.3% of
   them) — paid in both appearances to serve one. Price it before assuming the
   light can move.
+- **A token that carries two facts in one set can carry one in the other, and
+  the ladder is where you find out which.** `--void` is the darkest token in
+  the dark set *and* the clear colour, and for three steps those were one
+  fact; in the light set they come apart, and everything solved as "the
+  darkest a thing can be" broke while everything solved as "the clear colour"
+  was right. The rungs of `band.ts`'s −1 ladder are the answer to all of it —
+  rung 0 is the fog's floor (`--void` / `--paper`, 0.0068 and 0.0118, the same
+  value in the two sets) and rung 1 is the water's dark end (`--void-lift` /
+  `--muted`). Read the ladder, not the token name.
+- **A fog target in the middle of a surface's range costs contrast where one
+  under it costs none.** At night `haze()` is 0.019 and every value the ground
+  can take is above it, so a fogged pixel and an unfogged one are both dark
+  and the ratio survives; at day it is 0.532 and the ground runs 0.14 to 0.85
+  around it, so density is spent from both ends at once. §4.9's "aerial
+  perspective is stronger at day, so the density probably rises" is backwards:
+  measured, 0.70 of the night density takes the arrival's ground from a 2.36×
+  span to 3.30×, and the limit on going further is the world's own edge (§23)
+  rather than the frame.
+- **A ratio span flatters a dark scene and a perceptual one does not.**
+  Crushing toward 0.019 preserves ratios; crushing toward 0.532 destroys them,
+  so the same fog reads as 25× at night and 3.3× at day. In CIE L\* the two
+  are 44 and 34.5 units of spread, which is the honest comparison — a day
+  frame has less range than a night frame and always will.
+- **Additive blending is a night construction.** Over `--void` at 0.007 an
+  additive mark *is* its token times the gain, so a fifth of a gain still puts
+  the full weight of a colour on screen; over a day ground at 0.30–0.85 there
+  is no headroom and it adds a percent. The fix is one material property —
+  `NormalBlending` and a dark token — and then a **gain**, because the two
+  blends read the same number as brightness and as coverage: measured at §37's
+  lighthouse, a peak gain of 0.198 is 3.24:1 at night and **1.16:1** at day,
+  and the day multiplier is 1/(that peak) and nothing else. A blend mode is
+  not a node, so it is the one thing about the appearance that cannot be a
+  uniform — and therefore the one thing that can drift between a page *loaded*
+  in an appearance and one *toggled* into it (§15's bug class). Test both.
+- **A halo's leak helps at night and hurts at day, and the lever moves with
+  it.** §38 solved `--halo` by adding radius *inward*, because the bound is
+  measured over the glyphs' own covered pixels and what shows through there is
+  the antialiased edge. At day the ink is dark, so the same leak closes the
+  gap instead of widening it, and the binding block is the *outer pool*: two
+  more 1px rings bought **0.01**. And a token solved exactly to the bar cannot
+  be rescued by any halo at all — `--leader-ink` needs a backdrop of 0.910 to
+  clear 4.5:1 and pure `--void` is 0.918.
+- **A specular band is only in frame looking toward the light.** §26's glance
+  is in none of the six route poses, because §22 sited the opening pose
+  downsun. Finding it is arithmetic rather than search: from a camera over
+  water, the reflection reaches a light `e` degrees up exactly where the view
+  depression is `e`, so stand 1.6h back from a lake at the sun's own azimuth.
+  A harness that hunts for "the brightest thing below the horizon" instead
+  finds the rim (`--leader`, 0.385, undiluted on a crest) and reports it as a
+  glance.
+- **A DOM peel and a hide-the-mesh diff are alternatives, not companions.** A
+  layer-visibility difference has the document in *both* shots, so it cancels
+  and no peel is needed; adding one anyway cost an afternoon, because the 130
+  pixels it removed were the only ones the threshold was catching and the
+  reading went to a clean, wrong zero. And a harness that calls `built.update`
+  after `stop()` is driving the signal layer from a stale `matrixWorld` (§24's
+  `drive` does not refresh it) — the quads come out degenerate and the layer
+  measures as absent.
 - **CDP's CPU throttle does not slow a worker.** Chunk generation came back
   *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
   thread stops competing for cores. It bounds main-thread work and nothing
@@ -1511,7 +1611,12 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §41: **unchanged to the byte** on a §40 build in the
+  1024px). Measured at §42: **150,425 raw / 57,026 gzipped** over the same
+  three files against a §41 worktree built in the same session — **−1 byte**,
+  which is gzip and not content, because nothing in document mode imports
+  anything §42 touches. CSS **3,323 → 3,330** (+7; raw 12,334 → 12,349), which
+  is `--mint`'s light value and nothing else, and `index.html` 11,119 →
+  **11,123**. Earlier, measured at §41: **unchanged to the byte** on a §40 build in the
   same session — 150,425 raw / 57,027 gzipped over the same three files, CSS
   12,334 / 3,323, `index.html` 42,669 / 11,119 — because `band.ts` is the only
   file §41 touches and nothing in document mode imports it. Earlier, measured
@@ -1550,7 +1655,15 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. Measured at §41: **226,982
+- World chunk, desktop: **under 400KB gzipped**. Measured at §42: **227,198
+  gzipped** (799,236 raw), up **216** on a §41 worktree built in the same
+  session at the same gzip level — the fog's floor and its day density, the
+  water's dark end and its glance, the cloud forms' face, two blend switches
+  and two gains. **The worker is byte-identical** at 3,593, and that is worth
+  saying twice here: §42 is the first step to give `fog()` a parameter, and
+  `fog.ts` is imported by eight files — but nothing in a worker calls it, so
+  the whole step tree-shakes out exactly as `band.ts`, `sky.ts` and `solid.ts`
+  do. 221.87 KiB of 400. Earlier, at §41: **226,982
   gzipped** (798,703 raw), up **72** on a §40 build in the same session at the
   same gzip level — nine token names and one lerp per rung. **The worker is
   byte-identical** at 3,593, and it has to be: nothing in a worker calls
@@ -1619,7 +1732,19 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise.** **§41 costs nothing in either appearance**: one
+- **8ms/frame at cruise.** **§42 costs nothing in either appearance either**:
+  one forced pose driven into both builds, six poses, the loop stopped and 120
+  renders timed between two `onSubmittedWorkDone`, best of three — **−0.006 to
+  +0.010ms at DPR 1.5** and −0.002 to +0.003 at DPR 1. Everything it adds is
+  uniform-driven arithmetic inside functions that already ran. **Per layer at
+  DPR 1.5, in both appearances**, each layer hidden and the frame re-timed:
+  the sky dome is 0.253–0.416 at night and **0.306–0.464 at day** and is the
+  whole of the difference between the two (§40's gradient, not this step);
+  trees and stone 0.153–0.203, terrain 0.079–0.173, cloud forms 0.018–0.074,
+  everything built, the signals, the water, the cover and the motes all inside
+  their own noise between the appearances, with the signals at **0.037 at
+  their worst at day against 0.032 at night** — the blend flip costs nothing.
+  Earlier, **§41 cost nothing in either appearance**: one
   forced pose driven into both builds, six poses, the loop stopped and 120
   renders timed between two `onSubmittedWorkDone`, best of three — **−0.021 to
   +0.026ms at DPR 1.5** and −0.082 to +0.011 at DPR 1, with the sign
@@ -1722,7 +1847,12 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§41 adds none and moves none**: identical counts and
+- Under 100 draw calls. **§42 adds none and moves none either**: identical
+  counts and identical triangle totals at all six poses in both appearances
+  against a §41 build in the same session — 50 / 46 / 52 / 45 / 48 / 40 at
+  night and 49 / 45 / 51 / 44 / 47 / 39 at day — because the two layers it
+  changes keep their meshes and swap a material property. Earlier,
+  **§41 adds none and moves none**: identical counts and
   identical triangle totals at all six poses in both appearances, against a §40
   build in the same session, because everything it changes is a colour inside
   an existing material. Earlier, **§40 takes one away at day**: 49 / 63 / 51 / 55 / 56 /
@@ -1861,8 +1991,16 @@ budgeted apart and a reader never pays both.
   this machine is inside the budget at every scale measured. Both halves
   slowed at once — main thread 4× and four times the pixels — flies the
   world at a **16.9ms median** with 1.8% of frames over 25ms
-- Lighthouse accessibility **100**. **§40 measured axe clean in six world
-  states** — day arrival, day mid-flight, a day name frame, a day writeup,
+- Lighthouse accessibility **100**. **§42 leaves two measurements under the
+  bar and they are §43's by the plan §40 wrote**: the day world is *darker*
+  after the fog fix, and dark type over it loses contrast — the arrival's
+  subline (`--leader-ink`) goes 4.33 → **4.02:1** and its hint (`--dim`)
+  4.72 → **4.18:1**, on §38's glyph-mask harness. Night is identical to three
+  figures at all four targets (13.66 / 6.84 / 4.79 / 4.99). Neither lever
+  reaches them: two more 1px rings on `--halo` buy 0.01, and `--leader-ink`
+  needs a backdrop of 0.910 where pure `--void` is 0.918. axe cannot see any
+  of it — the backdrop is a canvas. Earlier, **§40 measured axe clean in six
+  world states** — day arrival, day mid-flight, a day name frame, a day writeup,
   day + contrast, and a night name frame — and the thing to say beside that is
   that **axe cannot see any of it**: the backdrop is a canvas, so the machine
   ID's measured 4.42:1 over the day sky is invisible to a checker and was found

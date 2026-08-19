@@ -246,6 +246,27 @@ export function gradient(dir: Node<'vec3'>, palette: Palette) {
    line under a lit band rather than a hard one under nothing. */
 const HAZE = 0.75;
 
+/* ── The other end of that mix, and it is the whole of §42's fog ────────
+   `--void` is the darkest token in the dark set *and* the clear colour, and
+   for three steps those two facts were one fact. In the light set they come
+   apart: `--void` is the **palest** token (0.918), so
+   `mix(--void, sky, 0.75)` at day is **0.758** against a horizon sky of
+   0.705 — a target *above* the sky as well as above the ground's whole
+   banded range (§41 measured 0.27–0.63 in the material arriving on screen
+   as 0.56–0.68). Far ground brighter than the sky behind it is the horizon
+   drawn in reverse, and a 2.3× range arriving as 1.2× is the white-out §41
+   left behind.
+
+   What this end of the mix means is *the darkest a thing in this world can
+   be*, and that is the token the −1 ladder bottoms out on: `--void` at
+   night and `--paper` at day. **They are the same value** — 0.0068 and
+   0.0118 — so HAZE does not move and neither does anything else: the day
+   target is 0.532, which is above the commonest ground (0.296, so distance
+   still *lightens*, which is what aerial perspective is) and below the sky
+   (0.705, so the horizon is still a soft dark line under a lit band, which
+   is what §22 and §26 asked for). One `mix` of two constants a pixel. */
+const floor = (palette: Palette) => mix(palette.void, palette.paper, palette.day);
+
 /* ── The inside of a cloud (§30) ───────────────────────────────────────
    What everything fades into while `murk` is up. Between `--void-lift` and
    `--rule`, which is the deck's own body colour taken down a little: the
@@ -259,7 +280,7 @@ export const interior = (palette: Palette) => mix(palette.lift, palette.rule, IN
 
 export const haze = (toEye: Node<'vec3'>, palette: Palette) =>
   mix(
-    mix(palette.void, gradient(toEye.negate(), palette), HAZE),
+    mix(floor(palette), gradient(toEye.negate(), palette), HAZE),
     interior(palette),
     murk,
   );

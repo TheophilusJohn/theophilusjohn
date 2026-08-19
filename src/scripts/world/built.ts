@@ -49,6 +49,7 @@
 import {
   AdditiveBlending,
   BufferAttribute,
+  NormalBlending,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
   Mesh,
@@ -193,6 +194,24 @@ const P_HOT = 0.9;
 const P_SLIDE = 0.18;
 
 const SIGNAL_ALPHA = 0.55;
+/* ── And the day gain, which is a measurement rather than a taste (§42) ──
+   Additive blending and alpha blending read the same `gain` as two different
+   quantities. Over `--void` at 0.007 an additive mark *is* its token times
+   the gain, so a gain of a fifth still puts the full weight of `--mint` on
+   screen; alpha-blended, a gain of a fifth is a fifth of the way from the
+   backdrop to the token and nothing more. Measured at §37's lighthouse from
+   120 units, over a whole turn of the beacon: the layer's own peak gain is
+   **0.198**, which at night is a lamp at 0.164 against ground at 0.016 —
+   **3.24:1** — and at day was 0.532 against 0.622, **1.16:1**, which is not
+   a light.
+
+   So at day the gain is a *coverage* and it has to reach 1 where the night
+   mark reaches its token. 5.0 is 1/0.198 and nothing else; it puts the same
+   lamp at 3.5:1 and leaves every fade in the layer — the far one, the
+   envelope, the fog, whose leg it is — doing exactly what it did, because
+   this multiplies the product rather than replacing any term in it. A
+   signal that is a tenth of the way through its life is still a tenth. */
+const DAY_GAIN = 5;
 /** How wide the fade at the far end is. **The distance itself is authored per
     signal** since §37 (`Signal.far`) rather than being one number for the
     layer: §0.2 asks the lighthouse for a light "visible from further than it
@@ -410,7 +429,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
      been told exists. */
   const lum = mix(float(MASS_DARK), float(MASS_LIGHT), normal.dot(sun).max(0));
   const surface = mix(bands(lum, palette, -1), palette.lead, hot.mul(HOT));
-  material.colorNode = mix(haze(toEye, palette), surface, fog(positionWorld));
+  material.colorNode = mix(haze(toEye, palette), surface, fog(positionWorld, palette));
 
   const mesh = new Mesh(geometry, material);
   /* Instance positions are world coordinates and the geometry is a unit cube
@@ -479,6 +498,21 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     depthTest: true,
     fog: false,
   });
+
+  /* **Additive is a night construction, and at day this layer is not one
+     (§42).** Fifty-one travelling signals and nineteen lamps have no
+     headroom over a ground that runs 0.30 to 0.85 — an additive dot on it
+     adds a percent and disappears. `motes.ts` takes the same change for the
+     same reason and in the same line: `NormalBlending`, and the two tokens
+     the layer wears are dark in the light set. Nothing else moves — the
+     same instance buffer, the same cycle, the same disc, the same one draw
+     call for everything travelling in the world. */
+  const setDay = (day: boolean) => {
+    const want = day ? NormalBlending : AdditiveBlending;
+    if (sMaterial.blending === want) return;
+    sMaterial.blending = want;
+    sMaterial.needsUpdate = true;
+  };
   {
     const from = attribute<'vec3'>('iFrom', 'vec3');
     const to = attribute<'vec3'>('iTo', 'vec3');
@@ -553,7 +587,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
         .mul(envelope)
         .mul(mine)
         .mul(at(flow, who.x.clamp(0, 3).toInt()))
-        .mul(fog(where))
+        .mul(fog(where, palette))
         .mul(SIGNAL_ALPHA),
     );
 
@@ -573,11 +607,22 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
        is *not* state, and the two are never in one frame's worth of doubt.
 
        A varying, for the reason the mass's `hot` is one: the tint is a
-       property of the instance and a constant interpolates to itself. */
-    const tint = varying(mix(palette.lead, palette.mint, step(3.5, who.x)));
+       property of the instance and a constant interpolates to itself.
+
+       **And the accent here is `--leader-ink` rather than `--leader`
+       (§42).** In dark the two are one value — §39 defines the second as
+       `var(--leader)` — so the night appearance is unchanged by
+       substitution rather than by intention, which is how §39 proved the
+       dark document untouched. What it buys is day: `#A99BF5` is 0.385,
+       which over open country at 0.296 is a mark you cannot see, and a
+       signal's whole job is to be seen. Hard rule 2 is not bent by it — the
+       rim and the mast that holds the term still wear `--leader` undiluted,
+       because those are a surface being shaded rather than a mark being
+       read. */
+    const tint = varying(mix(palette.leadInk, palette.mint, step(3.5, who.x)));
 
     sMaterial.colorNode = tint;
-    sMaterial.opacityNode = disc.mul(gain);
+    sMaterial.opacityNode = disc.mul(gain).mul(mix(float(1), float(DAY_GAIN), palette.day)).clamp(0, 1);
   }
 
   const signals = new Mesh(sGeo, sMaterial);
@@ -623,7 +668,7 @@ export function buildBuilt(palette: Palette, time: UniformNode<'float', number>)
     near.value = nearSwell(camera.position.x, camera.position.z, 700) ? 1 : 0;
   }
 
-  return { mesh, signals, update, count: N, signalCount: M };
+  return { mesh, signals, setDay, update, count: N, signalCount: M };
 }
 
 /* ── Philoi's table ─────────────────────────────────────────────────────

@@ -51,9 +51,31 @@
    valley floors run to −22, so 20 is the height above which ground is
    standing out of the layer rather than lying in it. */
 
-import { cameraPosition, exp, float, uniform, vec3 } from 'three/tsl';
+import { cameraPosition, exp, float, mix, uniform, vec3 } from 'three/tsl';
+import type Node from 'three/src/nodes/core/Node.js';
+import type { Palette } from './palette';
 
 export const FOG = 0.0011;
+
+/* ── And it is *thinner* at day, which is the opposite of what was expected
+   (§42) ────────────────────────────────────────────────────────────────
+   SPEC §4.9: "aerial perspective is stronger at day, so the density probably
+   rises." Measured, it has to fall, and the reason is where the target sits
+   rather than anything about air. At night `haze()` arrives at 0.019, which
+   is *under* every value the ground can take, so density costs nothing: a
+   fogged pixel and an unfogged one are both dark and the ratio between them
+   survives. At day it arrives at 0.532, which is in the middle of the
+   ground's own range — so every unit of density is contrast spent, from both
+   ends at once, and the landscape converges on one mid tone.
+
+   0.70 is what the world's own edge allows rather than what the frame would
+   like. §23's argument still binds: the far ground is the only thing hiding
+   the last chunk at 1,536, and at this scale it keeps 4.5% of its own value
+   there against the night tuning's 0.8% — still inside the horizon band, and
+   0.55 was measured with the edge of the world visible in the frame.
+
+   Applied to the whole product, so the valley term goes with it. */
+const DAY = 0.70;
 export const LAYER = 0.35;
 
 const FLOOR = 20;
@@ -80,10 +102,11 @@ const DEEPEST = 2.5;
 export const murk = uniform(0);
 const MURK = 8;
 
-export const fog = (world: any) => {
+export const fog = (world: any, palette: Palette) => {
   const d = world.sub(cameraPosition);
   const dist = vec3(d.x, d.y.mul(LAYER), d.z).length();
   const thick = exp(world.y.sub(FLOOR).div(VALLEY).negate()).clamp(0, DEEPEST).mul(EXTRA).add(1);
   const inside = float(1).add(murk.mul(MURK - 1));
-  return exp(dist.mul(FOG).mul(thick).mul(inside).pow(2).negate());
+  const hour: Node<'float'> = mix(float(1), float(DAY), palette.day);
+  return exp(dist.mul(FOG).mul(thick).mul(inside).mul(hour).pow(2).negate());
 };

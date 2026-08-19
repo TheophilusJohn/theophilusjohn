@@ -156,9 +156,14 @@
    that chroma is inside sRGB on this hue from L 0.226 to 0.766, and the solve
    sits at 0.558. Do not re-solve this in HSL.
 
-   --mint is deliberately absent. It has no document use — the world reads it
-   through getComputedStyle and nothing else does — so its light value is
-   §42's decision, with the lamps and the motes it is on.
+   --mint is here at §42, solved the same way --leader-ink was: the source's
+   own OKLCH hue and chroma (h 156.52°, C 0.0481) with lightness the only
+   thing that moves, to the lightest value clearing 4.5:1 on --void. That is
+   L 0.543 → #597864, relative luminance **0.165** — the same number
+   --leader-ink lands on, because it is the same bar on the same page, so the
+   world's two marks weigh the same at day. It has no document use still;
+   what it is for is §30's motes and §37's nineteen lamps, which at day are
+   dark specks rather than lights (§42).
 
    **§40 lifted the scoping and this is now the world's set too.** It was
    `:not([data-mode="world"])` for one step, so §39 could ship over a night
@@ -179,6 +184,7 @@ html[data-theme="light"] {
   --muted:      #5A518B;
   --paper:      #1D1541;
   --leader-ink: #7464B9;
+  --mint:       #597864;
 }
 
 /* Light × high contrast — the fourth appearance (§5), mirroring the dark
