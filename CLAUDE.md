@@ -60,7 +60,11 @@ focus ring, the stage's progress fill, `text-decoration-color` and the cursor's
 link dot moved with the type. The cost is that the light document has **no
 full-strength `#A99BF5` in it at all** — the pressed-toggle chip was built and
 measured out at a 2.23:1 boundary — and SPEC §8 carries that rather than
-hiding it. The third toggle is `tj:theme`, three states, `auto` **resolved to
+hiding it. **`--leader-ink` is solved in OKLCH** — the source's own hue and
+chroma (h 290.01°, C 0.1285) with lightness the only thing that moves, which
+is what makes it read as `#A99BF5` darkened; the first solve held HSL
+saturation instead and drifted 7.3° toward blue with 78% more chroma. The
+third toggle is `tj:theme`, three states, `auto` **resolved to
 an explicit attribute before first paint** rather than duplicated inside a
 media query; with the bundle blocked the appearance still applies, and with no
 JS at all the site is dark, which is its default by design. The world is
@@ -1656,7 +1660,7 @@ budgeted apart and a reader never pays both.
 - Lighthouse accessibility **100**. **§39 adds a second appearance to every
   state, and axe measured clean in eight document ones**: light, light +
   contrast, a light deep link, light at 360, light with motion off, dark, dark
-  + contrast, dark at 360. Nothing in the light document is under **5.08:1**,
+  + contrast, dark at 360. Nothing in the light document is under **4.54:1**,
   and the accent is the one token that could not come with it (2.23:1 on a
   pale page). Earlier: **axe measured clean at §38 in ten
   states**, both modes: document mode, a document deep link, the curtain

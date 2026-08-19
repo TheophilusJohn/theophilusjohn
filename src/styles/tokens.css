@@ -146,6 +146,16 @@
    the ink and 2.23:1 for the fill's own boundary, which is what identifies the
    state. SPEC §8 carries what to do about it.
 
+   **--leader-ink is solved in OKLCH and it is the same colour darkened.** The
+   first solve held HSL saturation and dropped HSL lightness, which is not a
+   perceptual operation at all: it landed on #654CED, **7.3° of hue toward
+   blue and 78% more chroma** than the source, and it read as a generic
+   blue-violet rather than as #A99BF5 in shadow. These hold the source's own
+   hue and chroma exactly — h 290.01°, C 0.1285 — and move **lightness only**,
+   to the lightest value that clears 4.5:1. Nothing is given up to the gamut:
+   that chroma is inside sRGB on this hue from L 0.226 to 0.766, and the solve
+   sits at 0.558. Do not re-solve this in HSL.
+
    --mint is deliberately absent. It has no document use — the world reads it
    through getComputedStyle and nothing else does — so its light value is
    §42's decision, with the lamps and the motes it is on.
@@ -163,18 +173,24 @@ html[data-theme="light"]:not([data-mode="world"]) {
   --dim:        #6A60A0;
   --muted:      #5A518B;
   --paper:      #1D1541;
-  --leader-ink: #654CED;
+  --leader-ink: #7464B9;
 }
 
 /* Light × high contrast — the fourth appearance (§5), mirroring the dark
    high-contrast ratios the same way: --paper 19.36 [18.49], --muted 11.69
    [11.60], --dim 7.43 [7.42], --rule 2.07 [2.07], --leader-ink 10.27
    [10.25]. --leader itself is left alone here: dark lifts it because it was
-   carrying ink, and after the split it is not. */
+   carrying ink, and after the split it is not.
+
+   The accent here is solved the same way as the one above — source hue and
+   chroma, lightness only — because high contrast is meant to be the same
+   colour with more of it, not a second colour. The target is 10.25 rather
+   than 4.5 so the light set holds dark's own ordering: the accent above
+   --dim's 7.43 and below --muted's 11.69, which is where dark puts it too. */
 html[data-theme="light"][data-contrast="high"]:not([data-mode="world"]) {
   --paper:      #000000;
   --muted:      #342E51;
   --dim:        #514A79;
   --rule:       #AEA9CB;
-  --leader-ink: #2C12B8;
+  --leader-ink: #402D7C;
 }

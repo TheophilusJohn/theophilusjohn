@@ -1242,7 +1242,7 @@ appearances. What it stops doing in light mode is carrying *type*.
 | token | what it is for | dark | light |
 |---|---|---|---|
 | `--leader` | the colour itself — fills behind dark ink, hairlines, and the entire world | `#A99BF5` | **`#A99BF5`, unchanged** |
-| `--leader-ink` | the accent when it has to be **read against the page** — links, machine IDs, metric values, the focus ring, a progress fill | `var(--leader)` | `#654CED` — same hue, same saturation, lightness only |
+| `--leader-ink` | the accent when it has to be **read against the page** — links, machine IDs, metric values, the focus ring, a progress fill | `var(--leader)` | `#7464B9` — the source's own OKLCH hue and chroma, lightness only |
 
 In dark the second is defined as `var(--leader)` and the two are one value,
 so the dark appearance cannot drift: `[data-contrast="high"]` lifts `--leader`
@@ -1263,7 +1263,7 @@ measured out: the ink is fine and the *fill's own boundary* against the page
 is 2.23:1, which is what identifies the state and is under SC 1.4.11's 3:1.
 High contrast makes it worse rather than better, because dark's high-contrast
 set lifts `--leader` to `#C4B8FF` and that is **1.66:1** on a pale page. So
-light's pressed state is `--leader-ink` at 5.08:1, mirroring dark's
+light's pressed state is `--leader-ink` at 4.54:1, mirroring dark's
 construction, and where the accent gets a full-strength home in the light
 document is an open decision (§8) rather than a thing quietly solved.
 
@@ -1279,8 +1279,27 @@ mirrored and then measured:
 --muted:      #5A528B;  /* 6.43 */
 --paper:      #1C143D;  /* 15.94 */
 --leader:     #A99BF5;  /* unchanged */
---leader-ink: #654CED;  /* 5.09 */
+--leader-ink: #7464B9;  /* 4.54 */
 ```
+
+**`--leader-ink` is solved in OKLCH, and the first attempt was not.** Holding
+HSL saturation and dropping HSL lightness is not a perceptual operation: it
+landed on `#654CED`, which is **7.3° of hue toward blue and 78% more chroma**
+than `#A99BF5` — a generic blue-violet rather than the site's colour in
+shadow. The shipped values hold the source's own hue and chroma exactly
+(h 290.01°, C 0.1285) and move **lightness only**, to the lightest value that
+clears the bar. Nothing is given up to the gamut: that chroma is inside sRGB
+on this hue from L 0.226 to 0.766, so the solve never touches the boundary.
+The high-contrast sibling is the same construction at a higher target —
+10.25, which is where dark puts the accent relative to `--dim` and `--muted`.
+**Do not re-solve this in HSL.**
+
+| | hex | OKLCH | ratio on the light page |
+|---|---|---|---|
+| `--leader`, the source | `#A99BF5` | L .737 C .1285 h 290.01° | 2.23 |
+| ~~first solve, HSL~~ | ~~`#654CED`~~ | ~~L .543 C **.2293** h **282.70°**~~ | ~~5.08~~ |
+| `--leader-ink` | `#7464B9` | L .558 C .1288 h 290.23° | **4.54** |
+| `--leader-ink`, high contrast | `#402D7C` | L .367 C .1279 h 289.64° | **10.27** |
 
 `--scrim` and `--halo` are written as `--void` and invert for free. Both are
 world-only, so neither moves until §40–§42; the light token set is scoped

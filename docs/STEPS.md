@@ -6132,18 +6132,18 @@ Measured in the browser off the built CSS, each against that appearance's own
 | `--muted` | `#5A518B` | **6.49** [6.43] | `#342E51` | **11.69** [11.60] |
 | `--paper` | `#1D1541` | **15.67** [15.64] | `#000000` | **19.36** [18.49] |
 | `--leader` | `#A99BF5` | 2.23 [7.65] | `#C4B8FF` | 1.66 [10.25] |
-| `--leader-ink` | `#654CED` | **5.08** [7.65] | `#2C12B8` | **10.27** [10.25] |
+| `--leader-ink` | `#7464B9` | **4.54** [7.65] | `#402D7C` | **10.27** [10.25] |
 
 Every one meets or exceeds its dark twin. The hue family holds at 248–252°
 against the dark set's 247–251, and `--dim` lands on the family hue at
-exactly 50% lightness. **Nothing in the light document is under 5.08:1**, and
+exactly 50% lightness. **Nothing in the light document is under 4.54:1**, and
 the lowest reading of any ink token anywhere is the dark set's own `--dim` at
 5.07.
 
 Read on the elements themselves rather than on the tokens, light mode: nav
-5.10, wordmark 15.67, meta 5.10, hero 15.67, subline 5.08, prose 6.49, log
-line 5.10, machine ID 5.08, metric value 5.08, metric label 5.10, writeup
-15.67, link row 5.08, **link underline 5.08**, footer meta 5.10, toggle at
+5.10, wordmark 15.67, meta 5.10, hero 15.67, subline 4.54, prose 6.49, log
+line 5.10, machine ID 4.54, metric value 4.54, metric label 5.10, writeup
+15.67, link row 4.54, **link underline 4.54**, footer meta 5.10, toggle at
 rest 5.10.
 
 ### The accent, and the thing it cost
@@ -6177,8 +6177,8 @@ light's pressed state is the same outline dark has, in `--leader-ink`:
 |---|---|---|---|
 | dark | `#A99BF5` | 7.65 | 7.65 |
 | dark + contrast | `#C4B8FF` | 10.25 | 10.25 |
-| light | `#654CED` | 5.08 | 5.08 |
-| light + contrast | `#2C12B8` | 10.27 | 10.27 |
+| light | `#7464B9` | 4.54 | 4.54 |
+| light + contrast | `#402D7C` | 10.27 | 10.27 |
 
 **Which leaves the light document with no full-strength `#A99BF5` in it at
 all.** That is a real cost of the split and it is recorded as an open
@@ -6186,6 +6186,42 @@ decision (SPEC §8) rather than solved quietly — the drafted answer, the hero
 subline as a lavender block, is a motion decision and not a palette one:
 `.sub` is a clip its line is revealed *out of*, so a background on it paints
 before the line arrives.
+
+### The accent's darker sibling, re-solved in OKLCH
+
+**The first solve was in HSL and it was wrong in a way the ratios could not
+see.** Holding HSL saturation at the source's 82% and dropping HSL lightness
+is not a perceptual operation: measured in OKLCH, `#654CED` sits **7.3° of hue
+toward blue** and carries **78% more chroma** than `#A99BF5`. It cleared every
+contrast bound and read as a generic blue-violet rather than as the site's own
+colour in shadow — which is the test that matters, and the one an arithmetic
+bound cannot state.
+
+Re-solved by pinning the source's hue and chroma and moving **lightness
+alone**:
+
+| | hex | L | C | h | ratio |
+|---|---|---|---|---|---|
+| `--leader`, the source | `#A99BF5` | 0.737 | 0.1285 | 290.01° | 2.23 |
+| ~~first solve, HSL~~ | ~~`#654CED`~~ | ~~0.543~~ | ~~**0.2293**~~ | ~~**282.70°**~~ | ~~5.08~~ |
+| ~~first solve, HSL, high contrast~~ | ~~`#2C12B8`~~ | ~~0.381~~ | ~~**0.2286**~~ | ~~**273.66°**~~ | ~~10.27~~ |
+| **`--leader-ink`** | `#7464B9` | 0.558 | 0.1288 | 290.23° | **4.54** |
+| **`--leader-ink`, high contrast** | `#402D7C` | 0.367 | 0.1279 | 289.64° | **10.27** |
+
+The two shipped values are the source's chroma to within 0.0003 and its hue to
+within a quarter of a degree, which is what "the same colour, darkened" means
+when it is written down. **No chroma was given up to the gamut**: C 0.1285 at
+h 290.01° is inside sRGB from L 0.226 to L 0.766, and the default solve sits
+at 0.558 — the boundary is never approached, so the constraint here is
+contrast and nothing else.
+
+The default is the **lightest** value that clears 4.5:1, which is the closest
+to the source the bar allows; the high-contrast sibling targets 10.25 instead,
+because that is where dark puts the accent relative to `--dim` (7.42) and
+`--muted` (11.60), and high contrast should be the same colour with more of it
+rather than a second colour. Re-measured after: axe clean in the same eight
+states, and the dark appearance untouched — `--leader-ink` is `var(--leader)`
+there and neither of these values exists in it.
 
 ### Three states, and the OS cannot undo a choice
 
