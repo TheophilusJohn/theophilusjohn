@@ -1242,7 +1242,7 @@ appearances. What it stops doing in light mode is carrying *type*.
 | token | what it is for | dark | light |
 |---|---|---|---|
 | `--leader` | the colour itself — fills behind dark ink, hairlines, and the entire world | `#A99BF5` | **`#A99BF5`, unchanged** |
-| `--leader-ink` | the accent when it has to be **read against the page** — links, machine IDs, metric values, the focus ring, a progress fill | `var(--leader)` | `#7464B9` — the source's own OKLCH hue and chroma, lightness only |
+| `--leader-ink` | the accent when it has to be **read against the page** — links, machine IDs, metric values, the focus ring, a progress fill | `var(--leader)` | `#6F5FB4` — the source's own OKLCH hue and chroma, lightness only (`#7464B9` from §39 to §42) |
 
 In dark the second is defined as `var(--leader)` and the two are one value,
 so the dark appearance cannot drift: `[data-contrast="high"]` lifts `--leader`
@@ -1274,7 +1274,7 @@ measured out: the ink is fine and the *fill's own boundary* against the page
 is 2.23:1, which is what identifies the state and is under SC 1.4.11's 3:1.
 High contrast makes it worse rather than better, because dark's high-contrast
 set lifts `--leader` to `#C4B8FF` and that is **1.66:1** on a pale page. So
-light's pressed state is `--leader-ink` at 4.54:1, mirroring dark's
+light's pressed state is `--leader-ink` at 4.87:1, mirroring dark's
 construction, and where the accent gets a full-strength home in the light
 document is an open decision (§8) rather than a thing quietly solved.
 
@@ -1290,14 +1290,14 @@ mirrored and then measured:
 --muted:      #5A518B;  /* 6.49 */
 --paper:      #1D1541;  /* 15.67 */
 --leader:     #A99BF5;  /* unchanged */
---leader-ink: #7464B9;  /* 4.54 */
+--leader-ink: #6F5FB4;  /* 4.86 — §43; #7464B9 / 4.54 from §39 to §42 */
 ```
 
 (Corrected at §40 from a drafted set that was never shipped — the values above
 are `tokens.css`'s own, re-read and re-measured. Relative luminances, which
 §40's sky needed and nothing before it did: `--void` 0.918, `--void-lift`
 0.845, `--rule` 0.705, `--dim` 0.140, `--muted` 0.099, `--paper` 0.012,
-`--leader` 0.385, `--leader-ink` 0.163.)
+`--leader` 0.385, `--leader-ink` **0.149** — 0.163 until §43.)
 
 **`--leader-ink` is solved in OKLCH, and the first attempt was not.** Holding
 HSL saturation and dropping HSL lightness is not a perceptual operation: it
@@ -1315,7 +1315,8 @@ The high-contrast sibling is the same construction at a higher target —
 |---|---|---|---|
 | `--leader`, the source | `#A99BF5` | L .737 C .1285 h 290.01° | 2.23 |
 | ~~first solve, HSL~~ | ~~`#654CED`~~ | ~~L .543 C **.2293** h **282.70°**~~ | ~~5.08~~ |
-| `--leader-ink` | `#7464B9` | L .558 C .1288 h 290.23° | **4.54** |
+| ~~§39–§42, solved on `--void`~~ | ~~`#7464B9`~~ | ~~L .558 C .1288 h 290.23°~~ | ~~4.54~~ |
+| `--leader-ink` | `#6F5FB4` | L .541 C .1285 h 290.01° | **4.86** |
 | `--leader-ink`, high contrast | `#402D7C` | L .367 C .1279 h 289.64° | **10.27** |
 
 `--scrim` and `--halo` are written as `--void` and invert for free. Both are
@@ -1325,22 +1326,36 @@ made §39 shippable on its own. **§40 lifted it**, and both inverted at no
 cost, as predicted — a light scrim behind a station's column and a light halo
 around the type on it.
 
-**What §40 also found is that `--leader-ink` has no margin for the world.** It
-was solved as the lightest value clearing 4.5:1 against `--void`, which is
-4.54 — and over the world a glyph never sits on a pure `--void`, it sits on
-`--void` seen through a halo over a scene. The machine ID measures **4.42–4.50**
-at a station's arrival, and neither lever reaches it: the scrim's rung buys
-0.09 across its whole range and the halo's ceiling *is* the 4.54. §43 re-solves
-it against the finished world; the target is a relative luminance at or under
-0.1578 against the worst backdrop measured, where it is now 0.1633.
+**What §40 found is that `--leader-ink` had no margin for the world, and §43
+is where it got one.** It was solved as the lightest value clearing 4.5:1
+against `--void`, which is 4.54 — and over the world a glyph never sits on a
+pure `--void`, it sits on `--void` seen through a halo over a scene. Measured
+at §43 against §42's finished ground, the machine ID is **4.39–4.51** at the
+five station frames, and neither lever reaches it: §32's scrim buys **0.05**
+across its whole range (4.48 → 4.53 at fully opaque) and the halo's own
+ceiling with three extra rings is **4.53**. Both are the same fact — the
+pixels a glyph sits on are looking at the halo.
+
+**So the method stays and the ground moves.** §39 solved the token on the
+page; §43 solves it on `--void-lift`, which is *the darkest a surface may be*
+(§4.7) and in the light set is the token one rung off the page at 0.845. The
+measured floor under these glyphs over the day world is 0.886, so the token
+now bounds the ground it was solved for rather than sitting exactly on it:
+L 0.541 → **`#6F5FB4`**, relative luminance **0.1492** against §40's predicted
+target of 0.1578. Measured after: **4.87:1** on the page, **4.71:1** at the
+worst of the five station frames, and every one of §38's 52 measurements
+clears 4.5 in all four appearances. It is one hex value and the world chunk is
+byte-identical, because the render layer reads the token as a uniform.
 
 `--mint` is in the light set as of **§42**, and it is solved exactly the way
 `--leader-ink` was: the source's own OKLCH hue and chroma (h 156.52°,
 C 0.0481) with lightness the only thing that moves, to the lightest value
 clearing 4.5:1 on `--void`. That is L 0.543 → **`#597864`**, relative
-luminance **0.165** — the same value `--leader-ink` lands on, because it is
-the same bar on the same page, so the world's two kinds of mark weigh the
-same at day. It still has no document use; what it is for is §30's motes and
+luminance **0.165**. That was `--leader-ink`'s own value until §43 moved that
+one to 0.149, and it does not follow: `--mint` is a mark *inside* the render
+layer, measured against the ground it is drawn on (§42's gain — 2.93:1 at the
+lighthouse), where `--leader-ink` is type measured through a halo against a
+page. Same bar at §42, two grounds at §43. It still has no document use; what it is for is §30's motes and
 §37's nineteen lamps, which at day are dark specks rather than lights (§4.9).
 
 | | hex | OKLCH | ratio on the light page |
@@ -2229,6 +2244,33 @@ that is opaque over a whole 7px window. **The lever is the token**, which is
 what §40 said and what §43 is for; the ground it has to be re-solved against
 is the one §42 has now built.
 
+**§43 closed it, and the first thing it found is that two of those three
+numbers were the instrument.** §38's harness measures the backdrop under the
+glyphs' **covered pixels only** — that is the rule the record has carried
+since §17, and it is what a glyph actually sits on, since what shows through
+there is the halo. §42's own harness averaged every pixel in the 7px window,
+pool between the strokes included, off a rect padded 4px past the element.
+Run as a second column beside the standing one on the same frames, it
+reproduces §42's day figures exactly — subline **4.03**, hint **4.18** — and
+then reports the *night* world at **2.24 to 4.94** on the same elements. A
+reading that condemns the appearance nobody has ever questioned is measuring
+the halo's leak between 10px glyphs, which is the same size in both
+appearances, and not the day. On the standing instrument the day arrival is
+4.54 for the subline and 5.09 for the hint, and the one thing genuinely under
+the bar at day was `--leader-ink` on a station's machine ID.
+
+| | §42, standing instrument | §43 | the pool reading, §42 → §43 |
+|---|---|---|---|
+| headline, `--paper` | 15.67:1 | 15.67:1 | 12.59 → 12.59 |
+| subline, `--leader-ink` | 4.54:1 | **4.87:1** | 4.03 → 4.33 |
+| hint, `--dim` | 5.09:1 | 5.09:1 | 4.18 → 4.18 |
+| machine ID, `--leader-ink` | **4.39:1** | **4.71:1** | 4.38 → 4.70 |
+
+`--dim` did not move and did not need to: it is solved on a rung rather than
+on the page, and at day it measures **5.00 to 5.09** everywhere over the
+world. `--leader-ink` was the only token in either set solved against `--void`
+itself, which is why it was the only one with nothing in hand.
+
 ### Lenis ↔ ScrollTrigger wiring
 
 Required for pinning to track smooth scroll:
@@ -2424,7 +2466,15 @@ calls rather than architectural ones. The architecture is decided.
   seven moved. The accent is now undiluted in the render layer and nowhere
   else in either appearance, which is a cleaner statement of the rule than the
   one §39 shipped.
-- **How much margin `--leader-ink` needs**, found at §40 and left for §43.
+- ~~**How much margin `--leader-ink` needs**, found at §40 and left for §43.~~
+  *Answered at §43: 4.86 on the page, because the ground it is solved on is
+  `--void-lift` and not `--void`.* `#7464B9` → **`#6F5FB4`**, §39's method
+  with §42's ground under it, and the two things that were supposed to be able
+  to rescue it were measured out first — the halo's ceiling is 4.53 and the
+  scrim buys 0.05 across its entire range. Measured after: 4.87:1 on the light
+  page, 4.71:1 at the worst of the five station frames, and 208 of 208
+  measurements clear 4.5:1 across four appearances. The record of what it was
+  before is below.
   §39 solved it as *the lightest value that clears 4.5:1 against `--void`* —
   4.54, three hundredths — on the reasoning that the closest to the source is
   the best answer. Over the world a glyph does not sit on `--void`; it sits on
@@ -2432,12 +2482,14 @@ calls rather than architectural ones. The architecture is decided.
   three hundredths: the machine ID measures **4.42–4.50** at the four station
   arrivals. Neither lever reaches it — the scrim's rung buys 0.09 across its
   entire range, and the halo's ceiling *is* 4.54, since that is the token's own
-  value against a pure `--void`. So it is the token, and the open part is only
-  how much darker it should be: against §40's worst measured backdrop it wants
-  a relative luminance at or under 0.1578 where it is 0.1633, which is a
-  document ratio of about 4.66. **Not solved at §40 on purpose** — §41 and §42
-  replace the ground behind every one of those measurements, and a value
-  solved against a white-out is solved against a world that will not exist.
+  value against a pure `--void`. So it was the token, and the open part was
+  only how much darker: against §40's worst measured backdrop it wanted a
+  relative luminance at or under 0.1578 where it was 0.1633. **Not solved at
+  §40 on purpose** — §41 and §42 replace the ground behind every one of those
+  measurements, and a value solved against a white-out is solved against a
+  world that will not exist. §43 solved it on the finished ground at
+  **0.1492**, inside §40's own prediction with a quarter of a ratio point in
+  hand.
 - ~~**Whether the world's rim light inverts at day.**~~ *Answered at §41: it
   inverts, and nothing was changed to make it.* `--leader` does not move
   between the appearances, so a rim painted in it is 26× the night sky it is

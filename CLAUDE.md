@@ -44,6 +44,39 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §43 every measurement in this project has been taken again in four
+appearances, and one hex value moved.** 208 of §38's brightness measurements —
+twelve states, ten targets, {night, day} × {normal, high contrast} — and
+**nothing is under 4.5:1 in any of them**; the worst in each quadrant is 5.05,
+7.36, **4.71** and 7.27. What the day quadrant found is one token failing,
+`--leader-ink` on a station's machine ID at **4.39**, and what it found first
+is that **two of the three numbers §42 left open were the instrument**. §38's
+harness measures the backdrop under the glyphs' *covered pixels only* — the
+record's rule since §17, and the right question, since what shows through a
+covered pixel is the halo. §42's averaged the whole 7px window off a padded
+rect; run as a second column it reproduces §42's day figures exactly (4.03 and
+4.18) and then reports the **night** world at 2.24–4.94 on the same elements.
+A reading that condemns both appearances equally is measuring the halo's leak
+between 10px glyphs. **The fix is the token and both other levers were
+measured out first**: §32's scrim buys **0.05** swept 0.45 → 1.0 and the
+halo's own ceiling with three extra rings is **4.53**, against a token whose
+value on pure `--void` is 4.54. So §39's method stays and the *ground* moves —
+`--leader-ink` was the only token in either set solved against `--void` itself
+rather than against a rung, which is why it was the only one with nothing in
+hand. Solved on **`--void-lift`** (the darkest a surface may be, 0.845, and
+the measured floor under these glyphs is 0.886): `#7464B9` → **`#6F5FB4`**,
+luminance 0.1633 → **0.1492**, **4.87:1** on the light page and **4.71:1** at
+the worst station frame. §40 predicted 0.1578 from a white-out world and was
+inside a hundredth. **The night quadrant is identical at all 52 rows** and the
+dark document identical at all 17 probes in both contrast states — `var(--leader)`
+in dark means the change cannot reach the appearance it was not for. **The
+world chunk is byte-identical** (same hash), so §23's edges, §27's tint,
+§28's compression and §26's glance are unchanged by construction and the
+re-runs say so; the one render-layer consumer is §34's signals, 2.66 → 2.81:1
+at day and 3.28 either side at night. axe is clean in **ten states × two
+appearances × two contrast settings**, each run asserting the appearance it
+resolved to. The CSS is the same size raw and −1 gzipped.
+
 **Since §42 the rest of the world has a day, and four of the five decisions
 were one token read off §41's own ladder.** The fog's floor, the water's dark
 end, the cloud forms' lit face and the additive layers' tint are all "which
@@ -511,7 +544,10 @@ These are not preferences. Violating one is a bug.
    state or a live link, it must not be that colour. **And since §39 it means
    the colour, not the ink**: anything that has to be *read against the page*
    — type, a focus ring, an underline, a progress fill — is `--leader-ink`,
-   which is `var(--leader)` in dark and a darker sibling in light. `--leader`
+   which is `var(--leader)` in dark and a darker sibling in light —
+   **`#6F5FB4` since §43**, solved on `--void-lift` rather than on the page,
+   because the world is a darker ground than the document and this is the one
+   token that had no margin for it. `--leader`
    itself may only be a fill with something dark on it, or **in the world's
    own render layer** — §40 sharpened that last clause, because it was written
    while the world was night in both appearances and the DOM controls over the
@@ -1594,6 +1630,29 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   after `stop()` is driving the signal layer from a stale `matrixWorld` (§24's
   `drive` does not refresh it) — the quads come out degenerate and the layer
   measures as absent.
+- **Two instruments that disagree about a glyph are two questions, and only
+  one of them is WCAG's.** The backdrop under the *covered pixels* is what the
+  ink sits on — the halo, mostly — and the mean of the *whole block* is that
+  plus the pool between the strokes. At 10px mono the pool is nearly all
+  scene, so the second reading is three tenths to two and a half points lower,
+  in **both** appearances: §42's day figures (4.03, 4.18) reproduce exactly on
+  the same frames, and the same column at night gives 2.24 for the way out and
+  2.39 for the stick. A reading that condemns the appearance nobody has
+  questioned is measuring the type and the shadow stack, not the ground.
+- **A token solved against the page is the one with no margin, and a token
+  solved against a rung has some by construction.** Every light token but one
+  was a rung off `--void`; `--leader-ink` was *the lightest value clearing
+  4.5:1 on `--void` itself*, so the first ground that was not the page took
+  the whole of it. Solving it on `--void-lift` instead — the darkest a surface
+  may be — costs a third of a ratio point on the document and buys the world.
+  The general form: solve an ink against the darkest ground it is ever read
+  against, and name that ground as a token so the claim can be re-checked.
+- **A blend of two constants can be a uniform, and then a whole appearance
+  costs nothing to check.** §43 changed one hex value and the world chunk came
+  out **byte-identical** — same content hash — because the render layer reads
+  the token into a uniform rather than compiling it. That is what lets a
+  re-measure step assert §23's, §27's and §26's numbers by construction and
+  spend its browser time only on what actually moved.
 - **CDP's CPU throttle does not slow a worker.** Chunk generation came back
   *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
   thread stops competing for cores. It bounds main-thread work and nothing
@@ -1611,7 +1670,11 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §42: **150,425 raw / 57,026 gzipped** over the same
+  1024px). Measured at §43: **150,425 raw / 57,026 gzipped** over the same
+  three files against a §42 build in the same session — **unchanged to the
+  byte**, because the step is one hex value. CSS **3,330 → 3,329** gzipped
+  (raw identical at 12,349 — a hex is a hex) and `index.html` 11,123 →
+  **11,121**; both deltas are the compressor. Earlier, measured at §42: **150,425 raw / 57,026 gzipped** over the same
   three files against a §41 worktree built in the same session — **−1 byte**,
   which is gzip and not content, because nothing in document mode imports
   anything §42 touches. CSS **3,323 → 3,330** (+7; raw 12,334 → 12,349), which
@@ -1655,7 +1718,12 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. Measured at §42: **227,198
+- World chunk, desktop: **under 400KB gzipped**. Measured at §43:
+  **227,198 gzipped** (799,236 raw) and **byte-identical to §42's** — same
+  `scene.DP0-OWWi.js` hash, same 3,593-byte worker — because the token the
+  step moves is read into a uniform and never compiled into a shader. That is
+  also what makes every §41 and §42 world measurement unchanged by
+  construction. 221.87 KiB of 400. Earlier, at §42: **227,198
   gzipped** (799,236 raw), up **216** on a §41 worktree built in the same
   session at the same gzip level — the fog's floor and its day density, the
   water's dark end and its glance, the cloud forms' face, two blend switches
@@ -1732,7 +1800,14 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise.** **§42 costs nothing in either appearance either**:
+- **8ms/frame at cruise.** **§43 costs nothing and cannot**: the world chunk
+  is byte-identical, draw calls and triangles are identical at all six poses in
+  both appearances, and the day A/B is **−0.008 to +0.007ms at DPR 1.5**
+  (−0.003 to +0.012 at DPR 1), which is the noise floor. Night is
+  pixel-identical at four of six poses and 698 / 383 pixels at 1/255 at the
+  other two — §42's own signature, the world's clock and the quadtree. Day
+  differs at 3,193–4,014 pixels, worst 5/255, and the bounding box says all of
+  it is type. Earlier, **§42 costs nothing in either appearance either**:
   one forced pose driven into both builds, six poses, the loop stopped and 120
   renders timed between two `onSubmittedWorkDone`, best of three — **−0.006 to
   +0.010ms at DPR 1.5** and −0.002 to +0.003 at DPR 1. Everything it adds is
@@ -1847,7 +1922,10 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§42 adds none and moves none either**: identical
+- Under 100 draw calls. **§43 adds none and moves none either** — identical
+  counts and identical triangle totals at all six poses in both appearances
+  against a §42 build in the same session, which is what a byte-identical
+  chunk guarantees. Earlier, **§42 adds none and moves none either**: identical
   counts and identical triangle totals at all six poses in both appearances
   against a §41 build in the same session — 50 / 46 / 52 / 45 / 48 / 40 at
   night and 49 / 45 / 51 / 44 / 47 / 39 at day — because the two layers it
@@ -1991,8 +2069,21 @@ budgeted apart and a reader never pays both.
   this machine is inside the budget at every scale measured. Both halves
   slowed at once — main thread 4× and four times the pixels — flies the
   world at a **16.9ms median** with 1.8% of frames over 25ms
-- Lighthouse accessibility **100**. **§42 leaves two measurements under the
-  bar and they are §43's by the plan §40 wrote**: the day world is *darker*
+- Lighthouse accessibility **100**. **§43 re-ran all of it in four appearances
+  and nothing is under 4.5:1**: 208 measurements (§38's twelve states × ten
+  targets × {night, day} × {normal, high contrast}), worst per quadrant 5.05 /
+  7.36 / **4.71** / 7.27, where 5.05 is `--dim` on pure `--void` and the
+  ceiling the instrument can report. The one failure it found was
+  `--leader-ink` at day (4.39–4.51 on a station's machine ID); the halo's
+  ceiling is 4.53 and the scrim buys 0.05, so the token moved — `#7464B9` →
+  `#6F5FB4`, 4.87:1 on the light page. §38's halo sweep re-run over eleven
+  grounds in both appearances: shipped stack 4.94–15.63 at night and
+  4.80–15.66 at day, against 1.18 and 1.06 with no halo. **axe is clean in ten
+  states × two appearances × two contrast settings** — forty runs, each
+  asserting the appearance it resolved to — and it still cannot see any of the
+  208, because the backdrop is a canvas. Earlier, **§42 left two measurements
+  under the bar**, and §43 found both of them to be the whole-block instrument
+  rather than the type: the day world is *darker*
   after the fog fix, and dark type over it loses contrast — the arrival's
   subline (`--leader-ink`) goes 4.33 → **4.02:1** and its hint (`--dim`)
   4.72 → **4.18:1**, on §38's glyph-mask harness. Night is identical to three

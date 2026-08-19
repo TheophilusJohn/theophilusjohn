@@ -132,6 +132,10 @@
      --void-lift  1.08 [1.08]   --dim    5.10 [5.07]   --paper 15.67 [15.64]
      --rule       1.28 [1.28]   --muted  6.49 [6.43]
 
+   Every one of those is unchanged at §43. The one token that moved is
+   --leader-ink, and it moved because it is the only one solved against the
+   page rather than against a rung — see below.
+
    --void is 1.081 off pure white rather than pure white, which under this
    much violet reads clinical. --void-lift goes *down* from the page, not up:
    raised is more ink here, not less.
@@ -153,15 +157,32 @@
    blue-violet rather than as #A99BF5 in shadow. These hold the source's own
    hue and chroma exactly — h 290.01°, C 0.1285 — and move **lightness only**,
    to the lightest value that clears 4.5:1. Nothing is given up to the gamut:
-   that chroma is inside sRGB on this hue from L 0.226 to 0.766, and the solve
-   sits at 0.558. Do not re-solve this in HSL.
+   that chroma is inside sRGB on this hue from L 0.226 to 0.766. Do not
+   re-solve this in HSL.
+
+   **§43 moved the ground it is solved against, not the method.** §39 solved
+   it on --void, which is the page — and over the world a glyph sits on
+   --void *seen through a halo over a scene*, which is a few hundredths
+   darker. Solved on the page the token had no margin at all (4.54:1 was the
+   ceiling and the world took it to 4.39), and neither lever reaches it:
+   measured at §43, the halo's own ceiling with three extra rings is 4.53 and
+   §32's scrim buys 0.05 across its entire range, because the covered pixels
+   are looking at the halo rather than at the scene. So the ground is
+   --void-lift, which is the darkest a surface may be (§22) and here the
+   token one rung off the page: L 0.541 → #6F5FB4, and the measured floor
+   under these glyphs over the day world is 0.886 against --void-lift's
+   0.845, so the token bounds the ground it was solved for. 4.86:1 on the
+   page, 4.70:1 on the worst day ground in the world.
 
    --mint is here at §42, solved the same way --leader-ink was: the source's
    own OKLCH hue and chroma (h 156.52°, C 0.0481) with lightness the only
    thing that moves, to the lightest value clearing 4.5:1 on --void. That is
-   L 0.543 → #597864, relative luminance **0.165** — the same number
-   --leader-ink lands on, because it is the same bar on the same page, so the
-   world's two marks weigh the same at day. It has no document use still;
+   L 0.543 → #597864, relative luminance **0.165**. It was --leader-ink's own
+   number until §43 moved that one to 0.149, and it does not follow: --mint
+   is a mark inside the render layer, measured against the ground it is drawn
+   on (§42's gain, 2.93:1 at the lighthouse), where --leader-ink is type
+   measured through a halo against a page. Same bar at §42, two grounds at
+   §43. It has no document use still;
    what it is for is §30's motes and §37's nineteen lamps, which at day are
    dark specks rather than lights (§42).
 
@@ -183,7 +204,7 @@ html[data-theme="light"] {
   --dim:        #6A60A0;
   --muted:      #5A518B;
   --paper:      #1D1541;
-  --leader-ink: #7464B9;
+  --leader-ink: #6F5FB4;
   --mint:       #597864;
 }
 

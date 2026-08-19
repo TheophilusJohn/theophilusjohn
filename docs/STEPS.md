@@ -7220,3 +7220,192 @@ different token set, which is what makes it expensive rather than impossible.
 - axe across ten states × two appearances × two contrast settings
 
 **Report:** the full matrix, and the worst measurement in each quadrant.
+
+*Done.* **Two hundred and eight measurements, four appearances, nothing under
+4.5:1 — and one hex value moved to get there.** §38's twelve states and ten
+targets were run again in each quadrant of {night, day} × {normal, high
+contrast}; §38's halo sweep and §32's scrim rung were run in both appearances;
+axe was run across ten states in all four. What the day quadrant found is one
+token failing — `--leader-ink` on a station's machine ID, at **4.39:1** — and
+what it found *first* is that two of the three numbers §42 left open were the
+instrument rather than the type.
+
+### The instrument, settled by measurement
+
+§38's harness measures the backdrop under the glyphs' **covered pixels only**.
+That is the record's own rule since §17, and it is the right question: what
+shows through a covered pixel is the halo, which is what the glyph is actually
+sitting on. §42's harness averaged **every** pixel in the 7px window — the
+pool between the strokes included — off a rect padded 4px past the element.
+
+Run as a second column beside the standing one, on the same frames, on a §42
+build:
+
+| the arrival column, day | covered pixels (§38) | whole block (§42) |
+|---|---|---|
+| headline, `--paper` | 15.67:1 | 12.59:1 |
+| subline, `--leader-ink` | 4.54:1 | **4.03:1** |
+| hint, `--dim` | 5.09:1 | **4.18:1** |
+| the way out, `--dim` | 5.06:1 | 3.93:1 |
+
+4.03 and 4.18 are §42's own two open numbers, reproduced to a hundredth. And
+then the same column at **night**, where nothing has ever been in question:
+the way out **2.24:1** at Philoi, the stick **2.39:1** at the arrival, 52
+measurements between 2.24 and 15.36. A reading that condemns both appearances
+equally is measuring the halo's leak between 10px mono glyphs — which is the
+same size in both, because the leak is a function of the type and the shadow
+stack, not of the ground. So the standing instrument is the bar, the pool
+column is reported beside it as what it is, and the one thing genuinely under
+4.5 at day was the accent's ink.
+
+### The token, and the two levers that were measured out first
+
+Neither of the things that could have rescued it can:
+
+| at a station's name frame, day | |
+|---|---|
+| §32's scrim swept 0.45 → 1.0 | 4.48 → **4.53** (0.05 across the whole range) |
+| §38's halo, none → three extra 1px rings | 3.13 → **4.53** |
+| the token's own ceiling on pure `--void` | 4.54 |
+
+Both are the same fact and it is §40's: the pixels a glyph sits on are looking
+at the halo. So the lever is the token, which is what §40 wrote and what §42
+handed forward.
+
+**§39's method, §42's ground.** `--leader-ink` was the only token in either
+set solved against `--void` itself — the page — rather than against a rung,
+which is exactly why it was the only one with nothing in hand. It is solved on
+**`--void-lift`** now, which is *the darkest a surface may be* (§4.7) and in
+the light set is the token one rung off the page at 0.845; the measured floor
+under these glyphs over the day world is 0.886, so the token bounds its own
+ground instead of sitting on it. Source hue and chroma held exactly, lightness
+the only thing that moves, as at §39:
+
+| | hex | OKLCH | luminance | on the page | worst over the day world |
+|---|---|---|---|---|---|
+| §39–§42 | `#7464B9` | L .558 C .1288 h 290.23° | 0.1633 | 4.54:1 | **4.39:1** |
+| §43 | **`#6F5FB4`** | L .541 C .1285 h 290.01° | **0.1492** | **4.87:1** | **4.71:1** |
+
+§40 predicted 0.1578 or under from a white-out world; the finished one wants
+0.1492, and the prediction was inside a hundredth of the exact-4.5 solve.
+
+### The matrix
+
+Twelve states × ten targets, the ones a reader can actually see at each, 52
+per quadrant. Worst per target, count in brackets:
+
+| target | night | night + contrast | day | day + contrast |
+|---|---|---|---|---|
+| the name (§34) | 15.64 (2) | 18.49 (2) | 15.67 (2) | 19.36 (2) |
+| the line under it | 7.65 (2) | 10.25 (2) | **4.87** (2) | 10.27 (2) |
+| scroll to fly | 5.07 (2) | 7.42 (2) | 5.09 (2) | 7.40 (2) |
+| the way out (§33) | 5.06 (12) | 7.41 (12) | 5.06 (12) | 7.37 (12) |
+| the stick (§35) | **5.05** (12) | **7.36** (12) | 5.00 (12) | **7.27** (12) |
+| the machine ID | 7.53 (5) | 10.05 (5) | **4.71** (5) | 9.79 (5) |
+| the headline | 15.63 (5) | 18.48 (5) | 15.65 (5) | 19.33 (5) |
+| the summary | 5.84 (2) | 10.37 (2) | 6.07 (2) | 10.64 (2) |
+| numbers and links | 13.21 (5) | 15.44 (5) | 14.74 (5) | 17.66 (5) |
+| the writeup | 5.73 (5) | 10.12 (5) | 5.54 (5) | 9.77 (5) |
+
+**The worst in each quadrant:** night **5.05:1** (the stick, at the arrival) —
+which is `--dim` on a backdrop of pure `--void` and the ceiling the instrument
+can report; night + contrast **7.36:1**, the same element; day **4.71:1** (the
+machine ID, reading Basis); day + contrast **7.27:1** (the stick, at Philoi).
+**Nothing under 4.5 in any of the 208.** Before the token moved, day had two
+under the bar (4.39 and 4.49) and three more inside a hundredth of it.
+
+The night quadrant is **identical to §42's at all 52 rows**, which is what
+`--leader-ink: var(--leader)` in dark buys: the change cannot reach the
+appearance it was not for. Seven of 52 day rows moved, and all seven are the
+two elements that wear the token.
+
+### The halo, in both appearances
+
+§38's eleven worst grounds in the world × six candidate stacks. The shipped
+stack is the `+1px ring` column:
+
+| eleven cases, worst … best | none | §33's stack | **shipped** | +3 more rings |
+|---|---|---|---|---|
+| night | 1.18 … 6.07 | 3.96 … 15.62 | **4.94** … 15.63 | 5.07 … 15.65 |
+| day | 1.06 … 10.24 | 4.02 … 15.63 | **4.80** … 15.65 | 4.87 … 15.66 |
+
+§38's 1px ring is still the whole of it in the appearance §38 never measured:
+without a halo the day type is 1.06:1 over a lit stadium, and three more rings
+on top of the shipped stack buy between 0.01 and 0.09 — §42's finding, now
+swept over the whole set. **A bright cloud under dark type is the same failure
+inverted and the same fix answers it**: on the worst case in each appearance
+the shipped stack is worth **4.5× at day against 4.2× at night**.
+
+### What §41 and §42 re-solved, checked rather than re-derived
+
+**The world chunk is byte-identical to §42's** — same `scene.DP0-OWWi.js`
+hash, same 799,236 raw / 227,198 gzipped — because the token is read into a
+uniform and never compiled into a shader. So §23's band edges, §27's tint,
+§28's compression and §26's glance are unchanged *by construction*, and the
+re-runs say so: `band.ts`'s own numbers out of Node are the sun at **32.0°**,
+edges at **0.64 / 0.90**, shares **88.24 / 11.67 / 0.09%** and 7.8° of tilt to
+cross the terminator, which is §41's table to the digit; the glance is still
+in none of the six route poses and still peaks at **0.901 at day** and
+**0.352 at night** against a lower-frame median of 0.294 and 0.080, aimed the
+way §42 aimed it.
+
+The one thing in the render layer that reads the token is §34's fifty-one
+travelling signals, which §42 moved onto it. Measured with the layer hidden
+and shown, at Basis: the strongest signal is **2.66 → 2.81:1** at day against
+its own ground, and **3.28:1 either side** at night. The mark got very
+slightly easier to see, which is the direction the type went too.
+
+### axe, and the frame
+
+**Ten states × two appearances × two contrast settings, and all forty are
+clean.** Document mode, a document deep link, the curtain held, the
+adapter-refused fallback, the arrival, mid-flight, a station's name frame, a
+writeup open, free flight with the stick taken, and the document with the way
+back showing. Every run asserts the appearance it actually resolved to
+(`dark/high/world` and so on) beside the result, because a run that silently
+fell back reports ten clean states of the wrong site. And the thing to say
+next to all of it, again: **axe cannot see any of the 208** — the backdrop is
+a canvas.
+
+Draw calls and triangles are **identical at all six poses in both
+appearances** (50 / 46 / 52 / 45 / 48 / 40 at night, one fewer at day for
+§40's starfield). Night is **pixel-identical at four of six poses** and 698 /
+383 pixels at 1/255 at Basis and cruise, which is §42's own signature — the
+world's clock and the quadtree. Day differs at 3,193–4,014 pixels, worst
+5/255, and a bounding box says all of it is the type: x 65–874, y 323–453,
+nothing at the rail. ms/frame at day, one forced pose into both builds, loop
+stopped, 120 renders between two `onSubmittedWorkDone`, best of three:
+**−0.008 to +0.007 at DPR 1.5** and −0.003 to +0.012 at DPR 1.
+
+### The document, and the dark appearance proved again
+
+§39's seventeen computed-colour probes, read off a §42 build and a §43 build
+in the same session, in all four appearances:
+
+| | probes differing |
+|---|---|
+| dark | **0 of 17** |
+| dark + contrast | **0 of 17** |
+| light + contrast | **0 of 17** |
+| light | 5 of 17 — the hero subline, the machine ID, the metric value, the link row with its underline, and the pressed theme toggle |
+
+All five are the same token. In light every element that carries it goes
+**4.54 → 4.87:1**; every other reading in the light document is unchanged,
+including the one §43 was asked to look at — the document's `--dim`, which
+carries the nav at **5.10:1** in light against 5.07 in dark, and 7.43 against
+7.42 in high contrast.
+
+### Sizes
+
+Against a §42 build in the same session at the same gzip level:
+
+| | §42 | §43 | Δ |
+|---|---|---|---|
+| `Base.css` | 12,349 / 3,330 gz | 12,349 / **3,329 gz** | **−1** |
+| `index.html` | 42,669 / 11,123 gz | 42,669 / **11,121 gz** | −2 |
+| document JS, three files | 150,425 / 57,026 gz | 150,425 / **57,026 gz** | **0** |
+| world chunk | 799,236 / 227,198 gz | 799,236 / **227,198 gz** | **0, byte-identical** |
+| terrain worker | 8,005 / 3,593 gz | 8,005 / **3,593 gz** | **0** |
+
+The raw CSS is the same size because a hex is a hex; the two gzipped deltas
+are the compressor. 55.69 KiB of a 120 KiB budget; **221.87 KiB of 400**.
