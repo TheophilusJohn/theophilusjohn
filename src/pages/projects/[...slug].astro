@@ -11,7 +11,16 @@ export async function getStaticPaths() {
 const { project } = Astro.props;
 const d = project.data;
 ---
-<Base title={`${d.title} — Theophilus John`} description={d.summary}>
+{/* Two titles, two jobs. The tab and the search result want the name
+    attached; the card is read beside `og:site_name`, which already says
+    theophilusjohn.com, so it spends its width on the editorial line
+    instead — which is also what makes the four deep links preview as four
+    different things rather than four copies of the site. */}
+<Base
+  title={`${d.title} — Theophilus John`}
+  ogTitle={`${d.title} — ${d.headline}`}
+  description={d.summary}
+>
   {/* §4.6: this route exists so the URL resolves on Cloudflare, stays
       crawlable, and renders with JS off. With JS the visitor belongs on
       the one page, at this section — url-sync there restores the path.

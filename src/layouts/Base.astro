@@ -5,14 +5,27 @@ import '../styles/global.css';
 import Toggles from '../components/Toggles.astro';
 import Entry from '../components/Entry.astro';
 
-// `entry` is only true on the page the world can actually mount on (§33).
-// The mode attribute is set site-wide because the header's way back into
-// the world is, but a curtain on a page with no world behind it would be a
-// load that never finishes.
-interface Props { title: string; description?: string; entry?: boolean; }
+/* `entry` is only true on the page the world can actually mount on (§33).
+   The mode attribute is set site-wide because the header's way back into
+   the world is, but a curtain on a page with no world behind it would be a
+   load that never finishes.
+
+   `ogTitle` exists because the two titles have different jobs. `title` is
+   the tab and the search result and carries the search terms; the card
+   title is read in a chat window beside a picture, so it can be shorter
+   and does not need the site name repeated when the card already carries
+   it. Defaults to `title`, which is right for every page that has not
+   thought about it. */
+interface Props { title: string; description?: string; ogTitle?: string; entry?: boolean; }
 // Third person, and search terms rather than the hero's voice — this
 // is what shows up in results and link previews, not on the page.
-const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.', entry = false } = Astro.props;
+const { title, description = 'Theophilus John builds distributed systems and runs production infrastructure. Consensus, replication, and browser-native inference.', ogTitle, entry = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+/* Absolute, because every unfurler that matters refuses a relative one.
+   The file is checked in rather than generated at build: it is one picture
+   that changes when the wordmark or the subline does, and the recipe for
+   re-rendering it is in the README. */
+const ogImage = new URL('/og.png', Astro.site);
 // One page (§4.6), so these are ranges on `/`, not routes. Absolute with
 // a hash so they also work from the standalone project pages.
 const nav = [
@@ -28,7 +41,35 @@ const nav = [
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
   <meta name="description" content={description} />
-  <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+  <link rel="canonical" href={canonical} />
+
+  <!-- Icons. The SVG is the mark — five nodes with the elected one in
+       --leader, which is §2's licensed use of the accent. The ICO carries
+       16/32/48 for the browsers that still ask for one by convention, and
+       the apple-touch-icon is full-bleed because iOS applies its own mask. -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- Link previews. Nothing here is generated at runtime: the card is a
+       static 1200x630 rendered from the site's own tokens and faces, and
+       the title and description are the ones already on the page. The four
+       project stubs carry their own, so /projects/<slug> previews as that
+       project rather than as the site. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="theophilusjohn.com" />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:title" content={ogTitle ?? title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="theophilusjohn.com — builds systems that have to agree with each other." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={ogTitle ?? title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
 
   <!-- Display face only. The mono carries metadata that can swap in late. §5 -->
   <link

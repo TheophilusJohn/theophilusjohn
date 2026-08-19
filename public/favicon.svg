@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="theophilusjohn.com">
+  <title>theophilusjohn.com</title>
+  <desc>Five nodes with the elected one in the leader accent, the site's own
+  motif and hard rule 2's licensed use of it. Colours are tokens: the void
+  tile, the dim followers, the leader. Token names are written bare because
+  an XML comment may not contain a double hyphen and this file is parsed as
+  XML, not as HTML: with the usual custom-property spelling it does not
+  parse at all, and a browser renders nothing rather than complaining.</desc>
+  <rect width="32" height="32" rx="7" fill="#14121F"/>
+  <circle cx="16.00" cy="7.40" r="3.90" fill="#A99BF5"/>
+  <circle cx="24.18" cy="13.34" r="3.10" fill="#8780B2"/>
+  <circle cx="21.05" cy="22.96" r="3.10" fill="#8780B2"/>
+  <circle cx="10.95" cy="22.96" r="3.10" fill="#8780B2"/>
+  <circle cx="7.82" cy="13.34" r="3.10" fill="#8780B2"/>
+</svg>
