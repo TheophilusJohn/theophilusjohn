@@ -2234,14 +2234,38 @@ calls rather than architectural ones. The architecture is decided.
 - **Sound.** A world without audio is quieter than it should be, and it is
   cheap to add and expensive to get right. Not in the build order; it would
   be a step of its own.
-- **Whether the light document ever gets a lavender band.** §39 measured
-  `#A99BF5` at 2.23:1 on the light page, which leaves the pressed toggle as
-  the only place in the light document where the accent appears at full
-  strength. The drafted answer was to set the hero subline as a lavender
-  block with `--paper` on it — 7.01:1, and the accent as a *fill* rather than
-  as a tint. It was not built: `.sub` is a clip mask the intro reveals a line
-  out of, so a background on it paints before the line arrives, and that is a
-  motion decision rather than a palette one.
+- **Where `#A99BF5` lives in the light document, if anywhere.** §39 measured
+  it at 2.23:1 on the light page, so it cannot be an outline, a rule, a ring
+  or a fill on the page's own ground — which leaves it appearing at full
+  strength **nowhere a light-mode reader looks**. Three candidates, two of
+  them built and measured out:
+  - *The hero subline as a lavender block.* Not built: `.sub` is a clip mask
+    the intro reveals a line out of, so a background on it paints before the
+    line arrives. A motion decision rather than a palette one.
+  - *A pressed toggle as a lavender chip.* Built. 7.03:1 for the ink and
+    **2.23:1 for the fill's own boundary**, which is what identifies the
+    state, and high contrast made it worse (1.66:1).
+  - *The machine ID on a dark chip* — `--leader` on `--paper`, repeated four
+    times down the page. Built, and **both bounds passed**: ink on chip
+    7.03:1, and the chip's edge against the page 15.67:1, because a dark mark
+    on a light ground is the easy direction for a boundary. It was removed on
+    the thing contrast cannot measure. Three reasons, in the order they
+    matter: it is the **only filled ground in the entire light document**, so
+    it is a vocabulary of one and reads as an artifact rather than as a
+    system; it puts the heaviest element in the section on the *least*
+    consequential text, directly above an 88px headline; and it does not even
+    deliver the accent — measured, the lavender is **9.9% of the mark that
+    exists to show it** (266 px² of ink in a 112×24 chip), so what a reader
+    registers is a black rectangle. A dark box on a light page also reads as
+    the one failure a light-mode reader is primed to spot, which is an
+    element that missed the theme.
+
+  So the accent's full-strength home in light mode is still open, and the
+  honest position is that it may not have one: `#A99BF5` was chosen against
+  `--void` and for a render layer that stacks it translucently, and a pale
+  ground is not a place it can be itself. **Leaving it out is a real answer**
+  — the light document is the same site in the reader's own appearance, not a
+  second brand — and forcing it in has now cost two attempts.
 - **Whether the world's rim light inverts at day.** §4.9's most likely
   failure, and the one question in the light-mode block that contrast
   arithmetic cannot answer — nothing out there is text. Decided by looking,

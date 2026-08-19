@@ -6187,6 +6187,38 @@ subline as a lavender block, is a motion decision and not a palette one:
 `.sub` is a clip its line is revealed *out of*, so a background on it paints
 before the line arrives.
 
+**And a third candidate was built after the fact and measured out on the
+thing contrast cannot see.** The machine ID on a dark chip — `--leader` on
+`--paper`, four times down the page — passes **both** bounds, which is what
+the pressed chip failed: ink on chip **7.03:1**, chip edge against the page
+**15.67:1** (19.36 in high contrast), because a dark mark on a light ground
+is the easy direction for a boundary. The layout risk was handled too —
+`margin-block` cancels the padding exactly, so `.top` stays 16px, the four
+stage measurements are identical in both appearances, and a 1512×804 laptop
+still pins 4/4.
+
+It came out anyway, for three reasons and one number:
+
+- It is the **only filled ground in the entire light document**. Nothing else
+  on that page has a background — no cards, no panels, no filled controls —
+  so it is a vocabulary of one, and a vocabulary of one reads as an artifact.
+- It puts the heaviest element in the section on the **least consequential
+  text in it**, directly above an 88px headline. The eye reaches the black box
+  before it reaches the word.
+- A dark rectangle on a light page is exactly what an element that **missed
+  the theme** looks like, which is the one failure a light-mode reader is
+  primed to spot.
+- And it does not deliver the accent. Measured with §38's glyph-mask method:
+  266 px² of `#A99BF5` inside a 112×24 chip — the lavender is **9.9% of the
+  mark that exists to show it**, and what registers is the other 90%.
+
+So the accent still has no full-strength home in the light document, and the
+position after two built attempts is that **it may not have one**. `#A99BF5`
+was picked against `--void`, and for a render layer that stacks it
+translucently; a pale ground is not somewhere it can be itself. It is
+undiluted across the whole of the world, which is where it was always doing
+the most work.
+
 ### The accent's darker sibling, re-solved in OKLCH
 
 **The first solve was in HSL and it was wrong in a way the ratios could not

@@ -58,9 +58,13 @@ both contrast states. The split had to go **wider than drafted**: `#A99BF5` is
 **2.23:1** on the light page and **1.74:1** on its own `--rule` track, so the
 focus ring, the stage's progress fill, `text-decoration-color` and the cursor's
 link dot moved with the type. The cost is that the light document has **no
-full-strength `#A99BF5` in it at all** — the pressed-toggle chip was built and
-measured out at a 2.23:1 boundary — and SPEC §8 carries that rather than
-hiding it. **`--leader-ink` is solved in OKLCH** — the source's own hue and
+full-strength `#A99BF5` in it at all** — two candidates were built and
+measured out, the pressed-toggle chip at a 2.23:1 boundary and the machine ID
+on a dark chip *despite* passing both bounds (7.03:1 ink, 15.67:1 edge),
+because it is the only filled ground in the light document and the accent is
+**9.9% of its own mark**. SPEC §8 carries that rather than hiding it, and the
+standing position is that the accent may simply not have a home on a pale
+ground. **`--leader-ink` is solved in OKLCH** — the source's own hue and
 chroma (h 290.01°, C 0.1285) with lightness the only thing that moves, which
 is what makes it read as `#A99BF5` darkened; the first solve held HSL
 saturation instead and drifted 7.3° toward blue with 78% more chroma. The
@@ -1315,6 +1319,16 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   the second one defined as `var(--leader)` in the base set — which is what
   makes the untouched appearance provably untouched, because there is no
   second value anywhere to keep in sync.
+- **Both contrast bounds can pass and the mark still be wrong, and the
+  instrument for that is the accent's share of its own area.** A machine ID
+  in `--leader` on a `--paper` chip measures 7.03:1 for the ink and 15.67:1
+  for the chip's edge — a dark mark on a light page is the easy direction for
+  a boundary — and it still came out, because at 10px mono in a 112×24 box the
+  accent is **9.9%** of the thing built to show it and what registers is the
+  black rectangle. Two other tells worth naming: a filled ground that is the
+  *only* one in its document is a vocabulary of one and reads as an artifact,
+  and the heaviest element in a section should not be its least consequential
+  text.
 - **Reversing a fill and its ink solves the ink and not the boundary.**
   `--paper` on `#A99BF5` is 7.03:1 and reads beautifully; the chip's own edge
   against a pale page is 2.23:1, and the edge is what SC 1.4.11 is about —
