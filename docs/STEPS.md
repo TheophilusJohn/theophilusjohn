@@ -6655,6 +6655,242 @@ the same problem re-appears — along with the ground's three-band ramp, §28's
 **Report:** the band placement and the tilt it takes to change band, at the
 new elevation; the rim decision, with a frame of a ridge against the day sky.
 
+*Done.* **§23 done again with the same numbers, which is the finding.** The
+sun did not move, the two band edges did not move, the ramp did not move and
+§28's three compressions did not move. What changed is **which four tokens the
+ladder names** — nine of them, in one function — and the rim inverted by
+itself because nothing was done to it. `band.ts` is the only file in the
+repository this step touches. The world chunk is **+72 gzipped**; the worker,
+the CSS, `index.html` and document JS are unchanged to the byte.
+
+**Say the state this leaves the site in, first.** §40 gave the light world a
+day sky over a night-shaded ground; §41 gives it a day-shaded ground. What is
+still §42's is the fog, the water, the ground tint's weight, the motes and the
+nineteen lamps — and the fog is the one that shows, because it is still solved
+against a `--void` that has become the *palest* thing in the set. The day
+ground's own bands span 0.27 to 0.63 of relative luminance at the arrival and
+arrive on screen at 0.56 to 0.68: **a 2.3× range compressed to 1.2× by a fog
+whose target is 0.758**. The world reads at a station, where the camera is
+low; it is still pale at the arrival, where it is 190 units up. That is
+§4.9's fog bullet and it is measured below rather than deferred silently.
+
+### The sun does not move, and it is priced rather than asserted
+
+SPEC §4.9 expects a higher sun. It is the one thing here that cannot be had
+for nothing, because `SUN` is not a shading parameter — it is baked. `chunk.ts`
+marches the height field against it in the worker and writes the result into
+two vertex attributes, so a second elevation is a second bake:
+
+| | measured |
+|---|---|
+| a level-0 chunk, whole | **1.527 ms** in Node |
+| the shadow march alone, over the 15×15 lattice a chunk marches | **0.405 ms**, 27% of it |
+| geometry a chunk carries | 2,597 vertices × 14 floats = 142.0 KB + 30 KB of indices |
+| a second `shadow` + `morphShadow` | **+20.3 KB a chunk**, +14.3% of the attributes |
+
+That is +27% of worker time and +3.6 MB alive at the opening pose, permanently,
+in both appearances, to serve one of them. And `sun.ts` exists precisely so
+that the two halves of the world agree on one direction; a second direction
+only one half can see is the drift the file was written to prevent.
+
+**What it would buy is negative.** The land's tilt distribution is fixed, so
+placing the edges by the same share of ground gives the same tilts at any
+elevation — what moves is how much `N·L` a degree of tilt is worth, and how
+long a shadow is. Measured over 74,000 samples of the field at seven
+elevations, with the edges re-placed by share each time:
+
+| elevation | flat ground | flat → upper edge | upper → lower | shadow / height |
+|---|---|---|---|---|
+| 22° | 0.375 | 0.137 | 0.329 | 2.48× |
+| **32°** | **0.530** | **0.130** | **0.322** | **1.60×** |
+| 40° | 0.643 | 0.121 | 0.312 | 1.19× |
+| 48° | 0.743 | 0.110 | 0.293 | 0.90× |
+| 55° | 0.819 | 0.099 | 0.273 | 0.70× |
+| 65° | 0.906 | 0.080 | 0.234 | 0.47× |
+
+Raising the sun to 55° narrows the gap between flat ground and the terminator
+by 24% and shortens every cast shadow by 56%. **Both of those are the day
+frame's structure, not the night frame's** — at day the cast shadow is a hard
+dark shape on a lit plain rather than §23's quarter-band lean, so it matters
+more here than it ever did at night. A noon sun cel-shades nothing: at 90° the
+gap is zero and every slope has the same `N·L`. §23 solved 32° for band
+placement and the same criterion picks the same number at day, because what
+sets it is the terrain's slope distribution and that has not changed.
+
+### The bands do not move either, and the shares say so
+
+Measured on the shipped generator's own two arrays — `buildChunk` over a
+spread of level-0 squares, 214,511 dry vertices, `litness` computed from the
+`normal` and `shadow` attributes it returns:
+
+| edges 0.64 / 0.90 | low | mid | high + top |
+|---|---|---|---|
+| over the ground | 88.89% | 11.07% | 0.04% |
+
+Both edges are above flat ground in both appearances, so §23's sentence is
+still the sentence — **open country is the low band and what the light finds
+is the slopes that face it** — and the day appearance changes only what the
+two sides land on.
+
+Tilt from flat, in the sun's own vertical plane (`N·L = sin(32° + t)`):
+**7.8°** to leave the low band and **32.2°** to reach the top. `band.ts` has
+recorded 14° and 38° since §23; computed that way they are 7.8 and 32.2, and
+the comment is corrected.
+
+### The ladder is the same list read in the other set's order
+
+A ladder is four tokens in ascending lightness. The two sets do not order the
+same way, and that is the whole of it:
+
+| | low | mid | high | top |
+|---|---|---|---|---|
+| night | `--rule` 0.0225 | `--dim` 0.238 | `--paper` 0.838 | `--leader` 0.385 |
+| day | `--dim` 0.140 | `--rule` 0.705 | `--void-lift` 0.845 | `--leader` 0.385 |
+
+`--rule` and `--dim` change places; `--paper` gives its rung to `--void-lift`,
+because in the light set `--paper` is the darkest ink rather than the
+brightest surface and the palest a surface may be is `--void-lift` (`--void`
+being the clear colour, §22); and `--leader` keeps the top rung it has always
+had, since the accent is the one token §39 did not invert. Flat ground is
+**0.082 at night and 0.296 at day**; a slope tilted 8° into the light is
+0.265 and **0.711**.
+
+**±1 cannot be symmetric, and that is §40's hole said again.** §0.2 asks
+growth to be one step lighter; at day there is nothing above `--rule` but
+`--void-lift` and `--void`, and the ground's own top rung is already
+`--void-lift`. So growth goes one rung *down* instead — which is what cover at
+noon does anyway — and a stand of pines goes two: 0.012 to 0.099 against open
+country at 0.296, still a mass with an edge.
+
+### What was built and measured out: the complement
+
+The tidier idea is to band the *missing* light at day — hand the ladder
+`1 − lum` and leave every token where it is. It was built, and it is wrong in
+the frame rather than on the ground. Over the whole terrain it looks right;
+over the pixels a reader sees it collapses, because §22 sited the opening pose
+downsun and the visible faces are therefore the lit ones:
+
+| the terminator over the arrival frame's own terrain pixels (526,907 of them) | low | mid | high |
+|---|---|---|---|
+| `lum` at 0.64 | **42.7%** | 57.2% | 0.1% |
+| `1 − lum` at 0.64 | **99.5%** | 0.5% | 0.0% |
+
+The whole landscape in one band, 0.70 to 0.75 of relative luminance, which is
+exactly what it looked like. **The lesson is the instrument**: a band edge is
+placed against the distribution of the term over the *frame*, not over the
+world. The two agree at night by luck — flat ground is 0.53 and the edge is
+0.64, so the edge sits just above the commonest surface *and* inside the
+visible distribution — and the complement keeps the first property while
+losing the second.
+
+Two earlier drafts died the same way. Reversing the ladder and moving the
+edges to 0.16 / 0.38 (the share mirror, both edges *below* flat ground) put
+89% of the ground and 99% of the frame in one band. Reversing the ladder and
+keeping the edges put the bulk of the frame on `--paper`, a near-black
+landscape under a pale sky.
+
+### The rim inverts, and the decision is to change nothing
+
+§4.9 calls this "the thing most likely to look wrong first" and says the
+arithmetic cannot decide it. It decides itself. `--leader` is 0.385 in both
+appearances — §39 held it there deliberately — so a rim painted in it is
+brighter than a night sky and darker than a day one, with no change to
+`RIM_IN`, `RIM_OUT`, `RIM_BACK`, `RIM` or `RIM_FLOOR`.
+
+Measured across the same crest at the same pose, three columns, walking the
+pixels down through the ridgeline:
+
+| | above the crest | the rim | below it |
+|---|---|---|---|
+| night | sky 0.009–0.019 | **0.236–0.271** | ground 0.117–0.133 |
+| day | sky 0.705–0.754 | **0.262–0.347** | ground 0.307–0.365 |
+
+At night it is the brightest thing on the crest — 26× the sky it is drawn
+against. At day it is the darkest — the sky is 2.1× it. Same construction,
+same width, opposite sign, and it is `--leader` doing it in the world's own
+render layer, which is where hard rule 2 says the accent may be undiluted.
+The day frame is in `rim-day.png`; its night twin is beside it.
+
+### The fog is what is left, and it is §42's
+
+The ground's own banded colour, read out of the material before the fog mix,
+against what reaches the screen at the arrival:
+
+| | own bands | on screen | fog survival |
+|---|---|---|---|
+| near ground | 0.532 | 0.638 | 0.78 |
+| mid ground | 0.338 | 0.612 | 0.44 |
+| far ground | 0.274 | 0.596 | 0.33 |
+
+The target is `mix(--void, the sky, 0.75)` = **0.758**, which at day sits
+*above* the ground's entire range instead of below it, so the fog compresses
+where at night it expands: the same three pixels at night are 0.081 → 0.065,
+0.09 → 0.034. §4.9's fog bullet — "target becomes the sky, not `--void`" — is
+the fix and it is §42's; what §41 adds is the number the fix has to move.
+
+### Cost
+
+Draw calls and triangles are **identical at all six poses in both
+appearances** — the day ladder is four lerps a pixel inside a function that
+already existed. Day is one draw call and 16,000 triangles below night, which
+is §40's starfield and not this step.
+
+ms/frame, one forced pose driven into both builds, the site's loop stopped, a
+warm-up batch and then 120 renders between two `onSubmittedWorkDone`, best of
+three:
+
+| pose | night §40 → §41 @1.5 | day §40 → §41 @1.5 |
+|---|---|---|
+| arrival | 1.319 → 1.302 | 1.321 → 1.313 |
+| enargeia | 1.330 → 1.349 | 1.344 → 1.352 |
+| philoi | 1.425 → 1.418 | 1.443 → 1.452 |
+| basis | 1.454 → 1.443 | 1.483 → 1.462 |
+| homonoia | 1.419 → 1.410 | 1.392 → 1.418 |
+| cruise | 1.283 → 1.281 | 1.319 → 1.299 |
+
+−0.021 to +0.026 at DPR 1.5 and −0.082 to +0.011 at DPR 1: inside the noise
+in both, and the sign disagrees between appearances at four of six poses.
+
+**The night appearance is unchanged by measurement.** Six forced poses, §40's
+build against §41's in the same session: pixel-identical at four of them, and
+at the other two 705 and 579 pixels differ by at most 3/255, which is the
+world's own clock and the quadtree. Day differs at 33–38% of the frame, worst
+209/255, which is the step.
+
+Contrast over the day world, §38's glyph-mask harness reduced to the arrival
+column (mask from a canvas-hidden shot, backdrop from a `color: transparent`
+shot so the halo is still painted, 7px blocks, darkest block since at day the
+failure inverts):
+
+| | §40 | §41 |
+|---|---|---|
+| headline, `--paper` | 14.57:1 | **14.73:1** |
+| subline, `--leader-ink` | 4.21:1 | **4.33:1** |
+| hint, `--dim` | 4.76:1 | 4.72:1 |
+
+Unchanged inside the harness's own spread — the covered pixels are looking at
+the halo, which is §38's and §40's finding for the third time. This harness
+reads about three tenths below §38's own numbers and it could not read the way
+out at all: `text-decoration-color` does not follow `color: transparent`
+(CLAUDE.md's own trap), so a link's underline stays painted into the backdrop
+shot. §43 owns the full sweep and §40 has already left `--leader-ink` to it.
+
+Sizes, against a §40 build in the same session at the same gzip level, neither
+carrying a measurement hook:
+
+| | §40 | §41 | Δ |
+|---|---|---|---|
+| `Base.css` | 12,334 / 3,323 gz | 12,334 / **3,323 gz** | **0** |
+| `index.html` | 42,669 / 11,119 gz | 42,669 / **11,119 gz** | **0** |
+| document JS, three files | 150,425 / 57,027 gz | 150,425 / **57,027 gz** | **0** |
+| world chunk | 798,466 / 226,910 gz | 798,703 / **226,982 gz** | **+72** |
+| terrain worker | 8,005 / 3,593 gz | 8,005 / **3,593 gz** | **0** |
+
+The worker is byte-identical, and it has to be: nothing in a worker calls
+`bands()` or reads the palette, so `band.ts` is tree-shaken out of it exactly
+as `sky.ts` and `solid.ts` are. 55.69 KiB of a 120 KiB budget; **225.17 KiB of
+400**.
+
 ### 42. The rest of the world, at day
 Fog target, water and §26's specular band, §27's ground tint, the motes, and
 §37's nineteen landmark lamps. The motes and the lamps are the same problem —

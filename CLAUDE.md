@@ -44,6 +44,41 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §41 the ground has a day too, and §23 came back with the same
+numbers.** The sun stays at **32°**, the band edges stay at **0.64 and 0.90**,
+the ramp stays at 0.30 and §28's three compressions are untouched — `band.ts`
+is the only file the step changes. What changes is **which four tokens the
+ladder names**, because a ladder is four tokens in ascending lightness and the
+two sets do not order the same way: `--rule` and `--dim` change places,
+`--paper` gives its rung to `--void-lift` (the palest a surface may be, since
+`--void` is the clear colour), and `--leader` keeps the top rung — the accent
+is the one token §39 did not invert. Open country is `--rule` in both
+appearances, 88.9% of the ground and one rung off the page, at 0.082 of
+relative luminance at night and **0.296** at day. **±1 cannot be symmetric**:
+there is nothing above `--rule` in the light set but `--void-lift` and
+`--void`, so at day growth goes one rung *down* and a stand of pines two, and
+a treeline is still 0.012–0.099 against open country's 0.296. **The rim
+inverts by itself** — `--leader` is 0.385 in both, so the same construction
+measures 0.236–0.271 against a night sky of 0.009 and 0.262–0.347 against a
+day sky of 0.705, the brightest thing on the crest and then the darkest, with
+no constant touched. **The elevation is priced rather than argued**: `SUN` is
+baked, so a day sun is a second march at +0.405ms a chunk and +20.3KB of
+geometry a chunk, and raising it to 55° would narrow the flat-to-terminator
+gap 24% and halve every cast shadow — worse in the appearance where a cast
+shadow is a hard dark shape rather than a lean. **What was built and measured
+out is the complement** (banding `1 − N·L` and leaving the tokens where they
+are): right over the world, wrong over the frame, 99.5% of the arrival's
+terrain pixels in one band against the night terminator's 42.7 / 57.2 split —
+a band edge is placed against the term's distribution over the **frame**, not
+over the world. Draw calls, triangles and frame cost are unchanged (−0.021 to
++0.026ms at DPR 1.5), night is pixel-identical at four of six poses and ≤3/255
+at the other two, and the chunk is **+72 gzipped**. **What is left is the
+fog**: its target is `mix(--void, sky, 0.75)` = 0.758 at day, *above* the
+ground's whole range instead of below it, so the arrival's 2.3× of banded
+range arrives on screen as 1.2×. The day world reads at a station and is still
+pale from 190 units up — that is §42's bullet, and §41 measured what it has to
+move.
+
 **Since §40 the world has a day, and it is the sky and the stars.** The light
 token set is no longer scoped away from `[data-mode="world"]`, so `--scrim`
 and `--halo` inverted for free exactly as §39 predicted and `palette.ts`
@@ -1421,6 +1456,44 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   cloud at 1.76:1. At day the ink is dark and it is the **darkest** one. A
   harness that takes a max is measuring nothing in the second case and will
   report a comfortable pass.
+- **A band edge is placed against the term's distribution over the *frame*,
+  not over the world.** The two agree at night by luck: flat ground is `N·L`
+  0.53 and §23's terminator is 0.64, which sits both just above the commonest
+  surface *and* inside what the camera can see. §41 tried banding `1 − N·L` at
+  day — the tidy construction, since it leaves every token where it is — and
+  it holds the first property and loses the second: over the whole terrain the
+  shares are the same shares, and over the arrival's own 526,907 terrain
+  pixels it puts **99.5%** of them in one band against the night edge's 42.7 /
+  57.2. §22 sited the opening pose downsun, so the visible faces are the lit
+  ones and the term's frame distribution is nothing like its world
+  distribution.
+- **A ladder is four tokens in ascending lightness, and two token sets with
+  the same *ratios* do not have the same order.** §39 built the light set as
+  the dark set's ratios, which makes a rung a distance from the page — and a
+  distance from the page is brightness at night and darkness at day. So the
+  ground's ladder needs no new numbers between the appearances, only the rungs
+  re-ordered: `--rule` and `--dim` change places and `--paper` gives its rung
+  to `--void-lift`. Anything that reads a palette as *values* rather than as
+  distances will invert somewhere.
+- **A step that is defined in lightness cannot be symmetric in a set whose
+  ends are not.** §0.2's growth is "one step lighter" and §28's conifers "one
+  step darker"; in the light set there is nothing above `--rule` but
+  `--void-lift` and `--void`, and the ground already owns `--void-lift`. So at
+  day both steps go the same way and the reason is the same hole §40 found in
+  the sky.
+- **A fog target that used to sit below the surface's whole range can end up
+  above it, and then the fog compresses instead of expanding.**
+  `mix(--void, sky, HAZE)` is 0.0068-ish at night, under everything the ground
+  can be, and 0.758 at day, over it: measured at the arrival, the ground's own
+  bands span 0.27–0.63 and reach the screen at 0.56–0.68. Nothing about the
+  shading is wrong there — the number to check when a landscape reads flat is
+  where the fog target sits relative to the surface's range, not the surface.
+- **`SUN` is baked, so its elevation is not a shading parameter.**
+  `chunk.ts` marches the field against it in a worker and writes two vertex
+  attributes, so a second elevation is a second march (+0.405ms on a 1.527ms
+  level-0 chunk) and a second pair of attributes (+20.3KB a chunk, +14.3% of
+  them) — paid in both appearances to serve one. Price it before assuming the
+  light can move.
 - **CDP's CPU throttle does not slow a worker.** Chunk generation came back
   *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
   thread stops competing for cores. It bounds main-thread work and nothing
@@ -1438,7 +1511,11 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §40: **unchanged to the byte** on a §39 build in the
+  1024px). Measured at §41: **unchanged to the byte** on a §40 build in the
+  same session — 150,425 raw / 57,027 gzipped over the same three files, CSS
+  12,334 / 3,323, `index.html` 42,669 / 11,119 — because `band.ts` is the only
+  file §41 touches and nothing in document mode imports it. Earlier, measured
+  at §40: **unchanged to the byte** on a §39 build in the
   same session — 150,425 raw over the same three files, 57,027 gzipped —
   because §40 ships no document JS at all. CSS **3,338 → 3,323** gzipped
   (**−15**; raw 12,352 → 12,334): the light set lost two
@@ -1473,7 +1550,12 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. Measured at §40: **226,910
+- World chunk, desktop: **under 400KB gzipped**. Measured at §41: **226,982
+  gzipped** (798,703 raw), up **72** on a §40 build in the same session at the
+  same gzip level — nine token names and one lerp per rung. **The worker is
+  byte-identical** at 3,593, and it has to be: nothing in a worker calls
+  `bands()` or reads the palette, so `band.ts` tree-shakes out of it exactly as
+  `sky.ts` and `solid.ts` do. 225.17 KiB of 400. Earlier, at §40: **226,910
   gzipped** (798,466 raw), up **179** on a §39 build in the same session at the
   same gzip level — the day gradient, the branch and the appearance uniform.
   **The worker is byte-identical** at 3,593: nothing in a worker calls
@@ -1537,7 +1619,13 @@ budgeted apart and a reader never pays both.
   the shade under a canopy is baked). §27: 205.3, §26: 202.7, §25: 202.1,
   §24: 201.4. A `__world` measurement hook lands in the *entry* script, not
   in the scene chunk, so an A/B of the world chunk is unaffected by it
-- **8ms/frame at cruise.** **§40 re-fitted §38's law in both appearances**,
+- **8ms/frame at cruise.** **§41 costs nothing in either appearance**: one
+  forced pose driven into both builds, six poses, the loop stopped and 120
+  renders timed between two `onSubmittedWorkDone`, best of three — **−0.021 to
+  +0.026ms at DPR 1.5** and −0.082 to +0.011 at DPR 1, with the sign
+  disagreeing between the appearances at four of the six. The day ladder is
+  four lerps a pixel inside a function that already ran. Earlier, **§40
+  re-fitted §38's law in both appearances**,
   five pixel scales at 1512×804 over six poses. Night `base` 0.79–0.95 and
   slope 0.129–0.175; day **0.74–0.90 and 0.150–0.199** — a lower base and a
   steeper slope, which is the right shape, since the stars are vertex work that
@@ -1634,7 +1722,10 @@ budgeted apart and a reader never pays both.
   already running: **391 / 399 / 445 ms** cold on desktop, 842–844 on Fast
   4G, 2,766–2,899 on Slow 4G. Of the desktop figure the ground is ~280ms
   (136 chunks at the opening pose) and the fetch about 50
-- Under 100 draw calls. **§40 takes one away at day**: 49 / 63 / 51 / 55 / 56 /
+- Under 100 draw calls. **§41 adds none and moves none**: identical counts and
+  identical triangle totals at all six poses in both appearances, against a §40
+  build in the same session, because everything it changes is a colour inside
+  an existing material. Earlier, **§40 takes one away at day**: 49 / 63 / 51 / 55 / 56 /
   61 over six poses against night's 50 / 64 / 52 / 56 / 57 / 62, and 16,000
   triangles, which is the 8,000 star sprites and nothing else. Identical at
   night to §39's. Earlier, **§38 adds none and cannot**: the world chunk is

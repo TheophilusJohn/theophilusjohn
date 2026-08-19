@@ -2080,22 +2080,50 @@ Each of the following is a decision, not a translation. Steps 40–42.
   worth **0.004 to 0.019ms**, which is the instrument's floor and about a fifth
   of the day gradient. 8,000 additive point sprites were never expensive on a
   frame that is fill-bound.
-- **The sun.** §23 solved the key light's elevation at 14° so the band edges
-  sat either side of flat ground. A day sun is higher and **the same problem
-  re-appears with different numbers**: the bands are re-solved from scratch,
-  not offset. Expect a different elevation and possibly a different band
-  count.
-- **Ground colour.** Rock at noon is light. The three bands run from a pale
-  lit face to a mid shadow — the whole ramp lives in the upper half of the
-  range where the night one lived in the lower. §28's `1.4×` compression of an
-  object's own `N·L` needs its own answer.
-- **Rim light.** A crest against a bright sky may want a *dark* line rather
-  than a light one, which is a real inversion of §23's construction and the
-  thing most likely to look wrong first. §2's arithmetic does not decide it:
-  nothing out there is text, so decide it by looking at a ridge against the
-  day sky.
+- **The sun.** *Decided at §41, and it does not move.* §23 solved the key
+  light's elevation at 32° so the band edges sat above flat ground, and the
+  same criterion picks the same number at day — what sets it is the terrain's
+  slope distribution, which has not changed. Raising it is also the one thing
+  here that is not free: `SUN` is **baked** (`chunk.ts` marches the field
+  against it in the worker), so a second elevation is a second bake at
+  **+0.405 ms a chunk and +20.3 KB of geometry a chunk**, paid in both
+  appearances to serve one. And it buys less than nothing — measured over
+  seven elevations, 32° → 55° narrows the gap between flat ground and the
+  terminator by 24% and shortens every cast shadow by 56%, and at day the cast
+  shadow is a hard dark shape on a lit plain rather than §23's quarter-band
+  lean. A noon sun cel-shades nothing.
+- **Ground colour.** *Decided at §41, and the band edges did not move
+  either.* **A ladder is four tokens in ascending lightness and the two sets do
+  not order the same way**, so what changes is the rungs and nothing else:
+  `--rule` and `--dim` change places, `--paper` gives its rung to
+  `--void-lift` (the palest a surface may be, `--void` being the clear
+  colour), and `--leader` keeps the top rung, since the accent is the one token
+  §39 did not invert. Open country is `--rule` in both appearances — 88.9% of
+  the ground, one rung off the page — at 0.082 of relative luminance at night
+  and 0.296 at day. §28's compressions are untouched: the term and the two
+  edges are §23's, so the same facet of a conifer crosses the terminator in
+  both. **±1 cannot be symmetric** — there is nothing above `--rule` in the
+  light set but `--void-lift` and `--void` — so at day growth goes one rung
+  *down* and a stand of pines two, which is what cover at noon does anyway.
+  What was built and measured out is the complement (banding `1 − N·L` and
+  leaving the tokens alone): it is right over the world and wrong over the
+  frame, 99.5% of the arrival's terrain pixels in one band against the night
+  terminator's 42.7 / 57.2 split.
+- **Rim light.** *Decided at §41: it inverts, and the decision is to change
+  nothing.* `--leader` is 0.385 in both appearances — §39 held it there
+  deliberately — so the same construction is brighter than a night sky and
+  darker than a day one with no constant touched. Measured across one crest:
+  at night the rim is 0.236–0.271 against a sky of 0.009–0.019, the brightest
+  thing on the ridgeline; at day it is 0.262–0.347 against a sky of
+  0.705–0.754, the darkest. Same width, opposite sign.
 - **Fog.** Target becomes the sky, not `--void`. Same construction, opposite
   end. Aerial perspective is stronger at day, so the density probably rises.
+  **§41 measured what this has to move**: `mix(--void, the sky, 0.75)` is
+  0.758 at day, which sits *above* the ground's whole banded range instead of
+  below it, so the fog compresses where at night it expands — the arrival's
+  ground spans 0.27–0.63 in the material and 0.56–0.68 on screen, a 2.3× range
+  arriving as 1.2×. It is why the day world reads at a station and is still
+  pale from 190 units up.
 - **Water.** It mirrors the sky gradient, so it inverts for free — but §26's
   one quantised specular band was solved against a dark surround and needs
   re-measuring.
@@ -2337,10 +2365,12 @@ calls rather than architectural ones. The architecture is decided.
   document ratio of about 4.66. **Not solved at §40 on purpose** — §41 and §42
   replace the ground behind every one of those measurements, and a value
   solved against a white-out is solved against a world that will not exist.
-- **Whether the world's rim light inverts at day.** §4.9's most likely
-  failure, and the one question in the light-mode block that contrast
-  arithmetic cannot answer — nothing out there is text. Decided by looking,
-  at §41.
+- ~~**Whether the world's rim light inverts at day.**~~ *Answered at §41: it
+  inverts, and nothing was changed to make it.* `--leader` does not move
+  between the appearances, so a rim painted in it is 26× the night sky it is
+  drawn against and half the day sky. The question that replaced it is the
+  **fog target** (§4.9), which is what still holds the day ground inside a
+  tenth of a stop from altitude — §42's.
 
 Carried over:
 
