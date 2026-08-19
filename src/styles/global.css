@@ -604,7 +604,51 @@ html[data-mode='world'] .curtain { display: grid; }
    0.95, which is a panel rather than a scrim and takes the scene away. The
    halo can, and does: 7.4:1 and 15.6:1 at the same frame, with the rung
    left where §32 put it. Inherited, so it reaches both. */
-.station .col .name { text-shadow: var(--halo); }
+/* **§44 widens this to everything the scrim has not caught up with yet.**
+   §38 put the halo on the name row because that is the frame the reader
+   lands on. What it missed is that the *rung* keeps moving after that:
+   `station.ts` brings the scrim up a step per beat — 0.45 named, 0.60 lead,
+   0.80 facts, 1.00 open — so the summary and the metric strip are both on
+   screen over a scrim that is only two thirds up, and the writeup is the
+   only block that ever sees a full one.
+
+   Measured at §44 over five stations and every rung, worst covered-pixel
+   block, shipped against this:
+
+     rung 0.98, night   everything 4.64 to 7.50            — never the problem
+     rung 0.80, night   the strip's 10px labels 3.44/3.45/4.14, stack 3.84
+     rung 0.80, day     the strip's values 3.49-4.34, labels 2.99-4.79
+     rung 0.60, day     the way out of the panel 3.61
+     rung 0.60, night   the way out of the panel 3.44 at Basis
+
+   **Both other levers were measured out first, and this time it was the
+   token's own percentage rather than the element's opacity.** §43 swept the
+   scrim element (0.45 → 1.0) and found 0.05, but it measured that over the
+   way out, which has no scrim behind it at all. Swept here where the scrim
+   *is* the backdrop, `--scrim`'s own 92% buys **0.17 at day and 0.23 at
+   night across its entire range to 100%** — five stations, four rounds,
+   interleaved so the world's clock is spread across the values rather than
+   confounded with them. And the token is not the lever either: `--dim` and
+   `--leader-ink` fail together, at 10px and at 44px, which is the tell that
+   what moved is the ground and not the ink.
+
+   Raising the rungs instead is the thing §38 already refused — solving for
+   the rung wants a panel rather than a scrim and takes the scene away, and
+   here it would also delete §32's beat gradation, which is the whole reason
+   the scrim comes up in steps.
+
+   Not the writeup body: it is the one block that only ever appears at a
+   full rung, and it is by far the most text to paint a fourteen-shadow
+   stack behind. */
+.station .col .name,
+.station .col .lead,
+.station .col .facts { text-shadow: var(--halo); }
+
+/* Explicitly, and not by inheritance from `.name` it sits inside: a
+   `<button>` does not take `text-shadow` from its ancestors here, which is
+   why the way out of the panel was the one string in the name row without
+   a halo. Measured as `text-shadow: none` on the shipped build. */
+.station .act { text-shadow: var(--halo); }
 
 /* The meta line: the machine ID and the period at their own width rather
    than pushed to the ends of a 45ch column, and the way out at the far
