@@ -1,8 +1,16 @@
 ---
-// Both controls from §5. State is applied before first paint by the
-// inline script in Base.astro, so there is no flash.
+// All three controls from §5. State is applied before first paint by the
+// inline script in Base.astro, so none of them flashes.
+//
+// The appearance is first and the other two are at the right edge, because
+// contrast and motion are what a struggling reader reaches for and this is
+// the third control on a strip §5 says cannot hold a fourth.
 ---
 <div class="toggles">
+  <button id="t-theme" type="button" aria-pressed="false" title="Toggle light appearance">
+    <span aria-hidden="true">☀</span>
+    <span class="sr-only">Light appearance</span>
+  </button>
   <button id="t-contrast" type="button" aria-pressed="false" title="Toggle high contrast">
     <span aria-hidden="true">◐</span>
     <span class="sr-only">High contrast</span>
@@ -26,17 +34,29 @@
     padding: var(--s-1) var(--s-2);
     cursor: pointer;
   }
-  button:hover { color: var(--leader); border-color: var(--leader); }
+  button:hover { color: var(--leader-ink); border-color: var(--leader-ink); }
 
   /* Painted off the root attribute, which the inline head script sets
      before first paint — not off aria-pressed, which the module below
      can only correct after it. Keying the colour to aria-pressed makes
      a stored toggle flash from inactive to active on every load. */
   :global(html[data-contrast="high"]) #t-contrast,
-  :global(html[data-motion="off"]) #t-motion {
-    color: var(--leader);
-    border-color: var(--leader);
+  :global(html[data-motion="off"]) #t-motion,
+  :global(html[data-theme="light"]) #t-theme {
+    color: var(--leader-ink);
+    border-color: var(--leader-ink);
   }
+
+  /* No chip. The pressed state was built as a --leader fill with --paper on
+     it — 7.03:1 for the ink, and the one place #A99BF5 would still appear at
+     full strength in the light document. Measured and removed: the fill's own
+     boundary against the page is **2.23:1**, under the 3:1 SC 1.4.11 asks of
+     the thing that identifies a control's state, and high contrast made it
+     worse rather than better (--leader lifts to #C4B8FF there, which is
+     1.66:1 on a pale page). The outline above mirrors dark's construction and
+     measures 5.08:1, 10.27 in high contrast. What it costs is that the accent
+     has no full-strength job left in the light document at all — recorded as
+     an open decision in SPEC §8, not papered over here. */
 
   /* Once the nav has wrapped to its own line these are being tapped,
      not clicked. 26x24 is too small for that — go to a full 44x44
@@ -99,6 +119,28 @@
       if (e.matches) root.dataset.motion = 'off';
       else delete root.dataset.motion;
       motion.setAttribute('aria-pressed', String(e.matches));
+    });
+  }
+
+  /* Appearance: the same three states and the same reason for writing both
+     directions (§39). `auto` is resolved to an explicit attribute by the head
+     script, so `light` here is a preference and the absence of the *key* — not
+     of the attribute — is what leaves the OS in charge. */
+  const theme = document.getElementById('t-theme');
+  if (theme) {
+    theme.setAttribute('aria-pressed', String(root.dataset.theme === 'light'));
+    theme.addEventListener('click', () => {
+      const light = root.dataset.theme !== 'light';
+      root.dataset.theme = light ? 'light' : 'dark';
+      store.set('tj:theme', light ? 'light' : 'dark');
+      theme.setAttribute('aria-pressed', String(light));
+    });
+
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+      if (store.get('tj:theme')) return;
+      if (e.matches) root.dataset.theme = 'light';
+      else delete root.dataset.theme;
+      theme.setAttribute('aria-pressed', String(e.matches));
     });
   }
 </script>

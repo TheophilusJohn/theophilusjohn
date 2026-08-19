@@ -3,6 +3,10 @@
    it appears: active, elected, current. Never decoration. */
 
 :root {
+  /* The two appearances (§5). Named so form controls, scrollbars and the
+     native focus ring follow the palette; the light set below flips it. */
+  color-scheme: dark;
+
   --void:      #14121F;
   --void-lift: #1C1A2B;
   --rule:      #2A2640;
@@ -17,6 +21,15 @@
   --muted:     #9A93C0;
   --paper:     #EDEAFB;
   --leader:    #A99BF5;
+  /* §39. The accent split by *job*, not by appearance. `--leader` is the
+     colour — a fill with something dark on it, a hairline, and the whole of
+     the world. `--leader-ink` is the accent when it has to be read against
+     the page: links, machine IDs, metric values, the focus ring, a progress
+     fill. In dark they are one value by construction, so the dark appearance
+     cannot drift and [data-contrast="high"] needs no second entry — it lifts
+     --leader and this follows by substitution. Only light moves it, because
+     #A99BF5 is 2.23:1 on a pale page. */
+  --leader-ink: var(--leader);
   /* Held in reserve from §2 to §30. The reason it was waiting for is the
      motes: the one thing in the world that is alive rather than lit, and the
      one thing allowed to be brighter than the ground it is over (§0.2). */
@@ -108,4 +121,60 @@
   --dim:    #A5A0C5;
   --rule:   #4A4470;
   --leader: #C4B8FF;
+}
+
+/* ── The second appearance — §39 / SPEC §2 ───────────────
+   Not a second palette invented beside the first: the same hue family
+   (248–252°), the same saturations, and the dark set's own *ratios*
+   reproduced against a page that is now the light end. Measured, each
+   against --void, dark twin in brackets:
+
+     --void-lift  1.08 [1.08]   --dim    5.10 [5.07]   --paper 15.67 [15.64]
+     --rule       1.28 [1.28]   --muted  6.49 [6.43]
+
+   --void is 1.081 off pure white rather than pure white, which under this
+   much violet reads clinical. --void-lift goes *down* from the page, not up:
+   raised is more ink here, not less.
+
+   **--leader does not move and never will.** What moves is --leader-ink,
+   because #A99BF5 measures 2.23:1 against this page and 1.74:1 against its
+   own --rule track — so it cannot carry type, a focus ring, or a progress
+   fill. What it keeps is every job where it is a *fill with something dark on
+   it* (--paper on --leader is 7.03:1) and the whole of the world — and after
+   §39 the light document has none of the first kind left. The one candidate,
+   a pressed toggle as a lavender chip, was built and measured out: 7.03:1 for
+   the ink and 2.23:1 for the fill's own boundary, which is what identifies the
+   state. SPEC §8 carries what to do about it.
+
+   --mint is deliberately absent. It has no document use — the world reads it
+   through getComputedStyle and nothing else does — so its light value is
+   §42's decision, with the lamps and the motes it is on.
+
+   Scoped away from world mode: --scrim and --halo are written as --void and
+   would invert with this set, and the world is night in both appearances
+   until §40 gives it a day. That scoping is what makes this step shippable
+   on its own. */
+html[data-theme="light"]:not([data-mode="world"]) {
+  color-scheme: light;
+
+  --void:       #F6F5FA;
+  --void-lift:  #EDECF4;
+  --rule:       #DBD9E8;
+  --dim:        #6A60A0;
+  --muted:      #5A518B;
+  --paper:      #1D1541;
+  --leader-ink: #654CED;
+}
+
+/* Light × high contrast — the fourth appearance (§5), mirroring the dark
+   high-contrast ratios the same way: --paper 19.36 [18.49], --muted 11.69
+   [11.60], --dim 7.43 [7.42], --rule 2.07 [2.07], --leader-ink 10.27
+   [10.25]. --leader itself is left alone here: dark lifts it because it was
+   carrying ink, and after the split it is not. */
+html[data-theme="light"][data-contrast="high"]:not([data-mode="world"]) {
+  --paper:      #000000;
+  --muted:      #342E51;
+  --dim:        #514A79;
+  --rule:       #AEA9CB;
+  --leader-ink: #2C12B8;
 }

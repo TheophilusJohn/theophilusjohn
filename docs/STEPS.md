@@ -6,7 +6,7 @@ Every step ends with: `npm run build` passing, a commit, and a report of
 what was measured. If a step can't be completed as written, **stop and say
 so** rather than substituting an approach.
 
-Steps 1–33 are done. The site is live. **Update this line at the end of
+Steps 1–39 are done. The site is live. **Update this line at the end of
 every step** — a stale marker in the file each session opens with is worse
 than no marker. (**Steps 1–4 predate this file**: it has opened at step 5
 since its first commit, `05cafce`, and 1–4 are the Astro 7 document-mode
@@ -6035,3 +6035,300 @@ else: the stacked layout is still 1.6 at 62ch, and so is the world's
 station panel, which clones the same nodes from outside the stage.
 Measured: 24px in the stage, 25.6 in both of the others. axe clean in ten
 states.
+
+---
+
+## The second appearance
+
+**The site is dark by design, not by default** — and that was a claim with
+nothing behind it: `prefers-color-scheme` was read nowhere, there was no
+light token set, and every band, bound, scrim and halo from §15 to §38 was
+solved against `--void`. These five steps add a second appearance to both
+halves. **In the document that is a palette. In the world it is a different
+hour** (SPEC §2 and §4.9).
+
+**39 first, and it ships on its own.** If 40–43 stall, a light document over
+a night world is not a broken site — it is the escape hatch in the reader's
+own appearance, which is arguably the point of an escape hatch. The light
+token set is scoped away from `[data-mode="world"]` to make that true rather
+than to hope it is.
+
+**The honest cost, stated once.** This touches every visual decision made
+since §15, and the world half is not a port — it is designing the same place
+at a different hour, with §41 the whole of §23 done again with different
+numbers. It is worth doing if a light-mode reader is someone worth serving
+properly. It is not worth doing if the answer is "some people have light
+OSes": for that, §39 alone is the answer, and `<meta name="color-scheme">` is
+the ten-second version of it. **Nothing here changes what the site is** — the
+dark appearance stays exactly as built and remains the default for anyone
+whose OS does not say otherwise.
+
+### 39. The document, light
+The palette, the split, and the third toggle. World mode is untouched.
+
+- **A second token set** under `[data-theme="light"]`, scoped away from
+  `[data-mode="world"]`. Same hue family, same *ratios* as the dark set, then
+  measured — not a second palette invented beside it.
+- **`--leader` splits by job** (SPEC §2). `--leader-ink` is the accent when it
+  has to be read against the page; `--leader` is the colour itself and stays
+  `#A99BF5` in both appearances. In dark the second is `var(--leader)`, so the
+  dark appearance cannot drift and the contrast toggle needs no second entry.
+- **The toggle as a third key**, in the shape `tj:motion` already has: three
+  states, `auto` resolved to an explicit attribute before first paint, the OS
+  consulted only while the key is absent, and both directions written on a
+  press so the OS cannot silently undo a choice.
+- **The log bands invert.** They are `--dim` on `--void` at low contrast by
+  design, and the same relationship at the same ratio the other way up is a
+  token change and nothing else.
+- **High contrast × light** is a fourth token set, and it mirrors the dark
+  high-contrast ratios the same way.
+
+**Done when:** the dark appearance is unchanged — computed colours identical,
+token for token, in both contrast states; every ink token clears 4.5:1 in
+light and every mirrored ratio matches its dark twin; axe is clean in light in
+both contrast settings; and no flash on a light load.
+
+**Report:** the two new token sets with a measured ratio beside every value,
+what moved from `--leader` to `--leader-ink` and why, CSS and document-JS
+bytes, and the header at 360px with a third control in it.
+
+*Done.* **A second token set, an accent split by job, and a third key — and
+the dark appearance is unchanged by measurement rather than by intention.**
+Every colour on this site was already a token in `tokens.css`, so the whole
+step is 471 bytes of CSS, one branch in the head script and one block in the
+toggle module. The world is untouched: its chunk is **byte-identical**, same
+`scene.DWsQXswP.js` hash, same worker.
+
+### The dark appearance, proved rather than asserted
+
+Seventeen probes — body, wordmark, nav, hero, subline, prose, log line,
+machine ID, metric value, metric label, writeup, link row, link underline,
+footer rule, skip link, three toggles — read as **computed** colour off a
+§38 build and a §39 build in the same browser session, in both contrast
+states. **Identical at every one.** The only two differences the diff
+reports are the two things that are supposed to be different:
+
+| | §38 | §39 |
+|---|---|---|
+| `#t-theme` | did not exist | `--dim` on transparent, `--rule` border — the other two exactly |
+| `color-scheme` | `normal` | `dark` |
+
+That is what `--leader-ink: var(--leader)` buys: the two tokens are one value
+in dark **by substitution**, so `[data-contrast="high"]` lifts `--leader` and
+the ink follows it with nothing to keep in sync, and there is no second
+palette entry that could drift.
+
+### The light set is the dark set's ratios
+
+Measured in the browser off the built CSS, each against that appearance's own
+`--void`, dark twin in brackets:
+
+| token | light | ratio | light + contrast | ratio |
+|---|---|---|---|---|
+| `--void` | `#F6F5FA` | — (1.085 off pure white) | `#F6F5FA` | — |
+| `--void-lift` | `#EDECF4` | 1.08 [1.08] | `#EDECF4` | 1.08 [1.08] |
+| `--rule` | `#DBD9E8` | 1.28 [1.28] | `#AEA9CB` | 2.07 [2.07] |
+| `--dim` | `#6A60A0` | **5.10** [5.07] | `#514A79` | **7.43** [7.42] |
+| `--muted` | `#5A518B` | **6.49** [6.43] | `#342E51` | **11.69** [11.60] |
+| `--paper` | `#1D1541` | **15.67** [15.64] | `#000000` | **19.36** [18.49] |
+| `--leader` | `#A99BF5` | 2.23 [7.65] | `#C4B8FF` | 1.66 [10.25] |
+| `--leader-ink` | `#654CED` | **5.08** [7.65] | `#2C12B8` | **10.27** [10.25] |
+
+Every one meets or exceeds its dark twin. The hue family holds at 248–252°
+against the dark set's 247–251, and `--dim` lands on the family hue at
+exactly 50% lightness. **Nothing in the light document is under 5.08:1**, and
+the lowest reading of any ink token anywhere is the dark set's own `--dim` at
+5.07.
+
+Read on the elements themselves rather than on the tokens, light mode: nav
+5.10, wordmark 15.67, meta 5.10, hero 15.67, subline 5.08, prose 6.49, log
+line 5.10, machine ID 5.08, metric value 5.08, metric label 5.10, writeup
+15.67, link row 5.08, **link underline 5.08**, footer meta 5.10, toggle at
+rest 5.10.
+
+### The accent, and the thing it cost
+
+`--leader` is `#A99BF5` in both appearances and always will be. What §39
+found is that the split has to be **wider than it was drafted**. The plan
+kept the accent on the focus ring, the progress rail and link underlines,
+on the grounds that non-text UI wants 3:1 and it clears that on a pale
+ground. Measured, it does not:
+
+| `#A99BF5` against | |
+|---|---|
+| the light page | **2.23:1** |
+| its own `--rule` track | **1.74:1** |
+| `--paper` on top of it (as a fill) | 7.03:1 |
+
+So everything that has to be *seen* moved with the type: the focus ring
+(SC 1.4.11 wants 3:1), the stage's progress fill, `text-decoration-color`,
+and the custom cursor's link dot. Nine use sites in five files, and in dark
+every one of them resolves to the same `#A99BF5` it did before.
+
+**Then the one place the accent could have stayed at full strength was built
+and measured out.** A pressed toggle as a lavender chip with `--paper` on it
+is 7.03:1 for the ink — the accent marking state, which is hard rule 2 — and
+**2.23:1 for the fill's own boundary**, which is the part that identifies the
+state. High contrast makes it worse rather than better: dark's high-contrast
+set lifts `--leader` to `#C4B8FF`, and that is **1.66:1** on a pale page. So
+light's pressed state is the same outline dark has, in `--leader-ink`:
+
+| appearance | pressed control | ink | border |
+|---|---|---|---|
+| dark | `#A99BF5` | 7.65 | 7.65 |
+| dark + contrast | `#C4B8FF` | 10.25 | 10.25 |
+| light | `#654CED` | 5.08 | 5.08 |
+| light + contrast | `#2C12B8` | 10.27 | 10.27 |
+
+**Which leaves the light document with no full-strength `#A99BF5` in it at
+all.** That is a real cost of the split and it is recorded as an open
+decision (SPEC §8) rather than solved quietly — the drafted answer, the hero
+subline as a lavender block, is a motion decision and not a palette one:
+`.sub` is a clip its line is revealed *out of*, so a background on it paints
+before the line arrives.
+
+### Three states, and the OS cannot undo a choice
+
+Same shape as `tj:motion`, and for the same reason — a toggle that clears its
+key on un-press drops back to `auto` and the OS silently re-asserts on the
+next load. Driven through the button, one live browser:
+
+| step | `data-theme` | `tj:theme` | `aria-pressed` | page |
+|---|---|---|---|---|
+| OS light, no key | `light` | – | true | `#F6F5FA` |
+| press | `dark` | `dark` | false | `#14121F` |
+| reload | `dark` | `dark` | false | `#14121F` |
+| press | `light` | `light` | true | `#F6F5FA` |
+| reload — the OS must not re-assert | `light` | `light` | true | `#F6F5FA` |
+| OS flips to dark, key still `light` | `light` | `light` | true | `#F6F5FA` |
+| key removed, OS flips live | – | – | false | `#14121F` |
+
+**`auto` is resolved to an explicit attribute before first paint** rather
+than by a second copy of the token block inside a media query. One selector,
+one palette, and the same branch `tj:motion` already has three lines above
+it.
+
+### No flash, and it is the inline script that proves it
+
+| load | `data-theme` | `--void` | `color-scheme` |
+|---|---|---|---|
+| OS light, whole page | `light` | `#F6F5FA` | light |
+| OS light, **every `.js` request aborted** | `light` | `#F6F5FA` | light |
+| OS light, **JS disabled entirely** | – | `#14121F` | dark |
+| OS dark + stored `light` | `light` | `#F6F5FA` | light |
+
+The middle row is the instrument: with the bundle blocked the appearance is
+still light, so it is the head script and not the module that applies it. The
+row under it is the other half of the same fact — with no script at all the
+site is dark, which is its default by design rather than by omission.
+
+### The world is night in both appearances
+
+The light set is scoped `html[data-theme="light"]:not([data-mode="world"])`,
+which is what makes this step shippable without §40–§42. Forced
+`data-mode="world"` on a light-preferred load: `--void` `#14121F`,
+`--leader-ink` back to `#A99BF5`, `color-scheme` dark. `--scrim` and `--halo`
+are written as `--void` and would have inverted with the set — they are
+world-only, so they invert **for free** at §40 and cost nothing here.
+`palette.ts` still observes `data-contrast` alone, correctly: nothing the
+world reads changes with the appearance yet, and adding `data-theme` to that
+filter is §40's first line.
+
+### The third control costs nothing, because §38's `[hidden]` defect is closed
+
+It costs 60px of header at 360 and 390 if it is left open. §38 recorded it and
+left it as a decision: `[hidden]` is a UA rule and the tap-target block's
+`display: inline-flex` outranks it, so the way back into the world was on
+screen at phone width with its attribute still set. With two toggles the nav
+absorbed it; with three, WORLD wrapped onto a line of its own and the header
+went **152 → 212px**. `nav a:not([hidden])` closes it, and then:
+
+| width | §38 header | §39 header | nav | toggles | right gutter | h-scroll |
+|---|---|---|---|---|---|---|
+| 320 | 212 | 212 | 20..128 | 152..300 | 20 | 0 |
+| 360 | 152 | **152** | 20..160 | 184..332 | 28 | 0 |
+| 390 | 152 | **152** | 20..160 | 184..332 | 58 | 0 |
+| 414 | 152 | 152 | 21..161 | 185..333 | 81 | 0 |
+| 640 | 94 | 94 | 296..436 | 460..608 | 32 | 0 |
+| 780 | 73 | 73 | 482..622 | 646..741 | 39 | 0 |
+| 1024 | 73 | 73 | 661..854 | 878..973 | 51 | 0 |
+| 1512 | 73 | 73 | 1137..1329 | 1353..1448 | 64 | 0 |
+
+**Identical to §38 at every width**, zero horizontal scroll, 44×44 targets at
+≤640 and 26×24 above it, and the toggles still end at the page gutter. At
+1024 and up the World link is back on screen because the script removed the
+attribute — which is the case it was written for.
+
+### axe, eight document states
+
+Clean in all eight: light, light + contrast, light deep link, light at 360,
+light with motion off, dark, dark + contrast, dark at 360. §38's instrument
+note held — wait for the log band's tween, not for `data-intro`, or eleven
+`color-contrast` violations on `aria-hidden` decoration are reported that are
+not there at rest.
+
+### Cost
+
+Against a §38 build in the same session at the same gzip level:
+
+| | §38 | §39 | Δ |
+|---|---|---|---|
+| `Base.css` | 11,881 / 3,189 gz | 12,352 / **3,338 gz** | **+149** |
+| `index.html` | 41,197 / 10,759 gz | 42,669 / **11,122 gz** | **+363** |
+| document JS, three files | 150,425 / 57,027 gz | 150,425 / **57,027 gz** | **0** |
+| world chunk + worker | 226,731 + 3,593 gz | 226,731 + 3,593 gz | **0** |
+
+Document JS is **unchanged to the byte**: Astro inlines the toggle module
+into the page, so the third control's script is inside the +363 and not in a
+chunk. The world chunk is byte-identical with the same hash, which is what a
+step that ships no world code should do. 55.69 KiB of a 120 KiB budget;
+224.93 KiB of 400.
+
+### 40. The sky, at day
+A gradient from a deep blue zenith to a pale horizon, banded like everything
+else. The cloud deck stays and re-tints. **The stars go** — not dimmed, gone,
+which takes a draw call with them. The light token set stops being scoped
+away from world mode at this step, so the scrim and the halo invert with it
+and the day sky has to be bright enough behind a station panel to read.
+
+**Report:** ms/frame per layer against §38's `base + slope × megapixels` fit,
+draw calls, and the scrim's rung re-solved against the day sky.
+
+### 41. The ground, at day
+**§23 done again with different numbers.** The sun's elevation and the band
+edges are re-solved from scratch rather than offset — a day sun is higher and
+the same problem re-appears — along with the ground's three-band ramp, §28's
+`N·L` compression, and the rim light, **including whether it inverts** (SPEC
+§4.9, and the one question here that contrast arithmetic cannot answer).
+
+**Report:** the band placement and the tilt it takes to change band, at the
+new elevation; the rim decision, with a frame of a ridge against the day sky.
+
+### 42. The rest of the world, at day
+Fog target, water and §26's specular band, §27's ground tint, the motes, and
+§37's nineteen landmark lamps. The motes and the lamps are the same problem —
+additive layers with no headroom above a bright ground — and they may get
+different answers: cutting the motes in light is acceptable, and a lighthouse
+with no light is not a lighthouse. `--mint`'s light value is decided here,
+because it has no document use and §39 left it out for that reason.
+
+**Report:** per-layer frame cost in both appearances, and what the motes and
+the lamps became.
+
+### 43. Re-measure everything
+The instruments exist — §38 built the pose solver, the glyph-mask contrast
+harness and the state sweep — so this is running them again against a
+different token set, which is what makes it expensive rather than impossible.
+
+- §38's 116 brightness measurements, in the two new appearances
+- The `--halo` ring, which exists because a machine ID measured 1.76:1 across
+  a lit cloud. **A bright cloud under dark type is the same failure inverted**
+- §32's scrim rung (0.45), and §29's finding that the scrim holds the reading
+  half of the frame still
+- §27's ground tint, §28's compression, §23's band edges and sun elevation,
+  §26's specular band — as re-solved by 41 and 42
+- The document's `--dim`, which was allowed to be 2.07:1 texture before §14
+  and carries the nav
+- axe across ten states × two appearances × two contrast settings
+
+**Report:** the full matrix, and the worst measurement in each quadrant.

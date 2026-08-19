@@ -1223,6 +1223,74 @@ The practical reason for lavender over the earlier amber: in the render layer th
 
 **Revised (§14): `--dim` is `#8780B2`, not the `#4A4470` this section shipped with.** The old value was 2.07:1 on `--void` and accounted for every one of the 100 axe violations §14 measured — the whole primary nav, both section headings, the period, the stack, the metric labels, the footer, the log bands. Same hue and saturation, lightness only, 5.07:1; the high-contrast value moved with it, to 7.42:1, because a toggle that shifts contrast by half a point looks broken. **Do not restore the darker value.** What it encoded survives as a rule about *what the token is used for* — `--dim` is texture and must never carry information said nowhere else — and a contrast checker cannot see that distinction anyway.
 
+### The second appearance (§39)
+
+**The site is dark by design, not by default** — and until §39 that was a
+claim with nothing behind it: `prefers-color-scheme` was read nowhere, there
+was no light token set, and every band, bound, scrim and halo since §15 was
+solved against `--void`. There is a second appearance now. **In the document
+it is a palette; in the world it is a different hour** (§4.9), and the two
+ship apart — §39 is the document alone, and a light document over a night
+world is a coherent site rather than a half-finished one.
+
+**The accent splits by job, not by appearance.** `#A99BF5` is 2.23:1 on a
+pale page — it fails text contrast by a wide margin, and it is the site's one
+meaningful colour. It does not move and it does not go anywhere: it is the
+value this site is built around and it stays exactly that in both
+appearances. What it stops doing in light mode is carrying *type*.
+
+| token | what it is for | dark | light |
+|---|---|---|---|
+| `--leader` | the colour itself — fills behind dark ink, hairlines, and the entire world | `#A99BF5` | **`#A99BF5`, unchanged** |
+| `--leader-ink` | the accent when it has to be **read against the page** — links, machine IDs, metric values, the focus ring, a progress fill | `var(--leader)` | `#654CED` — same hue, same saturation, lightness only |
+
+In dark the second is defined as `var(--leader)` and the two are one value,
+so the dark appearance cannot drift: `[data-contrast="high"]` lifts `--leader`
+and `--leader-ink` follows it by substitution, with nothing to keep in sync.
+
+**§39 measured the split wider than it was drafted.** The first draft kept
+`#A99BF5` on the focus ring, the rail and link underlines on the grounds that
+non-text UI wants 3:1 and it "clears that on a pale ground". It does not —
+2.23:1 against the page and **1.74:1 against its own `--rule` track** — so
+everything that must be *seen* moved to `--leader-ink` too, and the rule is
+now the sharper one: **`--leader` may only be a fill with something dark on
+it, or in the world.**
+
+**And in the light document there is nothing of the first kind left.** The one
+candidate was the pressed toggle as a lavender chip — `--paper` on `--leader`
+at 7.03:1, the accent marking state, which is hard rule 2. It was built and
+measured out: the ink is fine and the *fill's own boundary* against the page
+is 2.23:1, which is what identifies the state and is under SC 1.4.11's 3:1.
+High contrast makes it worse rather than better, because dark's high-contrast
+set lifts `--leader` to `#C4B8FF` and that is **1.66:1** on a pale page. So
+light's pressed state is `--leader-ink` at 5.08:1, mirroring dark's
+construction, and where the accent gets a full-strength home in the light
+document is an open decision (§8) rather than a thing quietly solved.
+
+The light set is the dark set's **ratios**, reproduced, not a second palette
+invented beside it — same hue family (248–250°), same saturations, lightness
+mirrored and then measured:
+
+```css
+--void:       #F7F5FA;  /* 1.083 off pure white — violet, warm, not clinical */
+--void-lift:  #EEECF4;  /* 1.08 from the page, as --void-lift is in dark */
+--rule:       #DCD9E8;  /* 1.28 */
+--dim:        #695FA0;  /* 5.18 — the family hue at exactly 50% lightness */
+--muted:      #5A528B;  /* 6.43 */
+--paper:      #1C143D;  /* 15.94 */
+--leader:     #A99BF5;  /* unchanged */
+--leader-ink: #654CED;  /* 5.09 */
+```
+
+`--scrim` and `--halo` are written as `--void` and invert for free. Both are
+world-only, so neither moves until §40–§42; the light token set is scoped
+away from `[data-mode="world"]` for exactly that reason, and that scoping is
+what makes §39 shippable on its own.
+
+`--mint` is **not** in the light set. It has no document use at all — it is
+read by the world through `getComputedStyle` and nowhere else — so its light
+value is §42's decision and not §39's.
+
 ### Type
 
 Display face needs a **variable width axis**. Hero is set at the expanded end (~120) at very large sizes with tight negative tracking; body sits nearer normal width. Candidates to audition: Archivo Expanded, Anybody, Roboto Flex. Pick by setting the actual word "Homonoia" at 180px and seeing which one holds up.
@@ -1933,6 +2001,65 @@ World mode is not required to be keyboard-navigable as a 3D space. It **is** req
 
 Every piece of information in world mode must exist in document mode. That is the accessibility story — not making a flight simulator screen-reader friendly, but guaranteeing nothing is lost by never entering it.
 
+### 4.9 The world at day
+
+The second half of §2's second appearance, and it is **not "the night scene,
+lighter"**. A cel-shaded landscape lit from a dark sky with a violet rim on
+every crest does not become daylight by raising an exposure: the rim stops
+reading, the stars have to go, the fog target inverts, and additive motes
+brighter than the ground they sit over become invisible.
+
+So light mode in the world is **the same landscape at day**. Same terrain,
+same water, same two cities, same twelve landmarks, same four scenes, same
+route. A sun instead of a low key light, a bright sky instead of stars, and
+the shading solved from the other end. That framing is what makes the work
+tractable: every question becomes "what is this at noon" rather than "what is
+the light version of this".
+
+Each of the following is a decision, not a translation. Steps 40–42.
+
+- **Sky.** A gradient from a deep blue zenith to a pale horizon, banded like
+  everything else. The dome already runs two fractal noises for the cloud
+  deck; the deck stays and re-tints.
+- **Stars.** Gone. Not dimmed — a daylight sky with faint stars in it is a
+  mistake, not a subtlety. The starfield's draw call goes away in light mode,
+  which pays for some of what follows.
+- **The sun.** §23 solved the key light's elevation at 14° so the band edges
+  sat either side of flat ground. A day sun is higher and **the same problem
+  re-appears with different numbers**: the bands are re-solved from scratch,
+  not offset. Expect a different elevation and possibly a different band
+  count.
+- **Ground colour.** Rock at noon is light. The three bands run from a pale
+  lit face to a mid shadow — the whole ramp lives in the upper half of the
+  range where the night one lived in the lower. §28's `1.4×` compression of an
+  object's own `N·L` needs its own answer.
+- **Rim light.** A crest against a bright sky may want a *dark* line rather
+  than a light one, which is a real inversion of §23's construction and the
+  thing most likely to look wrong first. §2's arithmetic does not decide it:
+  nothing out there is text, so decide it by looking at a ridge against the
+  day sky.
+- **Fog.** Target becomes the sky, not `--void`. Same construction, opposite
+  end. Aerial perspective is stronger at day, so the density probably rises.
+- **Water.** It mirrors the sky gradient, so it inverts for free — but §26's
+  one quantised specular band was solved against a dark surround and needs
+  re-measuring.
+- **Motes.** Additive, `--mint`, and explicitly allowed to be brighter than
+  the ground. At day there is no headroom above the ground. Either they
+  become dark motes or they are a night-only layer; **decide by looking, and
+  cutting them in light is acceptable.**
+- **Landmark lamps.** Nineteen additive lights in `--mint` (§37). The same
+  problem and the same two answers, except that a lighthouse with no light is
+  not a lighthouse — likely they stay and get a dark surround instead of a
+  glow.
+- **The election.** Unaffected. The swell is geometry.
+
+**The scrim is the constraint that crosses the two halves.** §17's gradient
+is `--void` at 0.92 and it inverts with the token set, so a light station
+panel wants a day sky bright enough behind it to read against — which is a
+requirement on §40, not on §39. Until then the light token set is scoped away
+from `[data-mode="world"]` entirely and the world is night in both
+appearances.
+
 ### Lenis ↔ ScrollTrigger wiring
 
 Required for pinning to track smooth scroll:
@@ -1946,9 +2073,12 @@ gsap.ticker.add((time) => lenis.raf(time * 1000));
 
 ---
 
-## 5. The two toggles
+## 5. The three toggles
 
-Both live in the header, both persist to `localStorage`, both apply before first paint via an inline script in `<head>` to avoid a flash.
+**Two until §39, three after it.** All live in the header, all persist to
+`localStorage`, all apply before first paint via an inline script in `<head>`
+to avoid a flash. Three is the most that strip can hold before it has to
+become a menu, so this is the end of the pattern as well as the third of it.
 
 ### Reduced motion
 
@@ -1963,6 +2093,27 @@ This isn't a courtesy feature. It's what keeps the site usable for a hiring mana
 Toggles a `[data-contrast="high"]` token set: `--paper` to pure `#FFFFFF`, `--muted` lifted to at least 7:1 against `--void`, `--dim` lifted to 4.5:1, hairlines to `--rule` at double opacity. The accent shifts lighter to hold contrast on dark.
 
 `--dim` must never carry information that isn't repeated elsewhere — it is texture. That is a rule about usage, not about the value: §14 lifted the token itself to `#8780B2` (5.07:1) because a checker cannot see the distinction and scored every use of it as a failure. See §2.
+
+### Appearance
+
+Three states, like motion: `auto` follows `prefers-color-scheme`, plus
+explicit `light` and `dark`. Default `auto` — which means **the site's
+appearance changes for the first time in response to something outside it**,
+and that is worth knowing, because every screenshot and every brightness
+measurement to date assumed one appearance.
+
+`auto` is resolved to an explicit `data-theme` by the head script rather than
+by a second copy of the token block inside a media query, which is the same
+shape the motion toggle already has: one attribute, one selector, and the OS
+consulted only while the key is absent. With JS off there is no attribute and
+the site is dark, which is its design default.
+
+**It multiplies the contrast toggle rather than replacing it.** Four
+appearances now — dark, dark+contrast, light, light+contrast — and every
+brightness figure in §38 was solved for two of them. §43 is where the other
+two get measured.
+
+The light token set is in §2. The world's half of it is §4.9.
 
 ---
 
@@ -2008,6 +2159,12 @@ it and it is why two of this project's decisions look arbitrary otherwise.
 - Lighthouse accessibility 100
 - Every interactive element reachable and visibly focused by keyboard
 - Site fully usable at 360px wide with motion disabled
+- **Four appearances, not two, after §39** (§5). Every contrast bound, every
+  brightness measurement and every axe state is now a matrix of two
+  appearances by two contrast settings, and §38's 116 measurements covered
+  half of it. §43 is where the other half is measured — and the instruments
+  for it already exist, which is why that step is expensive rather than
+  impossible
 
 **It blew at §15, and what gave was the renderer's WebGL 2 fallback** — not the laptop, and never the accessibility work. Three tiers did not fit in 260KB and two do, so a browser without WebGPU gets the document, which is the whole site. Measured: mobile 54.6 KiB, desktop 249.5 KiB.
 
@@ -2058,6 +2215,18 @@ calls rather than architectural ones. The architecture is decided.
 - **Sound.** A world without audio is quieter than it should be, and it is
   cheap to add and expensive to get right. Not in the build order; it would
   be a step of its own.
+- **Whether the light document ever gets a lavender band.** §39 measured
+  `#A99BF5` at 2.23:1 on the light page, which leaves the pressed toggle as
+  the only place in the light document where the accent appears at full
+  strength. The drafted answer was to set the hero subline as a lavender
+  block with `--paper` on it — 7.01:1, and the accent as a *fill* rather than
+  as a tint. It was not built: `.sub` is a clip mask the intro reveals a line
+  out of, so a background on it paints before the line arrives, and that is a
+  motion decision rather than a palette one.
+- **Whether the world's rim light inverts at day.** §4.9's most likely
+  failure, and the one question in the light-mode block that contrast
+  arithmetic cannot answer — nothing out there is text. Decided by looking,
+  at §41.
 
 Carried over:
 

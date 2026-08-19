@@ -44,6 +44,30 @@ is without importing what one is made of. `camera.ts`'s bound goes 2,600 →
 **5,000**, and that is load-bearing rather than aspirational: Houston stands
 2,992 from the origin. Everything under it is where §24 measured it.
 
+**Since §39 there are two appearances, and only the document has the second
+one yet.** `tokens.css` carries a light set under
+`html[data-theme="light"]:not([data-mode="world"])` — the dark set's own
+*ratios* reproduced (every one meets or exceeds its twin: `--dim` 5.10 against
+5.07, `--muted` 6.49 / 6.43, `--paper` 15.67 / 15.64), the same 248–252° hue
+family, and a fourth set for light × high contrast. **The accent splits by
+job, not by appearance**: `--leader` is `#A99BF5` in both and always will be,
+`--leader-ink` is the accent when it has to be *read against the page*, and in
+dark it is `var(--leader)` — so the dark appearance is unchanged by
+substitution rather than by intention, proved at 17 computed-colour probes in
+both contrast states. The split had to go **wider than drafted**: `#A99BF5` is
+**2.23:1** on the light page and **1.74:1** on its own `--rule` track, so the
+focus ring, the stage's progress fill, `text-decoration-color` and the cursor's
+link dot moved with the type. The cost is that the light document has **no
+full-strength `#A99BF5` in it at all** — the pressed-toggle chip was built and
+measured out at a 2.23:1 boundary — and SPEC §8 carries that rather than
+hiding it. The third toggle is `tj:theme`, three states, `auto` **resolved to
+an explicit attribute before first paint** rather than duplicated inside a
+media query; with the bundle blocked the appearance still applies, and with no
+JS at all the site is dark, which is its default by design. The world is
+night in both appearances and `--scrim` and `--halo` invert for free when §40
+lifts the scoping. Steps 40–43 are the world at day and the re-measure; see
+SPEC §4.9.
+
 **Since §38 hard rule 6 is verified rather than asserted, and the type is
 legible over everything §36 and §37 put in the world.** The audit is two
 halves: a walk over every string world mode can put on screen (**67, of
@@ -374,7 +398,11 @@ These are not preferences. Violating one is a bug.
    `src/styles/tokens.css`. Need a new one? Add a token, don't inline a hex
    or a `px` value.
 2. **`--leader` means state.** Active, elected, current. If it isn't marking
-   state or a live link, it must not be that colour.
+   state or a live link, it must not be that colour. **And since §39 it means
+   the colour, not the ink**: anything that has to be *read against the page*
+   — type, a focus ring, an underline, a progress fill — is `--leader-ink`,
+   which is `var(--leader)` in dark and a darker sibling in light. `--leader`
+   itself may only be a fill with something dark on it, or in the world.
 3. **Motion checks `[data-motion="off"]`**, not just the media query. The
    toggle overrides the OS in both directions.
 4. **Reduced motion means final state, not fast animation.** No shortened
@@ -1274,6 +1302,35 @@ Spring, Trig.js, GSAP ScrollSmoother (overlaps Lenis).
   which axe folds into the contrast it computes: eleven `color-contrast`
   violations on `aria-hidden` decoration, none once it has cleared. Wait for
   the tween, not for `data-intro`.
+- **An accent is not a colour with one contrast — it has one per ground, and
+  a palette that flips grounds re-asks the question.** `#A99BF5` is 7.65:1 on
+  `--void` and **2.23:1** on the light page, 1.74:1 on its own `--rule` track;
+  the drafted claim that it "clears 3:1 for non-text UI on a pale ground" was
+  made against no measurement and is wrong by a third. The fix is a token
+  split by *job* (`--leader` / `--leader-ink`) rather than by appearance, and
+  the second one defined as `var(--leader)` in the base set — which is what
+  makes the untouched appearance provably untouched, because there is no
+  second value anywhere to keep in sync.
+- **Reversing a fill and its ink solves the ink and not the boundary.**
+  `--paper` on `#A99BF5` is 7.03:1 and reads beautifully; the chip's own edge
+  against a pale page is 2.23:1, and the edge is what SC 1.4.11 is about —
+  it is the thing that says the control is pressed. High contrast made it
+  *worse*, because the dark set lifts `--leader` and a lighter accent on a
+  light page is 1.66:1. Measure the fill against what surrounds it, not only
+  against what sits on it.
+- **A `[hidden]` element with an author `display` on it is not hidden**, and
+  the cost of that only shows up when something else in the row grows. §38
+  recorded the World link showing at ≤640px and left it; §39's third toggle
+  turned it into a wrapped nav row and 60px of header at 360 and 390.
+  `nav a:not([hidden])` in the tap-target block, and the header is §38's
+  geometry to the pixel at every width.
+- **A three-state preference resolved in CSS is the palette written twice.**
+  `auto` for an appearance can be a `@media (prefers-color-scheme: light)`
+  block or an attribute the head script writes before paint; the second is one
+  selector and one copy of the tokens, and it is the shape `tj:motion` already
+  has. The instrument that proves it applies pre-paint is aborting every `.js`
+  request and checking the page is still light — and the honest thing to say
+  beside it is that with JS off there is no attribute at all.
 - **CDP's CPU throttle does not slow a worker.** Chunk generation came back
   *faster* under 4× throttling (1.27ms a chunk against 2.72) because the main
   thread stops competing for cores. It bounds main-thread work and nothing
@@ -1291,7 +1348,15 @@ document *plus* the scene. The world is the site now, so the two are
 budgeted apart and a reader never pays both.
 
 - Document JS, any viewport: **under 120KB gzipped** (no Three below
-  1024px). Measured at §38: **54.94 KiB (56,256)** over three files, 150,443
+  1024px). Measured at §39: **unchanged to the byte** on a §38 build in the
+  same session — 150,425 raw over the same three files — because Astro inlines
+  the toggle module into the page, so the third control's script lands in the
+  HTML. CSS **3,189 → 3,338** gzipped (+149; raw 11,881 → 12,352) for the two
+  light token sets and nine `--leader` → `--leader-ink` moves, and
+  `index.html` **10,759 → 11,122** (+363) for the head script's theme branch,
+  the third button and its module. (Those baselines are a post-§38 build:
+  §38's own report predates the hero-knee and stage-leading addenda.) Earlier,
+  measured at §38: **54.94 KiB (56,256)** over three files, 150,443
   raw, **unchanged to the byte** on a §37 build in the same session — the
   step's only document-mode bytes are CSS and HTML. (That file set is entry
   + LogBand + the motion chunk, with the dynamically imported world chunk
@@ -1312,7 +1377,10 @@ budgeted apart and a reader never pays both.
   `world.ts` and `projects.ts` each capture at import, and Lenis's
   re-measure. §31: 55.0 KiB (56,338), unchanged in content since §21; §28
   measured 55.2 with a `__world` hook still in the entry script
-- World chunk, desktop: **under 400KB gzipped**. Measured at §38:
+- World chunk, desktop: **under 400KB gzipped**. Measured at §39:
+  **byte-identical to §38's** — same 226,731 gzipped, same
+  `scene.DWsQXswP.js` hash, worker unchanged at 3,593 — because nothing in
+  that step ships world code. Earlier, at §38:
   **224.93 KiB** (230,324 = 226,731 + 3,593 worker) and **byte-identical to
   §37's** — same chunk hash, same worker — because nothing in that step
   lands in it. CSS 3,131 → **3,147** for the `--halo` token and its four
@@ -1585,7 +1653,12 @@ budgeted apart and a reader never pays both.
   this machine is inside the budget at every scale measured. Both halves
   slowed at once — main thread 4× and four times the pixels — flies the
   world at a **16.9ms median** with 1.8% of frames over 25ms
-- Lighthouse accessibility **100**. **axe measured clean at §38 in ten
+- Lighthouse accessibility **100**. **§39 adds a second appearance to every
+  state, and axe measured clean in eight document ones**: light, light +
+  contrast, a light deep link, light at 360, light with motion off, dark, dark
+  + contrast, dark at 360. Nothing in the light document is under **5.08:1**,
+  and the accent is the one token that could not come with it (2.23:1 on a
+  pale page). Earlier: **axe measured clean at §38 in ten
   states**, both modes: document mode, a document deep link, the curtain
   held, the **adapter-refused fallback** (which nothing had ever run it
   against), the arrival, mid-flight, a station's name frame, a writeup open,

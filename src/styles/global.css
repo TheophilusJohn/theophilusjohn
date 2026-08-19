@@ -14,11 +14,17 @@ body {
   min-height: 100svh;
 }
 
-a { color: inherit; text-decoration-color: var(--leader); text-underline-offset: 0.25em; }
-a:hover { color: var(--leader); }
+/* --leader-ink, not --leader (§39): both the hover colour and the underline
+   are how a link is told from body copy, and the accent itself is 2.23:1 on
+   the light page. In dark the two tokens are one value, so nothing here
+   changes appearance. */
+a { color: inherit; text-decoration-color: var(--leader-ink); text-underline-offset: 0.25em; }
+a:hover { color: var(--leader-ink); }
 
 :focus-visible {
-  outline: 2px solid var(--leader);
+  /* Non-text UI wants 3:1 (WCAG 1.4.11) and --leader does not clear it on a
+     pale ground — 2.23:1. --leader-ink is 5.08. §39. */
+  outline: 2px solid var(--leader-ink);
   outline-offset: 3px;
   border-radius: 2px;
 }
@@ -741,7 +747,7 @@ html[data-cursor] :is(input, textarea, select, [contenteditable]:not([contentedi
    link is state. The spec says amber; the palette moved off amber to
    lavender (§2) and this is the same accent it named. */
 .cursor[data-state="link"] .dot {
-  background: var(--leader);
+  background: var(--leader-ink);
   transform: scale(1.5);
 }
 

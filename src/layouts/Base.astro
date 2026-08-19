@@ -39,7 +39,7 @@ const nav = [
     crossorigin
   />
 
-  <!-- Applied before first paint so neither toggle flashes. §5 -->
+  <!-- Applied before first paint so no toggle flashes. §5 -->
   <script is:inline>
     (function () {
       var r = document.documentElement;
@@ -51,6 +51,17 @@ const nav = [
         var m = localStorage.getItem('tj:motion');
         if (m === 'off' || m === 'on') r.dataset.motion = m;
         else if (matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.motion = 'off';
+
+        /* The appearance (§39), and it is the same three states in the same
+           shape: stored wins in both directions, the OS is asked only while
+           the key is absent. `auto` is *resolved* here rather than left to a
+           second copy of the token block inside a media query — one
+           attribute, one selector, and no palette written twice. With JS off
+           there is no attribute and the site is dark, which is its default
+           by design rather than by omission. */
+        var t = localStorage.getItem('tj:theme');
+        if (t === 'light' || t === 'dark') r.dataset.theme = t;
+        else if (matchMedia('(prefers-color-scheme: light)').matches) r.dataset.theme = 'light';
       } catch (e) {}
 
       /* ── The mode, decided before paint (§33 / SPEC §0.1) ───────────
@@ -231,7 +242,7 @@ const nav = [
       letter-spacing: 0.12em; text-transform: uppercase;
       color: var(--dim); text-decoration: none;
     }
-    nav a:hover { color: var(--leader); }
+    nav a:hover { color: var(--leader-ink); }
 
     /* Same argument, and the same breakpoint, as the toggles these sit
        next to: once the nav has wrapped to its own line it is being
@@ -240,7 +251,15 @@ const nav = [
        already claim. The ink does not move — the box grows around it,
        and the row lines up with the toggles as a side effect. */
     @media (max-width: 640px) {
-      nav a, .wordmark {
+      /* :not([hidden]) is §38's recorded defect, closed here because §39's
+         third control is what made it cost something. `[hidden]` is a UA rule
+         and an author `display` outranks it, so the way back into the world
+         was on screen at phone width with its attribute still set — and with
+         three toggles beside it the nav then wrapped WORLD onto a line of its
+         own and took the header from 152px to 212 at 360 and 390. With the
+         attribute honoured the header is §38's geometry to the pixel at every
+         width, and the third control costs nothing. */
+      nav a:not([hidden]), .wordmark {
         display: inline-flex;
         align-items: center;
         min-height: 44px;
