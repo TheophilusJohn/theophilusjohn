@@ -1,4 +1,26 @@
-# theophilusjohn.com
+# Theophilus John
+
+I'm a computer science master's student at the University of Houston–Clear
+Lake, where I also administer the lab environment — a mixed Ubuntu and
+Windows Server estate used by students and faculty. Before that I spent three
+years at Tata Consultancy Services as a systems engineer, working on TCS
+BaNCS, a core banking platform. Most of what I build ends up being about the
+same problem: getting separate things to agree.
+
+**[theophilusjohn.com](https://theophilusjohn.com)** · Houston, TX
+
+- **[Enargeia](https://enargeia.dev)** — an LLM running entirely in the
+  browser, every kernel WGSL on WebGPU, zero server cost
+- **[Homonoia](https://homonoia.dev)** — Raft written from the paper, on a
+  network you can break while it runs
+- **[Philoi](https://philoi.net)** — a collaborative editor where concurrent
+  edits converge without a lock
+- **[Basis](https://github.com/TheophilusJohn/basis)** — a TypeScript SaaS
+  starter, shipped to a live deployment with validated billing
+
+---
+
+## About this repository
 
 Personal portfolio for Theophilus Biju John. Astro 7, deployed to Cloudflare
 Pages. Live at <https://theophilusjohn.com> — every commit to `main` deploys.
@@ -7,7 +29,7 @@ The design spec is `docs/SPEC.md`, the numbered build steps are
 `docs/STEPS.md`, and the working rules are `CLAUDE.md`. Those three are the
 authority; this file is the map.
 
-## Run
+### Run
 
 ```bash
 npm install
@@ -17,7 +39,7 @@ npm run check    # astro check — types across .astro, .ts and .mdx
 npm run preview
 ```
 
-## What the site is
+### What the site is
 
 **Two modes, and the world is the default.** `/` resolves which one before
 first paint, in a head script in `src/layouts/Base.astro`:
@@ -35,7 +57,7 @@ first paint, in a head script in `src/layouts/Base.astro`:
 world is a bug, not a feature — that is the whole accessibility story now
 that the world loads first.
 
-## Layout
+### Layout
 
 | | |
 |---|---|
@@ -49,7 +71,7 @@ that the world loads first.
 | `src/scripts/world/*.ts` | World mode. **Fourteen of these thirty-four files have no `three` and no DOM in them** — the field, the placement rules, the route, the scenes, the cities, the landmarks, the collision table, the election — so Node imports the `.ts` directly and the numbers in the record are the shipped function's own output |
 | `astro.config.mjs` | Two build plugins: the world chunk's manifest, and `sitemap.xml` / `robots.txt` |
 
-## Deploy
+### Deploy
 
 Cloudflare Pages, build command `npm run build`, output `dist`. The adapter
 is deliberately **not** in `astro.config.mjs` — leaving it out is what keeps
@@ -70,7 +92,7 @@ Two things about the zone rather than the repo, both found by the §44 audit:
   robots.txt appends to the origin's rather than standing aside, so confirm
   the `Sitemap:` line survived.
 
-## Regenerating the static art
+### Regenerating the static art
 
 `public/og.png`, `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` are
 checked in rather than built, because they change when the wordmark or the
@@ -83,7 +105,7 @@ If you regenerate the SVG by hand, note that **an XML comment may not contain
 a double hyphen** — writing `--leader` in one makes the file not well-formed,
 and it then serves 200 and renders nothing.
 
-## Budgets
+### Budgets
 
 Checked every step, and the numbers are in `CLAUDE.md`.
 
@@ -93,7 +115,7 @@ Checked every step, and the numbers are in `CLAUDE.md`.
 - LCP under 2.5s on throttled 4G; interactive world under 3s
 - Lighthouse accessibility 100, usable at 360px wide with motion off
 
-## Rules that are easy to break
+### Rules that are easy to break
 
 The full set is in `CLAUDE.md`. The ones that bite most often:
 
